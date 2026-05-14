@@ -1,0 +1,119 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.crt
+secrets/
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+bun-debug.log*
+
+# Node / JavaScript / TypeScript
+node_modules/
+.npm/
+.pnpm-store/
+.yarn/
+.turbo/
+.next/
+dist/
+build/
+coverage/
+*.tsbuildinfo
+
+# Python
+__pycache__/
+*.py[cod]
+.python-version
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+env/
+
+# Testing / reports
+playwright-report/
+test-results/
+htmlcov/
+.coverage
+.coverage.*
+
+# Temporary / cache
+.cache/
+.tmp/
+tmp/
+temp/
+
+# Project-generated artifacts
+*.pid
+*.sqlite
+*.db
+*.local
+sessions/
+artifacts/
+exports/
+projects/*/*/deliverable-v*/
+
+# AI company runtime state
+runtime/
+state/
+storage/
+workspaces/
+queues/
+snapshots/
+checkpoints/
+
+# Agent / company operational data
+agent-registry/
+agent-registry-state/
+company-dashboard/
+dashboard-snapshots/
+audit-log/
+audit-logs/
+decision-logs/
+reports/generated/
+reports/daily/
+reports/weekly/
+handoff-logs/
+message-bus/
+message-queue/
+
+# Per-agent transient state
+agents/*/state/
+agents/*/sessions/
+agents/*/runtime/
+agents/*/cache/
+
+# Support / PM / delivery operational outputs
+tickets/
+incident-reports/
+risk-registers/
+milestone-exports/
+delivery-reports/
+
+# Keep selected root source files tracked
+!extract-sources.js
+!package/
+
+# Local-only reference/spec work that must not be committed
+restored-src/
+.kiro/specs/
+package/
+extract-sources.js
+README.md
