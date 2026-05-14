@@ -18,9 +18,19 @@ import type {
   AgentRegistryState,
   AgentStatus,
   AgentType,
+  Approval_Response,
   Agent_Message,
+  AgentMessagePayload,
+  HandoffMessageType,
   Lifecycle_State,
+  LifecycleEvent,
   ProjectRegistryEntry,
+} from '../domain/types.js'
+import {
+  isHandoffAcknowledgedWithinSla,
+  isHandoffMessageType,
+  validateAgentMessage,
+  validateLifecycleTransition,
 } from '../domain/types.js'
 
 // ---------------------------------------------------------------------------
@@ -65,13 +75,34 @@ export type AuditLogEntry = {
   /** ISO 8601 timestamp of the event. */
   timestamp: string
   /** Type of audit event. */
-  event: 'access_denied' | 'agent_registered' | 'project_registered' | 'state_updated'
+  event:
+    | 'access_denied'
+    | 'agent_registered'
+    | 'project_registered'
+    | 'state_updated'
+    | 'message_routed'
+    | 'message_rejected'
+    | 'handoff_acknowledged'
+    | 'approval_recorded'
+    | 'lifecycle_transition'
+    | 'lifecycle_transition_rejected'
   /** Agent involved in the event. */
   agent_id?: string
   /** Project involved in the event. */
   project_id?: string
   /** Human-readable description of what happened. */
   detail: string
+}
+
+export type CommunicationLogEntry = {
+  log_id: string
+  recorded_at: string
+  message: Agent_Message<AgentMessagePayload>
+  status: 'routed' | 'rejected'
+  rejection_reason?: string
+  requires_acknowledgment: boolean
+  acknowledged_at?: string
+  acknowledged_within_sla?: boolean
 }
 
 // ---------------------------------------------------------------------------
@@ -100,6 +131,7 @@ export class AgentRegistry {
 
   // Audit log (Task 2.3)
   private readonly _auditLog: AuditLogEntry[] = []
+  private readonly _communicationLog: CommunicationLogEntry[] = []
 
   // ---------------------------------------------------------------------------
   // 2.1 Agent state management
@@ -333,6 +365,123 @@ export class AgentRegistry {
     return { allowed: true }
   }
 
+  routeMessage(
+    message: unknown,
+  ):
+    | { allowed: true; entry: CommunicationLogEntry }
+    | { allowed: false; reason: string } {
+    const validation = validateAgentMessage(message)
+    if (!validation.valid) {
+      const reason = validation.errors.join('; ')
+      this._audit({
+        event: 'message_rejected',
+        detail: reason,
+      })
+      return { allowed: false, reason }
+    }
+
+    const typedMessage = cloneMessage(
+      message as Agent_Message<AgentMessagePayload>,
+    )
+    const access = this.validateMessageAccess(typedMessage)
+    if (!access.allowed) {
+      const entry = this._recordCommunication(typedMessage, 'rejected', access.reason)
+      this._audit({
+        event: 'message_rejected',
+        project_id: typedMessage.project_id,
+        detail: access.reason,
+      })
+      return { allowed: false, reason: entry.rejection_reason ?? access.reason }
+    }
+
+    const entry = this._recordCommunication(typedMessage, 'routed')
+    this._audit({
+      event: 'message_routed',
+      project_id: typedMessage.project_id,
+      detail: `${typedMessage.message_type} routed from ${typedMessage.from} to ${typedMessage.to}`,
+    })
+
+    return { allowed: true, entry }
+  }
+
+  acknowledgeHandoff(
+    handoffId: string,
+    acknowledgedAt: string = new Date().toISOString(),
+  ): AccessValidationResult {
+    const target = [...this._communicationLog]
+      .reverse()
+      .find(entry => this._matchesHandoff(entry, handoffId))
+
+    if (!target) {
+      return { allowed: false, reason: `Handoff not found: ${handoffId}` }
+    }
+
+    target.acknowledged_at = acknowledgedAt
+    target.acknowledged_within_sla = isHandoffAcknowledgedWithinSla(
+      target.message.timestamp,
+      acknowledgedAt,
+    )
+    this._audit({
+      event: 'handoff_acknowledged',
+      project_id: target.message.project_id,
+      detail:
+        `Handoff ${handoffId} acknowledged by ${target.message.to}` +
+        ` within SLA: ${target.acknowledged_within_sla ? 'yes' : 'no'}`,
+    })
+
+    return { allowed: true }
+  }
+
+  transitionProjectLifecycle(args: {
+    project_id: string
+    to: Lifecycle_State
+    event: LifecycleEvent
+    actor: AgentType
+    updated_at?: string
+    milestone?: string
+  }): AccessValidationResult {
+    const project = this._projects.get(args.project_id)
+    if (!project) {
+      return { allowed: false, reason: `Project not found: ${args.project_id}` }
+    }
+
+    const validation = validateLifecycleTransition({
+      from: project.lifecycle_state,
+      to: args.to,
+      event: args.event,
+      owner: args.actor,
+    })
+
+    if (!validation.valid) {
+      this._audit({
+        event: 'lifecycle_transition_rejected',
+        project_id: args.project_id,
+        detail: validation.reason,
+      })
+      return { allowed: false, reason: validation.reason }
+    }
+
+    this.updateProject(args.project_id, {
+      lifecycle_state: args.to,
+      current_milestone: args.milestone ?? args.event,
+      updated_at: args.updated_at ?? new Date().toISOString(),
+    })
+    this._audit({
+      event: 'lifecycle_transition',
+      project_id: args.project_id,
+      detail: `${project.lifecycle_state} -> ${args.to} via ${args.event} by ${args.actor}`,
+    })
+    return { allowed: true }
+  }
+
+  recordApprovalResponse(response: Approval_Response): void {
+    this._audit({
+      event: 'approval_recorded',
+      project_id: undefined,
+      detail: `Approval ${response.request_id} recorded with decision ${response.decision}`,
+    })
+  }
+
   // ---------------------------------------------------------------------------
   // 2.4 State history
   // ---------------------------------------------------------------------------
@@ -345,7 +494,9 @@ export class AgentRegistry {
    * See requirements.md § Req 10, AC 4.
    */
   getAgentHistory(agentId: string): AgentStateSnapshot[] {
-    return [...(this._agentHistory.get(agentId) ?? [])]
+    return (this._agentHistory.get(agentId) ?? []).map(snapshot => ({
+      ...snapshot,
+    }))
   }
 
   /**
@@ -356,7 +507,10 @@ export class AgentRegistry {
    * See requirements.md § Req 10, AC 4.
    */
   getProjectHistory(projectId: string): ProjectStateSnapshot[] {
-    return [...(this._projectHistory.get(projectId) ?? [])]
+    return (this._projectHistory.get(projectId) ?? []).map(snapshot => ({
+      ...snapshot,
+      active_agent_ids: [...snapshot.active_agent_ids],
+    }))
   }
 
   // ---------------------------------------------------------------------------
@@ -369,6 +523,13 @@ export class AgentRegistry {
    */
   getAuditLog(): AuditLogEntry[] {
     return [...this._auditLog]
+  }
+
+  getCommunicationLog(): CommunicationLogEntry[] {
+    return this._communicationLog.map(entry => ({
+      ...entry,
+      message: cloneMessage(entry.message),
+    }))
   }
 
   // ---------------------------------------------------------------------------
@@ -441,5 +602,44 @@ export class AgentRegistry {
       if (entry.agent_type === agentType) return entry
     }
     return undefined
+  }
+
+  private _recordCommunication(
+    message: Agent_Message<AgentMessagePayload>,
+    status: CommunicationLogEntry['status'],
+    rejectionReason?: string,
+  ): CommunicationLogEntry {
+    const recordedAt = new Date().toISOString()
+    const entry: CommunicationLogEntry = {
+      log_id: `comm-${this._communicationLog.length + 1}`,
+      recorded_at: recordedAt,
+      message: cloneMessage(message),
+      status,
+      rejection_reason: rejectionReason,
+      requires_acknowledgment: isHandoffMessageType(message.message_type),
+    }
+    this._communicationLog.push(entry)
+    return entry
+  }
+
+  private _matchesHandoff(
+    entry: CommunicationLogEntry,
+    handoffId: string,
+  ): entry is CommunicationLogEntry & {
+    message: Agent_Message<{ handoff_id: string }>
+  } {
+    if (!isHandoffMessageType(entry.message.message_type)) {
+      return false
+    }
+
+    const payload = entry.message.payload as Record<string, unknown>
+    return payload['handoff_id'] === handoffId
+  }
+}
+
+function cloneMessage<P>(message: Agent_Message<P>): Agent_Message<P> {
+  return {
+    ...message,
+    payload: structuredClone(message.payload),
   }
 }

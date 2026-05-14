@@ -43,6 +43,29 @@ function makeProject(overrides: Partial<ProjectRegistryEntry> = {}): ProjectRegi
   }
 }
 
+function makeLeadHandoffMessage(
+  overrides: Partial<Agent_Message> = {},
+): Agent_Message {
+  return {
+    from: 'sales_agent',
+    to: 'product_agent',
+    message_type: 'lead_handoff',
+    project_id: 'proj-001',
+    timestamp: '2026-05-14T09:30:00Z',
+    payload: {
+      handoff_id: 'handoff-1',
+      lead_id: 'lead-1',
+      client_name: 'Acme Corp',
+      stakeholder_contacts: ['owner@acme.test'],
+      proposal_artifact_ref: 'projects/acme-corp/proj-001/proposal.md',
+      initial_scope: 'Build AI assistant',
+      commercial_assumptions: ['One-month delivery'],
+      initial_risks: ['Tight budget'],
+    },
+    ...overrides,
+  }
+}
+
 // ---------------------------------------------------------------------------
 // 2.1 Agent state management
 // ---------------------------------------------------------------------------
@@ -309,28 +332,14 @@ describe('AgentRegistry — 2.3 Access validation', () => {
   // validateMessageAccess
 
   it('allows a message when both sender and receiver are authorised for the project', () => {
-    const message: Agent_Message = {
-      from: 'sales_agent',
-      to: 'product_agent',
-      message_type: 'lead_handoff',
-      project_id: 'proj-001',
-      timestamp: '2026-05-14T09:30:00Z',
-      payload: {},
-    }
+    const message = makeLeadHandoffMessage()
     const result = registry.validateMessageAccess(message)
     expect(result.allowed).toBe(true)
   })
 
   it('denies a message when sender is not authorised for the project', () => {
     // sales-1 is on proj-001, message targets proj-999
-    const message: Agent_Message = {
-      from: 'sales_agent',
-      to: 'product_agent',
-      message_type: 'lead_handoff',
-      project_id: 'proj-999',
-      timestamp: '2026-05-14T09:30:00Z',
-      payload: {},
-    }
+    const message = makeLeadHandoffMessage({ project_id: 'proj-999' })
     const result = registry.validateMessageAccess(message)
     expect(result.allowed).toBe(false)
   })
@@ -349,14 +358,7 @@ describe('AgentRegistry — 2.3 Access validation', () => {
     isolated.registerAgent(makeAgent({ agent_id: 'sales-x', agent_type: 'sales_agent', current_project_id: 'proj-001' }))
     isolated.registerAgent(makeAgent({ agent_id: 'prod-x', agent_type: 'product_agent', current_project_id: 'proj-002' }))
 
-    const message: Agent_Message = {
-      from: 'sales_agent',
-      to: 'product_agent',
-      message_type: 'lead_handoff',
-      project_id: 'proj-001',
-      timestamp: '2026-05-14T09:30:00Z',
-      payload: {},
-    }
+    const message = makeLeadHandoffMessage()
     const result = isolated.validateMessageAccess(message)
     expect(result.allowed).toBe(false)
   })
@@ -368,7 +370,7 @@ describe('AgentRegistry — 2.3 Access validation', () => {
       message_type: 'status_update',
       project_id: 'proj-001',
       timestamp: '2026-05-14T09:30:00Z',
-      payload: {},
+      payload: { status: 'watching', summary: 'Need executive review' },
     }
     const result = registry.validateMessageAccess(message)
     expect(result.allowed).toBe(false)
@@ -384,7 +386,7 @@ describe('AgentRegistry — 2.3 Access validation', () => {
       message_type: 'lead_handoff',
       project_id: 'proj-001',
       timestamp: '2026-05-14T09:30:00Z',
-      payload: {},
+      payload: makeLeadHandoffMessage().payload,
     }
     const result = registry.validateMessageAccess(message)
     expect(result.allowed).toBe(false)
@@ -394,18 +396,63 @@ describe('AgentRegistry — 2.3 Access validation', () => {
   })
 
   it('logs denied message access to the audit log', () => {
-    const message: Agent_Message = {
-      from: 'sales_agent',
-      to: 'product_agent',
-      message_type: 'lead_handoff',
-      project_id: 'proj-999',
-      timestamp: '2026-05-14T09:30:00Z',
-      payload: {},
-    }
+    const message = makeLeadHandoffMessage({ project_id: 'proj-999' })
     registry.validateMessageAccess(message)
     const log = registry.getAuditLog()
     const denied = log.filter(e => e.event === 'access_denied')
     expect(denied.length).toBeGreaterThan(0)
+  })
+
+  it('routes a valid message into the communication log', () => {
+    const result = registry.routeMessage(makeLeadHandoffMessage())
+    expect(result.allowed).toBe(true)
+    if (result.allowed) {
+      expect(result.entry.requires_acknowledgment).toBe(true)
+    }
+    expect(registry.getCommunicationLog()).toHaveLength(1)
+  })
+
+  it('rejects invalid message payloads with an explicit reason', () => {
+    const result = registry.routeMessage({
+      ...makeLeadHandoffMessage(),
+      payload: { handoff_id: 'handoff-1' },
+    })
+    expect(result.allowed).toBe(false)
+    if (!result.allowed) {
+      expect(result.reason).toContain('payload.lead_id is required')
+    }
+  })
+
+  it('tracks handoff acknowledgment and SLA result', () => {
+    registry.routeMessage(makeLeadHandoffMessage())
+    const acknowledgment = registry.acknowledgeHandoff(
+      'handoff-1',
+      '2026-05-14T09:30:20Z',
+    )
+
+    expect(acknowledgment.allowed).toBe(true)
+    const logEntry = registry.getCommunicationLog()[0]!
+    expect(logEntry.acknowledged_at).toBe('2026-05-14T09:30:20Z')
+    expect(logEntry.acknowledged_within_sla).toBe(true)
+  })
+
+  it('validates lifecycle transitions before mutating project state', () => {
+    registry.updateProject('proj-001', {
+      lifecycle_state: 'proposal',
+      current_milestone: 'proposal_sent',
+      updated_at: '2026-05-14T09:15:00Z',
+    })
+
+    const result = registry.transitionProjectLifecycle({
+      project_id: 'proj-001',
+      to: 'won',
+      event: 'deal_won',
+      actor: 'sales_agent',
+      updated_at: '2026-05-14T09:20:00Z',
+    })
+
+    expect(result.allowed).toBe(true)
+    expect(registry.getProject('proj-001')!.lifecycle_state).toBe('won')
   })
 })
 

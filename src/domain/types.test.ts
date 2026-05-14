@@ -16,10 +16,14 @@ import {
   LIFECYCLE_TRANSITIONS,
   type Lifecycle_State,
   buildProjectNamespace,
+  getAgentMessageValidationErrors,
   getValidNextStates,
+  HANDOFF_ACKNOWLEDGMENT_SLA_SECONDS,
   isValidAgentMessage,
+  isHandoffAcknowledgedWithinSla,
   isValidTransition,
   isWithinProjectContext,
+  MESSAGE_TYPES,
   parseProjectNamespace,
   type Approval_Gate,
   type Approval_Request,
@@ -27,6 +31,7 @@ import {
   type Agent_Message,
   APPROVAL_GATE_LABELS,
   PROJECT_ISOLATION_RULES,
+  validateLifecycleTransition,
 } from './types.js'
 
 // ---------------------------------------------------------------------------
@@ -316,7 +321,16 @@ describe('isValidAgentMessage', () => {
     message_type: 'lead_handoff',
     project_id: 'proj-123',
     timestamp: '2026-05-14T09:30:00Z',
-    payload: { lead_id: 'lead-456' },
+    payload: {
+      handoff_id: 'handoff-1',
+      lead_id: 'lead-456',
+      client_name: 'Acme Corp',
+      stakeholder_contacts: ['owner@acme.test'],
+      proposal_artifact_ref: 'projects/acme/proj-123/proposal.md',
+      initial_scope: 'Build internal sales dashboard',
+      commercial_assumptions: ['Fixed scope MVP'],
+      initial_risks: ['Timeline is aggressive'],
+    },
   }
 
   it('returns true for a valid message', () => {
@@ -361,5 +375,75 @@ describe('isValidAgentMessage', () => {
     expect(isValidAgentMessage('string')).toBe(false)
     expect(isValidAgentMessage(42)).toBe(false)
     expect(isValidAgentMessage(undefined)).toBe(false)
+  })
+
+  it('requires message_type to be one of the supported contract values', () => {
+    expect(MESSAGE_TYPES).toContain('lead_handoff')
+    expect(
+      isValidAgentMessage({
+        ...validMsg,
+        message_type: 'not_real',
+      }),
+    ).toBe(false)
+  })
+
+  it('reports missing payload contract fields for typed handoffs', () => {
+    const errors = getAgentMessageValidationErrors({
+      ...validMsg,
+      payload: {
+        handoff_id: 'handoff-1',
+      },
+    })
+
+    expect(errors).toContain('payload.lead_id is required')
+    expect(errors).toContain('payload.client_name is required')
+  })
+})
+
+describe('validateLifecycleTransition', () => {
+  it('accepts a valid event-owner-state combination', () => {
+    expect(
+      validateLifecycleTransition({
+        from: 'proposal',
+        to: 'won',
+        event: 'deal_won',
+        owner: 'sales_agent',
+      }),
+    ).toEqual({ valid: true })
+  })
+
+  it('rejects invalid owner/event combinations with a reason', () => {
+    const result = validateLifecycleTransition({
+      from: 'proposal',
+      to: 'won',
+      event: 'deal_won',
+      owner: 'engineering_agent',
+    })
+
+    expect(result.valid).toBe(false)
+    if (!result.valid) {
+      expect(result.reason).toContain('Illegal lifecycle transition')
+    }
+  })
+})
+
+describe('isHandoffAcknowledgedWithinSla', () => {
+  it('returns true when acknowledgment lands within 30 seconds', () => {
+    expect(
+      isHandoffAcknowledgedWithinSla(
+        '2026-05-14T09:00:00Z',
+        '2026-05-14T09:00:29Z',
+      ),
+    ).toBe(true)
+  })
+
+  it('returns false when acknowledgment exceeds the default SLA', () => {
+    expect(HANDOFF_ACKNOWLEDGMENT_SLA_SECONDS).toBe(30)
+    expect(
+      isHandoffAcknowledgedWithinSla(
+        '2026-05-14T09:00:00Z',
+        '2026-05-14T09:00:31Z',
+      ),
+    ).toBe(false)
   })
 })

@@ -113,7 +113,7 @@ delivery-reports/
 
 # Local-only reference/spec work that must not be committed
 restored-src/
-.kiro/specs/
+# .kiro/specs/
 package/
 extract-sources.js
 README.md

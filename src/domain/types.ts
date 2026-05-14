@@ -434,6 +434,117 @@ export type MessageType =
   | 'ticket_escalation'
   | 'risk_alert'
 
+export const MESSAGE_TYPES: readonly MessageType[] = [
+  'lead_handoff',
+  'discovery_handoff',
+  'implementation_handoff',
+  'status_update',
+  'clarification_request',
+  'clarification_response',
+  'approval_request',
+  'approval_response',
+  'ticket_escalation',
+  'risk_alert',
+] as const
+
+export type HandoffMessageType =
+  | 'lead_handoff'
+  | 'discovery_handoff'
+  | 'implementation_handoff'
+
+export const HANDOFF_MESSAGE_TYPES: readonly HandoffMessageType[] = [
+  'lead_handoff',
+  'discovery_handoff',
+  'implementation_handoff',
+] as const
+
+export const HANDOFF_ACKNOWLEDGMENT_SLA_SECONDS = 30 as const
+
+export type LeadHandoffPayload = {
+  handoff_id: string
+  lead_id: string
+  client_name: string
+  stakeholder_contacts: string[]
+  proposal_artifact_ref: string
+  initial_scope: string
+  commercial_assumptions: string[]
+  initial_risks: string[]
+}
+
+export type DiscoveryHandoffPayload = {
+  handoff_id: string
+  spec_artifact_ref: string
+  mvp_scope: string[]
+  tool_stack: string[]
+  acceptance_criteria: string[]
+  technical_constraints: string[]
+  implementation_risks: string[]
+}
+
+export type ImplementationHandoffPayload = {
+  handoff_id: string
+  deliverable_artifact_ref: string
+  qa_summary: string
+  deployment_notes: string[]
+  known_risks: string[]
+  support_watchouts: string[]
+}
+
+export type StatusUpdatePayload = {
+  status: string
+  summary: string
+  milestone?: string
+  blocker_ids?: string[]
+}
+
+export type ClarificationRequestPayload = {
+  request_id: string
+  related_handoff_id?: string
+  question: string
+  artifact_ref?: string
+}
+
+export type ClarificationResponsePayload = {
+  request_id: string
+  related_handoff_id?: string
+  response: string
+  artifact_ref?: string
+}
+
+export type ApprovalRequestMessagePayload = {
+  approval: Approval_Request
+}
+
+export type ApprovalResponseMessagePayload = {
+  response: Approval_Response
+}
+
+export type TicketEscalationPayload = {
+  ticket_id: string
+  severity: 'low' | 'medium' | 'high' | 'critical'
+  summary: string
+  requested_action: string
+}
+
+export type RiskAlertPayload = {
+  risk_id: string
+  severity: 'low' | 'medium' | 'high' | 'critical'
+  summary: string
+  mitigation_plan?: string
+}
+
+export type AgentMessagePayload =
+  | LeadHandoffPayload
+  | DiscoveryHandoffPayload
+  | ImplementationHandoffPayload
+  | StatusUpdatePayload
+  | ClarificationRequestPayload
+  | ClarificationResponsePayload
+  | ApprovalRequestMessagePayload
+  | ApprovalResponseMessagePayload
+  | TicketEscalationPayload
+  | RiskAlertPayload
+
 /**
  * Structured inter-agent message format.
  *
@@ -467,6 +578,52 @@ export type Agent_Message<P = unknown> = {
   payload: P
 }
 
+export const MESSAGE_TYPE_REQUIRED_PAYLOAD_FIELDS: Record<MessageType, readonly string[]> =
+  {
+    lead_handoff: [
+      'handoff_id',
+      'lead_id',
+      'client_name',
+      'stakeholder_contacts',
+      'proposal_artifact_ref',
+      'initial_scope',
+      'commercial_assumptions',
+      'initial_risks',
+    ],
+    discovery_handoff: [
+      'handoff_id',
+      'spec_artifact_ref',
+      'mvp_scope',
+      'tool_stack',
+      'acceptance_criteria',
+      'technical_constraints',
+      'implementation_risks',
+    ],
+    implementation_handoff: [
+      'handoff_id',
+      'deliverable_artifact_ref',
+      'qa_summary',
+      'deployment_notes',
+      'known_risks',
+      'support_watchouts',
+    ],
+    status_update: ['status', 'summary'],
+    clarification_request: ['request_id', 'question'],
+    clarification_response: ['request_id', 'response'],
+    approval_request: ['approval'],
+    approval_response: ['response'],
+    ticket_escalation: ['ticket_id', 'severity', 'summary', 'requested_action'],
+    risk_alert: ['risk_id', 'severity', 'summary'],
+  } as const
+
+export type AgentMessageValidationResult =
+  | { valid: true; errors: [] }
+  | { valid: false; errors: string[] }
+
+export type LifecycleTransitionValidationResult =
+  | { valid: true }
+  | { valid: false; reason: string }
+
 /**
  * Validates that an object has all required Agent_Message fields.
  * Returns true if valid, false if any required field is missing.
@@ -474,14 +631,130 @@ export type Agent_Message<P = unknown> = {
  * See requirements.md § Req 9, AC 3.
  */
 export function isValidAgentMessage(msg: unknown): msg is Agent_Message {
-  if (typeof msg !== 'object' || msg === null) return false
+  return validateAgentMessage(msg).valid
+}
+
+export function validateAgentMessage(
+  msg: unknown,
+): AgentMessageValidationResult {
+  const errors = getAgentMessageValidationErrors(msg)
+  if (errors.length > 0) {
+    return { valid: false, errors }
+  }
+
+  return { valid: true, errors: [] }
+}
+
+export function getAgentMessageValidationErrors(msg: unknown): string[] {
+  if (typeof msg !== 'object' || msg === null) {
+    return ['message must be an object']
+  }
+
   const m = msg as Record<string, unknown>
-  return (
-    typeof m['from'] === 'string' &&
-    typeof m['to'] === 'string' &&
+  const errors: string[] = []
+
+  if (typeof m['from'] !== 'string') {
+    errors.push('from is required')
+  }
+
+  if (typeof m['to'] !== 'string') {
+    errors.push('to is required')
+  }
+
+  if (
+    typeof m['message_type'] !== 'string' ||
+    !MESSAGE_TYPES.includes(m['message_type'] as MessageType)
+  ) {
+    errors.push('message_type is invalid')
+  }
+
+  if (typeof m['project_id'] !== 'string') {
+    errors.push('project_id is required')
+  }
+
+  if (typeof m['timestamp'] !== 'string') {
+    errors.push('timestamp is required')
+  }
+
+  if (!('payload' in m)) {
+    errors.push('payload is required')
+    return errors
+  }
+
+  if (typeof m['payload'] !== 'object' || m['payload'] === null) {
+    errors.push('payload must be an object')
+    return errors
+  }
+
+  if (
     typeof m['message_type'] === 'string' &&
-    typeof m['project_id'] === 'string' &&
-    typeof m['timestamp'] === 'string' &&
-    'payload' in m
-  )
+    MESSAGE_TYPES.includes(m['message_type'] as MessageType)
+  ) {
+    const requiredFields =
+      MESSAGE_TYPE_REQUIRED_PAYLOAD_FIELDS[m['message_type'] as MessageType]
+    const payload = m['payload'] as Record<string, unknown>
+    for (const field of requiredFields) {
+      if (!(field in payload)) {
+        errors.push(`payload.${field} is required`)
+      }
+    }
+  }
+
+  return errors
+}
+
+export function isHandoffMessageType(
+  messageType: MessageType,
+): messageType is HandoffMessageType {
+  return HANDOFF_MESSAGE_TYPES.includes(messageType as HandoffMessageType)
+}
+
+export function validateLifecycleTransition(args: {
+  from: Lifecycle_State
+  to: Lifecycle_State
+  event?: LifecycleEvent
+  owner?: AgentType
+}): LifecycleTransitionValidationResult {
+  const transition = LIFECYCLE_TRANSITIONS.find(item => {
+    if (item.from !== args.from || item.to !== args.to) {
+      return false
+    }
+
+    if (args.event && item.event !== args.event) {
+      return false
+    }
+
+    if (args.owner && item.primaryOwner !== args.owner) {
+      return false
+    }
+
+    return true
+  })
+
+  if (!transition) {
+    return {
+      valid: false,
+      reason:
+        `Illegal lifecycle transition ${args.from} -> ${args.to}` +
+        (args.event ? ` for event ${args.event}` : '') +
+        (args.owner ? ` by ${args.owner}` : ''),
+    }
+  }
+
+  return { valid: true }
+}
+
+export function isHandoffAcknowledgedWithinSla(
+  messageTimestamp: string,
+  acknowledgedAt: string,
+  slaSeconds: number = HANDOFF_ACKNOWLEDGMENT_SLA_SECONDS,
+): boolean {
+  const startedAt = Date.parse(messageTimestamp)
+  const endedAt = Date.parse(acknowledgedAt)
+
+  if (Number.isNaN(startedAt) || Number.isNaN(endedAt)) {
+    return false
+  }
+
+  return endedAt - startedAt <= slaSeconds * 1000
 }
