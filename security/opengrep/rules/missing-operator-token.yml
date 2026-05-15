@@ -1,0 +1,18 @@
+- id: agentai.mutating-endpoint-missing-operator-token
+  message: Mutating operator endpoints must call requireAuthenticatedOperator before handling the action.
+  severity: ERROR
+  languages: [ts, js]
+  paths:
+    include:
+      - /src/runtime-app/server/**/*.ts
+  patterns:
+    - pattern-inside: |
+        if ($METHOD === 'POST' && $ROUTE) {
+          ...
+        }
+    - pattern-not-inside: |
+        if ($METHOD === 'POST' && $ROUTE) {
+          ...
+          requireAuthenticatedOperator(...);
+          ...
+        }

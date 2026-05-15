@@ -3,6 +3,7 @@ import { createRuntimeAppState } from './server.js'
 
 const state = createRuntimeAppState()
 const logger = createLogger({
+  env: state.config.env,
   bindings: {
     context: {
       component: 'runtime-scheduler',

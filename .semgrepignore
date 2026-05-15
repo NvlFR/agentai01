@@ -1,0 +1,29 @@
+# Product-external and generated paths
+node_modules/
+referensi/
+runtime/
+dist/
+coverage/
+.kiro/
+.opengrep-out/
+
+# Tests, fixtures, and mocks
+test/
+tests/
+fixtures/
+mocks/
+__tests__/
+__mocks__/
+*.test.*
+*.spec.*
+*.mock.*
+*-mock.*
+*-mocks.*
+*.fixture.*
+*-fixture.*
+*-fixtures.*
+
+# Docs and repo policy files
+docs/
+AGENTS.md
+CODEX.md

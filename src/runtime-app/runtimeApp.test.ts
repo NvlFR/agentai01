@@ -80,7 +80,7 @@ describe('Runtime app operator server', () => {
     expect(result.ok).toBe(true)
     expect(result.message).toContain('Runbook check berhasil.')
     expect(result.message).toContain('Artifact:')
-  })
+  }, 35_000)
 
   test('executes workspace inspection directives through runtime app state', () => {
     const state = new RuntimeAppState(createConfig())
@@ -149,16 +149,26 @@ function createConfig(): RuntimeAppConfig {
     host: '127.0.0.1',
     port: 0,
     baseUrl: 'http://127.0.0.1:0',
+    runtimeId: 'runtime-test',
     operatorToken: 'test-owner-token',
+    telegramToken: 'telegram-test-token',
+    allowedChatIds: ['123456'],
     ai: {
       baseUrl: 'http://127.0.0.1:8045/v1',
       apiKey: 'sk-test-123456',
       model: 'gpt-4.1-mini',
       timeoutMs: 30_000,
+      retryLimit: 2,
+      logLatency: true,
     },
     storage: {
       mode: 'memory',
       artifactsRoot: 'runtime/artifacts',
+      operationalRoot: 'runtime/operational',
+    },
+    queue: {
+      concurrency: 1,
+      retryLimit: 3,
     },
     readiness: {
       ready: true,

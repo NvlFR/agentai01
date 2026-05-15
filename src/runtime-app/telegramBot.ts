@@ -1,6 +1,5 @@
 import { createLogger, type Logger } from '../logging/index.js'
-import { loadRuntimeAppConfig } from './config.js'
-import { loadRuntimeConfig } from './config/runtimeConfig.js'
+import { getSubprocessEnvironment, loadRuntimeAppConfig } from './config.js'
 import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { spawnSync } from 'node:child_process'
@@ -30,19 +29,20 @@ type BotReply = {
   sourceLabel?: string
 }
 
-const logger = createLogger({
-  bindings: {
-    context: {
-      component: 'runtime-telegram',
-    },
-  },
-})
-
 export async function startTelegramBot(): Promise<void> {
-  const runtimeConfig = await loadRuntimeConfig()
-  const appConfig = loadRuntimeAppConfig()
+  const appConfig = loadRuntimeAppConfig({
+    requireProvider: true,
+  })
+  const logger = createLogger({
+    env: appConfig.env,
+    bindings: {
+      context: {
+        component: 'runtime-telegram',
+      },
+    },
+  })
   const state = new RuntimeAppState(appConfig)
-  const token = process.env.TOKEN_TELE?.trim()
+  const token = appConfig.telegramToken
 
   if (!token) {
     throw new Error('TOKEN_TELE is required to run the Telegram bot.')
@@ -50,13 +50,13 @@ export async function startTelegramBot(): Promise<void> {
 
   const client = new TelegramBotClient(token)
   const provider = createOpenAICompatibleProvider({
-    baseURL: runtimeConfig.provider.baseURL,
-    apiKey: runtimeConfig.provider.apiKey,
-    model: runtimeConfig.provider.model,
-    timeoutMs: runtimeConfig.provider.timeoutMs,
-    retryLimit: runtimeConfig.provider.retryLimit,
+    baseURL: appConfig.ai.baseUrl,
+    apiKey: appConfig.ai.apiKey ?? '',
+    model: appConfig.ai.model,
+    timeoutMs: appConfig.ai.timeoutMs,
+    retryLimit: appConfig.ai.retryLimit,
   })
-  const allowedChatIds = parseAllowedChatIds(process.env.ID_CHAT)
+  const allowedChatIds = new Set(appConfig.allowedChatIds)
   const sessions = new Map<string, ChatSession>()
   const automationState: { mode: AutomationMode } = {
     mode: 'semi',
@@ -738,7 +738,7 @@ function runSafeCommand(
     cwd: process.cwd(),
     encoding: 'utf8',
     timeout: 300_000,
-    env: process.env,
+    env: getSubprocessEnvironment(),
   })
 
   return {
@@ -940,19 +940,6 @@ function truncateForTelegram(text: string): string {
     return '(no output)'
   }
   return text
-}
-
-function parseAllowedChatIds(value: string | undefined): Set<string> {
-  if (!value?.trim()) {
-    return new Set()
-  }
-
-  return new Set(
-    value
-      .split(',')
-      .map(item => item.trim())
-      .filter(Boolean),
-  )
 }
 
 export function splitTelegramMessage(text: string, maxLength = 3500): string[] {

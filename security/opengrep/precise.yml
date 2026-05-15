@@ -1,0 +1,65 @@
+# Compiled by node security/opengrep/compile-rules.mjs
+rules:
+  - id: agentai.hardcoded-secret.literal
+    message: Hardcoded secret-like literal detected. Move the value to env or secrets boundary.
+    severity: ERROR
+    languages: [ts, js]
+    paths:
+      include:
+        - /src/**/*.ts
+    patterns:
+      - pattern-either:
+          - pattern: $KEY = "sk-..."
+          - pattern: $KEY = 'sk-...'
+          - pattern: $KEY = "Bearer ..."
+          - pattern: $KEY = 'Bearer ...'
+      - metavariable-regex:
+          metavariable: $KEY
+          regex: (?i).*(api[_-]?key|token|secret|password|authorization).*
+  - id: agentai.mutating-endpoint-missing-operator-token
+    message: Mutating operator endpoints must call requireAuthenticatedOperator before handling the action.
+    severity: ERROR
+    languages: [ts, js]
+    paths:
+      include:
+        - /src/runtime-app/server/**/*.ts
+    patterns:
+      - pattern-inside: |
+          if ($METHOD === 'POST' && $ROUTE) {
+            ...
+          }
+      - pattern-not-inside: |
+          if ($METHOD === 'POST' && $ROUTE) {
+            ...
+            requireAuthenticatedOperator(...);
+            ...
+          }
+  - id: agentai.risky-console-output
+    message: Use the structured logger instead of raw console output on source paths.
+    severity: WARNING
+    languages: [ts, js]
+    paths:
+      include:
+        - /src/**/*.ts
+      exclude:
+        - /src/logging/**/*.ts
+    pattern-either:
+      - pattern: console.log(...)
+      - pattern: console.info(...)
+      - pattern: console.warn(...)
+      - pattern: console.error(...)
+      - pattern: console.debug(...)
+  - id: agentai.raw-process-env.outside-boundary
+    message: Read environment variables through src/runtime-app/config or src/secrets instead of raw process.env.
+    severity: ERROR
+    languages: [ts, js]
+    paths:
+      include:
+        - /src/**/*.ts
+      exclude:
+        - /src/runtime-app/config/**/*.ts
+        - /src/runtime-app/config.ts
+        - /src/secrets/**/*.ts
+    pattern-either:
+      - pattern: process.env.$KEY
+      - pattern: process.env[$KEY]

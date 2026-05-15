@@ -1,3 +1,5 @@
+import { formatIso8601, mapDeep } from '../shared/index.js'
+
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error'
 
 export type LogContext = Record<string, unknown>
@@ -83,7 +85,7 @@ export function createLogger(options: CreateLoggerOptions = {}): Logger {
   }
 }
 
-export function getMinimumLogLevelForEnvironment(env = resolveRuntimeEnvironment()): LogLevel {
+export function getMinimumLogLevelForEnvironment(env: string = 'development'): LogLevel {
   if (env === 'production') {
     return 'info'
   }
@@ -96,12 +98,7 @@ export function getMinimumLogLevelForEnvironment(env = resolveRuntimeEnvironment
 }
 
 export function redactLogMessage(message: string): string {
-  const keyValueRedacted = message.replace(
-    KEY_VALUE_SECRET_PATTERN,
-    (_, key: string, separator: string) => `${key}${separator}${REDACTED}`,
-  )
-
-  return INLINE_SECRET_PATTERNS.reduce(
+  const inlineRedacted = INLINE_SECRET_PATTERNS.reduce(
     (current, pattern) => current.replace(pattern, match => {
       if (match.includes(REDACTED)) {
         return match
@@ -113,12 +110,57 @@ export function redactLogMessage(message: string): string {
 
       return REDACTED
     }),
-    keyValueRedacted,
+    message,
+  )
+
+  return inlineRedacted.replace(
+    KEY_VALUE_SECRET_PATTERN,
+    (_, key: string, separator: string) => `${key}${separator}${REDACTED}`,
   )
 }
 
 export function redactLogContext(context: LogContext): LogContext {
-  return redactValue(context, []) as LogContext
+  return mapDeep(context, (value, path) => {
+    const key = path[path.length - 1]
+    if (typeof key === 'string' && SECRET_KEY_PATTERN.test(key)) {
+      return {
+        handled: true,
+        value: REDACTED,
+      }
+    }
+
+    if (
+      typeof value === 'string' &&
+      path.some(part => typeof part === 'string' && SECRET_KEY_PATTERN.test(part))
+    ) {
+      return {
+        handled: true,
+        value: REDACTED,
+      }
+    }
+
+    if (value instanceof Error) {
+      return {
+        handled: true,
+        value: {
+          name: value.name,
+          message: redactLogMessage(value.message),
+          stack: value.stack ? redactLogMessage(value.stack) : undefined,
+        },
+      }
+    }
+
+    if (typeof value === 'string') {
+      return {
+        handled: true,
+        value: redactLogMessage(value),
+      }
+    }
+
+    return {
+      handled: false,
+    }
+  }) as LogContext
 }
 
 function buildEntry(
@@ -129,7 +171,7 @@ function buildEntry(
 ): LogEntry {
   const mergedContext = mergeContexts(bindings.context, context)
   const entry: LogEntry = {
-    timestamp: new Date().toISOString(),
+    timestamp: formatIso8601(new Date()),
     level,
     message: redactLogMessage(message),
   }
@@ -192,57 +234,4 @@ function mergeContexts(
     ...(base ?? {}),
     ...(override ?? {}),
   }
-}
-
-function redactValue(value: unknown, parentKeys: string[]): unknown {
-  if (Array.isArray(value)) {
-    return value.map(item => redactValue(item, parentKeys))
-  }
-
-  if (value instanceof Error) {
-    return redactValue(
-      {
-        name: value.name,
-        message: value.message,
-        stack: value.stack,
-      },
-      parentKeys,
-    )
-  }
-
-  if (value && typeof value === 'object') {
-    return Object.fromEntries(
-      Object.entries(value).map(([key, entryValue]) => {
-        const nextParentKeys = [...parentKeys, key]
-        if (SECRET_KEY_PATTERN.test(key)) {
-          return [key, redactSecretValue(entryValue)]
-        }
-
-        return [key, redactValue(entryValue, nextParentKeys)]
-      }),
-    )
-  }
-
-  if (typeof value === 'string') {
-    if (parentKeys.some(key => SECRET_KEY_PATTERN.test(key))) {
-      return redactSecretValue(value)
-    }
-
-    return redactLogMessage(value)
-  }
-
-  return value
-}
-
-function redactSecretValue(value: unknown): string {
-  if (typeof value === 'string' && value === REDACTED) {
-    return value
-  }
-
-  const normalized = String(value ?? '')
-  return normalized.length === 0 ? normalized : REDACTED
-}
-
-function resolveRuntimeEnvironment(): string {
-  return process.env['APP_ENV'] ?? process.env['NODE_ENV'] ?? 'development'
 }

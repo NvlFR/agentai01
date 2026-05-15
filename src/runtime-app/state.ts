@@ -26,6 +26,7 @@ import {
   type RuntimeWorkerDescriptor,
 } from '../runtime/orchestrator.js'
 import type { RuntimeAppConfig } from './config.js'
+import { getSubprocessEnvironment } from './config.js'
 
 export type RuntimeJobKind =
   | 'message_dispatch'
@@ -687,7 +688,7 @@ function runWorkspaceCommand(action: RuntimeRunbookAction): {
     cwd: process.cwd(),
     encoding: 'utf8',
     timeout: 300_000,
-    env: process.env,
+    env: getSubprocessEnvironment(),
   })
 
   return {

@@ -1,0 +1,15 @@
+- id: agentai.risky-console-output
+  message: Use the structured logger instead of raw console output on source paths.
+  severity: WARNING
+  languages: [ts, js]
+  paths:
+    include:
+      - /src/**/*.ts
+    exclude:
+      - /src/logging/**/*.ts
+  pattern-either:
+    - pattern: console.log(...)
+    - pattern: console.info(...)
+    - pattern: console.warn(...)
+    - pattern: console.error(...)
+    - pattern: console.debug(...)

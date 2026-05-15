@@ -108,13 +108,22 @@ milestone-exports/
 delivery-reports/
 
 # Keep selected root source files tracked
-!extract-sources.js
-!package/
+!package.json
+!tsconfig.json
+!AGENTS.md
+!VISION.md
+!README.md
+!CLAUDE.md
+!CODEX.md
+!SECURITY.md
+!TODO.md
+
 
 # Local-only reference/spec work that must not be committed
+referensi/
 restored-src/
-# .kiro/specs/
 package/
 extract-sources.js
-README.md
+.opengrep-out/
+.venv-semgrep/
 AI-WORKFLOW.md

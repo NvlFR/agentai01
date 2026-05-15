@@ -1,4 +1,5 @@
 import type { PersistedJobRecord } from '../storage/fileStore.js'
+import { formatIso8601, generateId } from '../../shared/index.js'
 
 export type RuntimeJobKind =
   | 'message_dispatch'
@@ -36,9 +37,9 @@ export class RuntimeJobQueue {
     runAt?: string
     maxAttempts?: number
   }): RuntimeJob {
-    const now = new Date().toISOString()
+    const now = formatIso8601(new Date())
     const job: RuntimeJob = {
-      jobId: `job-${this.jobs.size + 1}-${Date.now()}`,
+      jobId: generateId('job'),
       kind: input.kind,
       status: 'queued',
       attempts: 0,
@@ -81,7 +82,7 @@ export class RuntimeJobQueue {
     job.updatedAt = now
     if (job.attempts < job.maxAttempts) {
       job.status = 'retrying'
-      job.runAt = new Date(Date.parse(now) + retryDelayMs).toISOString()
+      job.runAt = formatIso8601(new Date(Date.parse(now) + retryDelayMs))
     } else {
       job.status = 'failed'
     }

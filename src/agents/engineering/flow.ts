@@ -1,6 +1,6 @@
 import type { AgentRegistry } from '../../registry/AgentRegistry.js'
 import type { Approval_Request, Approval_Response } from '../../domain/types.js'
-import { applyLifecycleUpdate } from '../project-manager/lifecycle.js'
+import { applyLifecycleUpdate } from '../../domain/lifecycle.js'
 import type {
   ApprovalOutcome,
   ApprovalRequestContext,

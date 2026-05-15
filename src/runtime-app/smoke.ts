@@ -1,6 +1,5 @@
 import { startRuntimeAppServer } from './server.js'
-import type { RuntimeAppConfig } from './config.js'
-import { loadRuntimeConfig } from './config/runtimeConfig.js'
+import { loadRuntimeAppConfig, type RuntimeAppConfig } from './config.js'
 import {
   createOpenAICompatibleProvider,
   type ProviderLogEntry,
@@ -13,26 +12,28 @@ import {
 } from './scenarios/e2e.js'
 import { createFileRuntimePersistence } from './storage/fileRuntimeStorage.js'
 
-const config = await loadRuntimeConfig()
+const config = loadRuntimeAppConfig({
+  requireProvider: true,
+})
 const providerLogs: ProviderLogEntry[] = []
 const provider = createOpenAICompatibleProvider({
-  baseURL: config.provider.baseURL,
-  apiKey: config.provider.apiKey,
-  model: config.provider.model,
-  timeoutMs: config.provider.timeoutMs,
-  retryLimit: config.provider.retryLimit,
+  baseURL: config.ai.baseUrl,
+  apiKey: config.ai.apiKey ?? '',
+  model: config.ai.model,
+  timeoutMs: config.ai.timeoutMs,
+  retryLimit: config.ai.retryLimit,
   logger: entry => providerLogs.push(entry),
 })
 
 const persistence = createFileRuntimePersistence({
   operationalRoot: config.storage.operationalRoot,
-  artifactRoot: config.storage.artifactRoot,
+  artifactRoot: config.storage.artifactsRoot,
 })
 await persistence.ensureReady()
 
 const runtimeApp = createRuntimeOperationalApp({
   now: '2026-05-14T09:00:00Z',
-  workspaceBaseDir: config.storage.artifactRoot,
+  workspaceBaseDir: config.storage.artifactsRoot,
 })
 const ownerDirective = await runOwnerDirectiveToDashboardScenario(
   runtimeApp,
@@ -50,21 +51,10 @@ const providerResult = await provider.generateText({
 })
 
 const appConfig: RuntimeAppConfig = {
-  env: config.app.env,
+  ...config,
   host: '127.0.0.1',
   port: 0,
   baseUrl: 'http://127.0.0.1',
-  operatorToken: process.env.OPERATOR_TOKEN ?? 'dev-owner-token',
-  ai: {
-    baseUrl: config.provider.baseURL,
-    apiKey: config.provider.apiKey,
-    model: config.provider.model,
-    timeoutMs: config.provider.timeoutMs,
-  },
-  storage: {
-    mode: 'memory',
-    artifactsRoot: config.storage.artifactRoot,
-  },
   readiness: {
     ready: true,
     reasons: [],
@@ -110,7 +100,7 @@ const summary = {
 }
 
 const persistedStatePath = await persistence.operational.saveRuntimeState({
-  runtimeId: config.app.runtimeId,
+  runtimeId: config.runtimeId,
   savedAt: summary.timestamp,
   state: summary,
 })

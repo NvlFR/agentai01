@@ -86,7 +86,7 @@ export async function runLeadIntakeToDeliveredScenario(
   return app.shell.readDashboard('2026-05-14T10:16:00Z')
 }
 
-export async function runLeadToDeliveredScenario(input: {
+async function runLeadToDeliveredScenario(input: {
   runtimeId: string
   now?: string
 }): Promise<{

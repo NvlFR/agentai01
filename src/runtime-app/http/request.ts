@@ -1,5 +1,7 @@
+import { generateCorrelationId } from '../../shared/index.js'
+
 export function getCorrelationId(request: Request): string {
-  return request.headers.get('x-correlation-id')?.trim() || crypto.randomUUID()
+  return request.headers.get('x-correlation-id')?.trim() || generateCorrelationId('req')
 }
 
 export function getUrlPath(request: Request): string {

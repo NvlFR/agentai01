@@ -2,6 +2,7 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import { spawnSync } from 'node:child_process'
 import type { OwnerCommand } from '../agents/ceo/models.js'
+import { getSubprocessEnvironment } from './config.js'
 
 export type RuntimeCapabilityAction =
   | 'read_file'
@@ -25,8 +26,10 @@ export function executeWorkspaceCapability(input: {
   env: string
   now: string
   cwd?: string
+  subprocessEnv?: Record<string, string | undefined>
 }): RuntimeCapabilityExecution {
   const cwd = input.cwd ?? process.cwd()
+  const subprocessEnv = input.subprocessEnv ?? getSubprocessEnvironment()
   const action = normalizeCapabilityAction(input.command.parameters['action'])
   if (!action) {
     return buildCapabilityFailure({
@@ -45,15 +48,15 @@ export function executeWorkspaceCapability(input: {
       case 'read_file':
         return executeReadFile(input.command, input.env, input.now, cwd)
       case 'search_code':
-        return executeSearchCode(input.command, input.env, input.now, cwd)
+        return executeSearchCode(input.command, input.env, input.now, cwd, subprocessEnv)
       case 'git_status':
-        return executeGitStatus(input.command, input.env, input.now, cwd)
+        return executeGitStatus(input.command, input.env, input.now, cwd, subprocessEnv)
       case 'git_diff':
-        return executeGitDiff(input.command, input.env, input.now, cwd)
+        return executeGitDiff(input.command, input.env, input.now, cwd, subprocessEnv)
       case 'read_log':
         return executeReadLog(input.command, input.env, input.now, cwd)
       case 'list_files':
-        return executeListFiles(input.command, input.env, input.now, cwd)
+        return executeListFiles(input.command, input.env, input.now, cwd, subprocessEnv)
     }
   } catch (error) {
     return buildCapabilityFailure({
@@ -94,6 +97,7 @@ function executeSearchCode(
   env: string,
   now: string,
   cwd: string,
+  subprocessEnv: Record<string, string | undefined>,
 ): RuntimeCapabilityExecution {
   const query = readRequiredString(command.parameters['query'], 'Query pencarian wajib diisi.')
   const requestedPath = readOptionalString(command.parameters['path'])
@@ -103,7 +107,7 @@ function executeSearchCode(
     cwd,
     encoding: 'utf8',
     timeout: 120_000,
-    env: process.env,
+    env: subprocessEnv,
   })
   const output = `${result.stdout ?? ''}\n${result.stderr ?? ''}`.trim()
   if (result.status !== 0 && result.status !== 1) {
@@ -126,8 +130,9 @@ function executeGitStatus(
   env: string,
   now: string,
   cwd: string,
+  subprocessEnv: Record<string, string | undefined>,
 ): RuntimeCapabilityExecution {
-  const result = runCommand(cwd, ['git', 'status', '--short', '--branch'])
+  const result = runCommand(cwd, ['git', 'status', '--short', '--branch'], subprocessEnv)
   if (result.exitCode !== 0) {
     throw new Error(result.output || 'git status gagal dijalankan.')
   }
@@ -147,10 +152,11 @@ function executeGitDiff(
   env: string,
   now: string,
   cwd: string,
+  subprocessEnv: Record<string, string | undefined>,
 ): RuntimeCapabilityExecution {
   const requestedPath = readOptionalString(command.parameters['path'])
   const args = ['git', 'diff', '--no-ext-diff', '--', ...(requestedPath ? [requestedPath] : [])]
-  const result = runCommand(cwd, args)
+  const result = runCommand(cwd, args, subprocessEnv)
   if (result.exitCode !== 0) {
     throw new Error(result.output || 'git diff gagal dijalankan.')
   }
@@ -194,6 +200,7 @@ function executeListFiles(
   env: string,
   now: string,
   cwd: string,
+  subprocessEnv: Record<string, string | undefined>,
 ): RuntimeCapabilityExecution {
   const requestedPath = readOptionalString(command.parameters['path'])
   const root = requestedPath ? resolveWorkspacePath(cwd, requestedPath) : cwd
@@ -201,7 +208,7 @@ function executeListFiles(
     cwd,
     encoding: 'utf8',
     timeout: 120_000,
-    env: process.env,
+    env: subprocessEnv,
   })
   const output = `${result.stdout ?? ''}\n${result.stderr ?? ''}`.trim()
   if (result.status !== 0) {
@@ -309,7 +316,11 @@ function writeCapabilityArtifact(input: {
   return filePath
 }
 
-function runCommand(cwd: string, command: readonly string[]): {
+function runCommand(
+  cwd: string,
+  command: readonly string[],
+  subprocessEnv: Record<string, string | undefined>,
+): {
   exitCode: number | null
   output: string
 } {
@@ -320,7 +331,7 @@ function runCommand(cwd: string, command: readonly string[]): {
     cwd,
     encoding: 'utf8',
     timeout: 120_000,
-    env: process.env,
+    env: subprocessEnv,
   })
   return {
     exitCode: result.status,

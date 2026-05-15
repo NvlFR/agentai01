@@ -1,4 +1,4 @@
-import { redactSecrets } from '../config/index.js'
+import { serializeAuditSafe } from '../../security/index.js'
 
 export type ProviderRequest = {
   systemPrompt?: string
@@ -81,7 +81,7 @@ export class OpenAICompatibleProvider {
           ok: true,
           latencyMs,
           retries,
-          request: redactSecrets(request),
+          request: serializeAuditSafe(request),
         })
         return {
           model: this.config.model,

@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'bun:test'
-import { buildSalesLeadHandoffMessage } from '../marketing/models.js'
 import {
   SALES_AGENT_DEFINITION,
   applyProposalApprovalResponse,
@@ -27,6 +26,7 @@ import {
   sendProposal,
   updatePipelineStage,
 } from './flow.js'
+import type { MarketingLeadHandoffMessage } from './models.js'
 
 describe('sales flow', () => {
   it('exposes a sales agent definition with required tools', () => {
@@ -50,23 +50,30 @@ describe('sales flow', () => {
   })
 
   it('creates a lead from marketing handoff and generates clarification/outreach helpers', () => {
-    const handoff = buildSalesLeadHandoffMessage({
-      lead_id: 'lead-mkt-001',
-      company_name: 'Orbit AI',
-      contact_name: 'Maya',
-      contact_channel: 'website_form',
-      source_channel: 'website',
-      campaign_id: 'cmp-growth',
-      segment_id: 'ops-leaders',
-      project_id: null,
-      initial_need_summary: 'Need faster inbound lead qualification',
-      captured_at: '2026-05-14T08:00:00Z',
-      ack_status: 'pending_sales_ack',
-      tags: ['inbound', 'roi'],
-    }, {
-      routingProjectId: 'routing-growth',
+    const handoff: MarketingLeadHandoffMessage = {
+      from: 'marketing_agent',
+      to: 'sales_agent',
+      message_type: 'lead_handoff',
+      project_id: 'routing-growth',
       timestamp: '2026-05-14T08:01:00Z',
-    })
+      payload: {
+        lead_id: 'lead-mkt-001',
+        company_name: 'Orbit AI',
+        contact_name: 'Maya',
+        contact_channel: 'website_form',
+        source_channel: 'website',
+        campaign_id: 'cmp-growth',
+        segment_id: 'ops-leaders',
+        project_id: null,
+        initial_need_summary: 'Need faster inbound lead qualification',
+        captured_at: '2026-05-14T08:00:00Z',
+        ack_status: 'pending_sales_ack',
+        tags: ['inbound', 'roi'],
+        handoff_source: 'marketing_campaign',
+        lifecycle_state_hint: 'lead',
+        pending_project_creation: true,
+      },
+    }
 
     const lead = createLeadFromMarketingHandoff(handoff)
     const questions = generateClarificationQuestions(lead)

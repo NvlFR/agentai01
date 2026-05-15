@@ -1,3 +1,4 @@
+import { generateCorrelationId } from '../shared/index.js'
 import { renderOperatorShell } from './ui/render.js'
 import { RuntimeAppState } from './state.js'
 import { loadRuntimeAppConfig } from './config.js'
@@ -160,5 +161,5 @@ function json(data: unknown, status = 200): Response {
 }
 
 function buildCorrelationId(): string {
-  return `req-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+  return generateCorrelationId('req')
 }

@@ -1,0 +1,14 @@
+- id: agentai.raw-process-env.outside-boundary
+  message: Read environment variables through src/runtime-app/config or src/secrets instead of raw process.env.
+  severity: ERROR
+  languages: [ts, js]
+  paths:
+    include:
+      - /src/**/*.ts
+    exclude:
+      - /src/runtime-app/config/**/*.ts
+      - /src/runtime-app/config.ts
+      - /src/secrets/**/*.ts
+  pattern-either:
+    - pattern: process.env.$KEY
+    - pattern: process.env[$KEY]

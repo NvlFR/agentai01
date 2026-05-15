@@ -5,7 +5,9 @@ import path from 'node:path'
 
 import {
   RuntimeConfigError,
+  loadRuntimeAppConfig,
   loadRuntimeConfig,
+  parseRuntimeAppConfig,
   redactRuntimeConfigSecrets,
 } from './runtimeConfig.js'
 
@@ -15,14 +17,13 @@ afterEach(async () => {
   await Promise.all(tempDirs.splice(0).map(dir => rm(dir, { recursive: true, force: true })))
 })
 
-describe('loadRuntimeConfig', () => {
-  it('loads mode-aware env files with local overrides', async () => {
+describe('parseRuntimeAppConfig', () => {
+  it('loads mode-aware env files and lets .env.local override explicit env', async () => {
     const cwd = await createTempDir()
     await writeFile(
       path.join(cwd, '.env'),
       [
         'AI_BASE_URL=https://base.example/v1',
-        'AI_API_KEY=base-key',
         'AI_MODEL=model-from-env',
         'APP_PORT=3010',
       ].join('\n'),
@@ -31,67 +32,152 @@ describe('loadRuntimeConfig', () => {
     await writeFile(path.join(cwd, '.env.production'), 'AI_MODEL=prod-model\n', 'utf8')
     await writeFile(
       path.join(cwd, '.env.local'),
-      ['AI_API_KEY=local-key', 'RUNTIME_OPERATIONAL_ROOT=.runtime/ops'].join('\n'),
+      [
+        'AI_API_KEY=local-key',
+        'RUNTIME_OPERATIONAL_ROOT=.runtime/ops',
+        'ID_CHAT=1001,1002',
+      ].join('\n'),
       'utf8',
     )
     await writeFile(path.join(cwd, '.env.production.local'), 'APP_PORT=4010\n', 'utf8')
 
-    const config = await loadRuntimeConfig({
+    const result = parseRuntimeAppConfig({
       cwd,
       mode: 'production',
-      env: {},
+      env: {
+        AI_API_KEY: 'process-env-key',
+      },
+      readEnvFiles: true,
     })
 
-    expect(config.app.env).toBe('production')
-    expect(config.app.port).toBe(4010)
-    expect(config.provider.apiKey).toBe('local-key')
-    expect(config.provider.model).toBe('prod-model')
-    expect(config.storage.operationalRoot).toBe(path.join(cwd, '.runtime/ops'))
-    expect(config.storage.artifactRoot).toBe(
+    expect(result.ok).toBe(true)
+    if (!result.ok) {
+      return
+    }
+
+    expect(result.config.env).toBe('production')
+    expect(result.config.port).toBe(4010)
+    expect(result.config.ai.apiKey).toBe('local-key')
+    expect(result.config.ai.model).toBe('prod-model')
+    expect(result.config.allowedChatIds).toEqual(['1001', '1002'])
+    expect(result.config.storage.operationalRoot).toBe(path.join(cwd, '.runtime/ops'))
+    expect(result.config.storage.artifactsRoot).toBe(
       path.join(cwd, 'runtime', 'production', 'artifacts'),
     )
   })
 
-  it('fails fast when required env variables are missing', async () => {
-    const cwd = await createTempDir()
-
-    const result = loadRuntimeConfig({
-      cwd,
-      mode: 'test',
+  it('returns warnings and fallback defaults for invalid numeric values', () => {
+    const result = parseRuntimeAppConfig({
+      mode: 'development',
       env: {
-        AI_BASE_URL: 'http://127.0.0.1:8045/v1',
+        APP_PORT: 'not-a-number',
+        AI_TIMEOUT_MS: 'oops',
+        AI_RETRY_LIMIT: 'bad',
+        QUEUE_CONCURRENCY: 'nah',
+        QUEUE_RETRY_LIMIT: 'nope',
       },
     })
 
-    await expect(result).rejects.toBeInstanceOf(RuntimeConfigError)
-    await expect(result).rejects.toMatchObject({
-      issues: [
-        'Missing required environment variable: AI_API_KEY',
-        'Missing required environment variable: AI_MODEL',
+    expect(result.ok).toBe(true)
+    if (!result.ok) {
+      return
+    }
+
+    expect(result.config.port).toBe(3000)
+    expect(result.config.ai.timeoutMs).toBe(30_000)
+    expect(result.config.ai.retryLimit).toBe(2)
+    expect(result.config.queue.concurrency).toBe(1)
+    expect(result.config.queue.retryLimit).toBe(3)
+    expect(result.warnings).toEqual([
+      'APP_PORT must be an integer. Falling back to 3000.',
+      'AI_TIMEOUT_MS must be an integer. Falling back to 30000.',
+      'AI_RETRY_LIMIT must be an integer. Falling back to 2.',
+      'QUEUE_CONCURRENCY must be an integer. Falling back to 1.',
+      'QUEUE_RETRY_LIMIT must be an integer. Falling back to 3.',
+    ])
+  })
+
+  it('marks readiness false when AI_API_KEY is missing without reading host env in test mode', () => {
+    const result = parseRuntimeAppConfig({
+      mode: 'test',
+      env: {
+        AI_BASE_URL: 'http://127.0.0.1:8045/v1',
+        AI_MODEL: 'gpt-4.1-mini',
+      },
+    })
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) {
+      return
+    }
+
+    expect(result.config.readiness.ready).toBe(false)
+    expect(result.config.readiness.reasons).toEqual(['AI_API_KEY is not set.'])
+    expect(result.config.ai.apiKey).toBeNull()
+  })
+})
+
+describe('loadRuntimeConfig', () => {
+  it('returns structured errors when provider-backed config is incomplete', async () => {
+    const cwd = await createTempDir()
+
+    await expect(
+      loadRuntimeConfig({
+        cwd,
+        mode: 'test',
+        env: {
+          AI_BASE_URL: 'http://127.0.0.1:8045/v1',
+          AI_MODEL: 'gpt-4.1-mini',
+        },
+      }),
+    ).rejects.toMatchObject({
+      errors: [
+        {
+          field: 'AI_API_KEY',
+          message: 'AI_API_KEY is required for provider-backed runtime operations.',
+        },
       ],
     })
+  })
+
+  it('throws structured invalid-field errors for unsupported runtime environment', () => {
+    expect(() =>
+      loadRuntimeAppConfig({
+        env: {
+          APP_ENV: 'staging',
+        },
+      }),
+    ).toThrow(RuntimeConfigError)
+
+    expect(() =>
+      loadRuntimeAppConfig({
+        env: {
+          APP_ENV: 'staging',
+        },
+      }),
+    ).toThrow('Runtime app config validation failed.')
   })
 })
 
 describe('redactRuntimeConfigSecrets', () => {
   it('masks nested secret-like values without changing non-secret fields', () => {
     const redacted = redactRuntimeConfigSecrets({
-      provider: {
+      ai: {
         apiKey: 'sk-example-secret',
-        baseURL: 'http://127.0.0.1:8045/v1',
+        baseUrl: 'http://127.0.0.1:8045/v1',
       },
-      nested: {
+      auth: {
         access_token: 'token-value',
       },
     })
 
     expect(redacted).toEqual({
-      provider: {
-        apiKey: 'sk***et',
-        baseURL: 'http://127.0.0.1:8045/v1',
+      ai: {
+        apiKey: 'sk-***ret',
+        baseUrl: 'http://127.0.0.1:8045/v1',
       },
-      nested: {
-        access_token: 'to***ue',
+      auth: {
+        access_token: 'tok***lue',
       },
     })
   })
