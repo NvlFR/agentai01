@@ -1,0 +1,16 @@
+#!/usr/bin/env sh
+# pre-commit hook — runs TypeScript typecheck.
+# Bypass: git commit --no-verify
+
+set -e
+
+echo "⟳  pre-commit: running typecheck (npm run check)..."
+
+if ! npm run check --silent; then
+  echo ""
+  echo "✖  pre-commit: typecheck failed. Fix errors before committing."
+  echo "   To bypass (emergency only): git commit --no-verify"
+  exit 1
+fi
+
+echo "✔  pre-commit: typecheck passed."

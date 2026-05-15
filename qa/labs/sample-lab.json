@@ -1,0 +1,73 @@
+{
+  "name": "sample-lab",
+  "description": "Deterministic QA lab sample with seed data, env overrides, mock service, and a command assertion.",
+  "steps": {
+    "setup": [
+      {
+        "type": "seed-json",
+        "path": "${RUN_DIR}/db/users.json",
+        "value": {
+          "users": [
+            {
+              "id": "operator-1",
+              "role": "operator"
+            }
+          ]
+        }
+      },
+      {
+        "type": "mock-service",
+        "service": "catalog",
+        "response": {
+          "items": [
+            "deterministic-widget"
+          ]
+        }
+      },
+      {
+        "type": "env",
+        "values": {
+          "QA_PROVIDER": "stub-openai",
+          "QA_MODEL": "gpt-4.1-mini"
+        }
+      }
+    ],
+    "run": [
+      {
+        "type": "assert-file-json",
+        "path": "${RUN_DIR}/db/users.json",
+        "equals": {
+          "users": [
+            {
+              "id": "operator-1",
+              "role": "operator"
+            }
+          ]
+        }
+      },
+      {
+        "type": "assert-env",
+        "key": "QA_PROVIDER",
+        "equals": "stub-openai"
+      },
+      {
+        "type": "command",
+        "command": [
+          "node",
+          "qa/fixtures/lab-check.mjs",
+          "--expect-provider",
+          "stub-openai",
+          "--expect-model",
+          "gpt-4.1-mini"
+        ],
+        "cwd": "${REPO_ROOT}"
+      }
+    ],
+    "teardown": [
+      {
+        "type": "cleanup-path",
+        "path": "${RUN_DIR}/artifacts"
+      }
+    ]
+  }
+}

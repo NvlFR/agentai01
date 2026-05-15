@@ -1,0 +1,30 @@
+#!/usr/bin/env sh
+# commit-msg hook — validates conventional commit format.
+# Accepted format: <type>(<scope>): <description>
+# Bypass: git commit --no-verify
+
+COMMIT_MSG_FILE="$1"
+COMMIT_MSG=$(cat "$COMMIT_MSG_FILE")
+
+VALID_TYPES="feat|fix|docs|chore|refactor|test|perf|ci|build"
+PATTERN="^($VALID_TYPES)(\([a-zA-Z0-9_/-]+\))?: .+"
+
+if ! echo "$COMMIT_MSG" | grep -qE "$PATTERN"; then
+  echo ""
+  echo "✖  commit-msg: invalid commit message format."
+  echo ""
+  echo "   Expected: <type>(<scope>): <description>"
+  echo "   Valid types: feat, fix, docs, chore, refactor, test, perf, ci, build"
+  echo ""
+  echo "   Examples:"
+  echo "     feat(providers): add groq adapter"
+  echo "     fix(telegram): handle missing chat id gracefully"
+  echo "     chore: update dependencies"
+  echo ""
+  echo "   Your message: $COMMIT_MSG"
+  echo ""
+  echo "   To bypass (emergency only): git commit --no-verify"
+  exit 1
+fi
+
+echo "✔  commit-msg: message format valid."

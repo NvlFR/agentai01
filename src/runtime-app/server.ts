@@ -2,6 +2,7 @@ import { generateCorrelationId } from '../shared/index.js'
 import { renderOperatorShell } from './ui/render.js'
 import { RuntimeAppState } from './state.js'
 import { loadRuntimeAppConfig } from './config.js'
+import { SkillRegistry } from './skills/SkillRegistry.js'
 
 export type RuntimeAppServer = ReturnType<typeof Bun.serve>
 
@@ -31,6 +32,11 @@ export function startRuntimeAppServer(state = createRuntimeAppState()): RuntimeA
       '/api/runtime/jobs': req => json(withMeta(req, state.getSnapshot(), state.getSnapshot().jobs)),
       '/api/messages': req => json(withMeta(req, state.getSnapshot(), state.getSnapshot().messages)),
       '/api/audit': req => json(withMeta(req, state.getSnapshot(), state.getSnapshot().audit)),
+      '/api/extensions': req => json(withMeta(req, state.getSnapshot(), state.getSnapshot().extensions)),
+      '/api/skills': async req => {
+        const registry = await SkillRegistry.create()
+        return json(withMeta(req, state.getSnapshot(), registry.list()))
+      },
     },
     fetch: async req => {
       const url = new URL(req.url)

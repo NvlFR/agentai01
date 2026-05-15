@@ -10,9 +10,13 @@
     "runtime:scheduler": "bun run src/runtime-app/scheduler.ts",
     "runtime:smoke": "bun run src/runtime-app/smoke.ts",
     "runtime:telegram": "bun run src/runtime-app/telegramBot.ts",
+    "skills:workshop": "bun run skills/workshop.mjs",
+    "qa:lab": "node qa/lab-runner.mjs",
+    "qa:matrix": "node qa/matrix.mjs",
     "check": "tsc -p tsconfig.json --noEmit",
     "build": "tsc -p tsconfig.json",
-    "test": "bun test"
+    "test": "bun test",
+    "postinstall": "node scripts/apply-patches.mjs"
   },
   "devDependencies": {
     "@types/bun": "1.2.15",

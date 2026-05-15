@@ -1,0 +1,40 @@
+{
+  "name": "echo-text",
+  "version": "1.0.0",
+  "description": "Echo text with optional uppercasing for deterministic formatting checks.",
+  "deterministic": true,
+  "implementation": "./index.mjs",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "text": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uppercase": {
+        "type": "boolean"
+      }
+    },
+    "required": ["text"],
+    "additionalProperties": false
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "text": {
+        "type": "string",
+        "minLength": 1
+      },
+      "original": {
+        "type": "string",
+        "minLength": 1
+      },
+      "characterCount": {
+        "type": "integer",
+        "minimum": 1
+      }
+    },
+    "required": ["text", "original", "characterCount"],
+    "additionalProperties": false
+  }
+}
