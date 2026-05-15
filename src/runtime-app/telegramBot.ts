@@ -26,6 +26,7 @@ type BotReply = {
   text: string
   parseMode?: 'Markdown' | 'HTML'
   documentPath?: string
+  sourceLabel?: string
 }
 
 export async function startTelegramBot(): Promise<void> {
@@ -116,17 +117,18 @@ async function handleUpdate(
   const replies = await executeTelegramCommand(chatId, command, context)
   const decoratedReplies = decorateProcessReplies(command, replies, startedAt)
   for (const reply of decoratedReplies) {
-    for (const chunk of splitTelegramMessage(reply.text)) {
+    const sourcedReply = attachReplySource(reply)
+    for (const chunk of splitTelegramMessage(sourcedReply.text)) {
       await context.client.sendMessage({
         chatId,
         text: chunk,
-        parseMode: reply.parseMode,
+        parseMode: sourcedReply.parseMode,
       })
     }
-    if (reply.documentPath) {
+    if (sourcedReply.documentPath) {
       await context.client.sendDocument({
         chatId,
-        filePath: reply.documentPath,
+        filePath: sourcedReply.documentPath,
         caption: 'Detail lengkap ada di lampiran.',
       })
     }
@@ -190,27 +192,30 @@ async function executeTelegramCommand(
   switch (command.kind) {
     case 'start':
     case 'help':
-      return [{ text: buildHelpText(), parseMode: 'HTML' }]
+      return [{ text: buildHelpText(), parseMode: 'HTML', sourceLabel: 'Runtime lokal' }]
     case 'status':
-      return [{ text: buildStatusText(context.state.getSnapshot()), parseMode: 'HTML' }]
+      return [{ text: buildStatusText(context.state.getSnapshot()), parseMode: 'HTML', sourceLabel: 'Runtime lokal' }]
     case 'approvals':
-      return [{ text: buildApprovalsText(context.state.getSnapshot()), parseMode: 'HTML' }]
+      return [{ text: buildApprovalsText(context.state.getSnapshot()), parseMode: 'HTML', sourceLabel: 'Runtime lokal' }]
     case 'mode':
       context.automationState.mode = command.mode
       return [{
         text: `<b>Mode automation diubah</b>\nSekarang aktif: <code>${escapeHtml(command.mode)}</code>`,
         parseMode: 'HTML',
+        sourceLabel: 'Runtime lokal',
       }]
     case 'directive_help':
       return [{
         text: buildDirectiveHelpText(),
         parseMode: 'HTML',
+        sourceLabel: 'Runtime lokal',
       }]
     case 'reset':
       context.sessions.delete(chatId)
       return [{
         text: '<b>Riwayat chat direset.</b>\nSilakan lanjut tanya dari nol.',
         parseMode: 'HTML',
+        sourceLabel: 'Runtime lokal',
       }]
     case 'audit': {
       const audit = await runSystemAudit(context.state, context.provider)
@@ -218,6 +223,7 @@ async function executeTelegramCommand(
         text: formatAutomationSummary('Audit System', audit),
         parseMode: 'HTML',
         documentPath: audit.artifactPath,
+        sourceLabel: 'Shell lokal + AI provider',
       }]
     }
     case 'improve':
@@ -234,6 +240,7 @@ async function executeTelegramCommand(
         ),
         parseMode: 'HTML',
         documentPath: report.artifactPath,
+        sourceLabel: 'Shell lokal + AI provider',
       }]
     }
     case 'directive': {
@@ -241,10 +248,12 @@ async function executeTelegramCommand(
         input: command.input,
         mode: 'natural',
       })
+      const sourceLabel = inferDirectiveSourceLabel(context.state, command.input)
       if (result.requires_confirmation) {
         return [{
           text: `<b>Directive butuh konfirmasi.</b>\n${escapeHtml(result.message)}`,
           parseMode: 'HTML',
+          sourceLabel,
         }]
       }
       if (!result.ok) {
@@ -252,12 +261,14 @@ async function executeTelegramCommand(
           text: formatDirectiveFailure(result.message),
           parseMode: 'HTML',
           documentPath: result.artifactPath,
+          sourceLabel,
         }]
       }
       return [{
         text: `<b>Directive dijalankan.</b>\n${escapeHtml(result.message)}`,
         parseMode: 'HTML',
         documentPath: result.artifactPath,
+        sourceLabel,
       }]
     }
     case 'chat': {
@@ -268,32 +279,40 @@ async function executeTelegramCommand(
 
       const session = context.sessions.get(chatId) ?? { messages: [] }
       const snapshot = context.state.getSnapshot()
-      const response = await context.provider.generateText({
-        messages: [
-          {
-            role: 'system',
-            content: buildSystemPrompt(snapshot),
-          },
+      try {
+        const response = await context.provider.generateText({
+          messages: [
+            {
+              role: 'system',
+              content: buildSystemPrompt(snapshot),
+            },
+            ...session.messages,
+            {
+              role: 'user',
+              content: command.input,
+            },
+          ],
+          temperature: 0.2,
+          maxTokens: 3200,
+        })
+
+        const normalizedReply = normalizeTelegramReply(response.content)
+
+        session.messages = trimConversation([
           ...session.messages,
-          {
-            role: 'user',
-            content: command.input,
-          },
-        ],
-        temperature: 0.2,
-        maxTokens: 3200,
-      })
+          { role: 'user', content: command.input },
+          { role: 'assistant', content: normalizedReply },
+        ])
+        context.sessions.set(chatId, session)
 
-      const normalizedReply = normalizeTelegramReply(response.content)
-
-      session.messages = trimConversation([
-        ...session.messages,
-        { role: 'user', content: command.input },
-        { role: 'assistant', content: normalizedReply },
-      ])
-      context.sessions.set(chatId, session)
-
-      return [{ text: normalizedReply }]
+        return [{ text: normalizedReply, sourceLabel: 'AI provider' }]
+      } catch (error) {
+        return [{
+          text: buildProviderUnavailableText(error),
+          parseMode: 'HTML',
+          sourceLabel: 'Runtime lokal',
+        }]
+      }
     }
   }
 }
@@ -315,7 +334,8 @@ function buildHelpText(): string {
     '• <code>/reset</code>',
     '',
     '<b>Chat langsung</b>',
-    'Kirim pesan biasa untuk ngobrol langsung dengan AI.',
+    'Kirim pesan biasa untuk ngobrol dengan AI provider.',
+    'Kalau provider mati atau proxy dimatikan, saya akan bilang terus terang bahwa AI tidak tersedia.',
     '',
     '<b>Contoh directive real</b>',
     '• <code>/directive jalankan check</code>',
@@ -326,6 +346,10 @@ function buildHelpText(): string {
     '• <code>/directive status git</code>',
     '• <code>/directive analisa kebutuhan agent</code>',
     '• <code>/directive buat 2 agent engineering baru untuk proj-001</code>',
+    '',
+    '<b>Sumber jawaban</b>',
+    'Command seperti /status, /approvals, dan banyak /directive berasal dari runtime lokal atau shell lokal.',
+    'Chat biasa hanya berasal dari model jika AI provider benar-benar aktif.',
     '',
     '<b>Catatan mode semi</b>',
     'Hanya menjalankan aksi aman: audit, check/test/smoke, dan self-heal operasional terbatas.',
@@ -809,6 +833,7 @@ function buildDirectIntentReply(input: string): BotReply | undefined {
         `• <code>${escapeHtml(suggestDirective(input))}</code>`,
       ].join('\n'),
       parseMode: 'HTML',
+      sourceLabel: 'Runtime lokal',
     }
   }
 
@@ -845,6 +870,47 @@ function summarizeDiagnosis(text: string): string {
     return compact
   }
   return `${compact.slice(0, 420).trim()}...`
+}
+
+function inferDirectiveSourceLabel(state: RuntimeAppState, input: string): string {
+  const parsed = state.ceoRuntime.parseOwnerCommand(input, 'natural')
+  if (parsed.kind === 'parsed' && parsed.command.command_type === 'runbook') {
+    return 'Shell lokal'
+  }
+  return 'Runtime lokal'
+}
+
+function attachReplySource(reply: BotReply): BotReply {
+  if (!reply.sourceLabel) {
+    return reply
+  }
+
+  if (reply.parseMode === 'HTML') {
+    return {
+      ...reply,
+      text: `<b>Sumber:</b> ${escapeHtml(reply.sourceLabel)}\n${reply.text}`,
+    }
+  }
+
+  return {
+    ...reply,
+    text: `Sumber: ${reply.sourceLabel}\n${reply.text}`,
+  }
+}
+
+function buildProviderUnavailableText(error: unknown): string {
+  return [
+    '<b>AI provider tidak tersedia.</b>',
+    'Pesan biasa seperti ini memang butuh model/provider aktif. Saat ini saya tidak bisa menjawab dari AI.',
+    '',
+    `<b>Error:</b> <code>${escapeHtml(String(error))}</code>`,
+    '',
+    '<b>Yang masih bisa dipakai sekarang</b>',
+    '• <code>/status</code>',
+    '• <code>/approvals</code>',
+    '• <code>/directive jalankan check</code>',
+    '• <code>/directive status perusahaan</code>',
+  ].join('\n')
 }
 
 function truncateForTelegram(text: string): string {
