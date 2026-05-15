@@ -1,119 +1,248 @@
-# Todo ini berisi apa aja yang harus di sesuaikan dengan project kita dari referensi openclaw
+# TODO Adaptasi dari Referensi OpenClaw
 
+Dokumen ini berisi daftar upgrade dari `referensi/openclaw` ke project kita. Karena project ini masih tahap early, prioritas dibagi menjadi `high`, `medium`, dan `low` supaya pengerjaan lebih realistis.
 
-1. terapkan folder packages/ ke project kita dan sesuaikan
+## Prinsip Prioritas
 
-2. terapkan folder patches/ ke project kita dan sesuaikan
+### High
 
-3. terapkan folder qa/ ke project kita dan sesuaikan
+Dikerjakan lebih dulu karena langsung memengaruhi fondasi runtime, keamanan dasar, kualitas development workflow, atau struktur inti project.
 
-4. ini yang paling penting terapkan semua folder scripts/ ke project kita dan sesuaikan
+### Medium
 
-5. terapkan folder security/ ke project kita dan sesuaikan
+Penting untuk tahap berikutnya, tetapi bisa dikerjakan setelah fondasi inti sudah stabil.
 
-6. terapkan folder skils/ ke project kita dan sesuaikan
+### Low
 
-7. terapkan folder src/ ke project kita dan sesuaikan dan liat yang relavan sama project kita ini
+Berguna, tetapi belum mendesak untuk fase sekarang. Cocok dikerjakan setelah runtime, struktur core, dan workflow utama sudah matang.
 
-8. terapkan folder test/ ke project kita dan sesuaikan
+## Prioritas Folder yang Perlu Diterapkan
 
-9. terapkan folder ui/ ke project kita dan sesuaikan 
+### High Priority
 
-10. terapkan folder apps/swabble ke project kita dan sesuaikan
+1. Terapkan folder `src/` ke project kita dan sesuaikan. Lihat juga bagian yang relevan dengan project ini.
+2. Terapkan semua folder `scripts/` ke project kita dan sesuaikan.
+3. Terapkan folder `security/` ke project kita dan sesuaikan.
+4. Terapkan folder `test/` ke project kita dan sesuaikan.
+5. Terapkan folder `packages/` ke project kita dan sesuaikan.
+6. Terapkan folder `ui/` ke project kita karna ui kita masih early jadi kita bakal pake konsep ui dari openclaw dan sesuaikan.
+7. Terapkan folder `docs/` ke project kita dan sesuaikan.
 
-11. terapkan folder changelog/ ke project kita dan sesuaikan
+Alasan:
 
-12. terapkan folder docs/ ke project kita dan sesuaikan
+- `src/` adalah inti arsitektur dan runtime
+- `scripts/` menentukan kualitas workflow build, check, release, dan automation
+- `security/` penting sejak awal agar boundary repo tidak liar
+- `test/` dibutuhkan untuk menjaga refactor tetap aman
+- `packages/` membantu memisahkan surface internal/public sejak dini
+- `ui/` penting karena project ini memang punya operator shell/dashboard
+- `docs/` penting agar struktur yang sedang tumbuh tidak cepat membingungkan
 
-13. terapkan folder git-hooks/ ke project kita dan sesuaikan
+### Medium Priority
 
-14. terapkan folder .agents/ ke project kita dan sesuaikan
+1. Terapkan folder `qa/` ke project kita dan sesuaikan.
+2. Terapkan folder `git-hooks/` ke project kita dan sesuaikan.
+3. Terapkan folder `patches/` ke project kita dan sesuaikan.
+4. Terapkan folder `.agents/` ke project kita dan sesuaikan.
+5. Terapkan folder `changelog/` ke project kita dan sesuaikan.
+6. Terapkan folder `apps/swabble/` ke project kita dan sesuaikan.
 
+Alasan:
 
+- `qa/` penting, tetapi biasanya efektif setelah test dan runtime utama cukup stabil
+- `git-hooks/` bagus untuk disiplin repo, tetapi bukan blocker utama
+- `patches/` dibutuhkan kalau dependency mulai kompleks atau butuh override
+- `.agents/` berguna untuk workflow AI-assisted development, tapi bukan fondasi runtime
+- `changelog/` penting saat ritme release mulai rutin
+- `apps/swabble/` menarik untuk voice interface, tetapi belum sepenting runtime inti project
 
-## extensions yang harus di terapkan ke project kita
+### Low Priority
 
-# LLM Providers (Model AI)
-1. openai
-2. anthropic
-3. anthropic-vertex
-4. google
-5. groq
+1. Terapkan folder `skills/` ke project kita dan sesuaikan.
 
-# OpenAI-Compatible / Gateway Providers
-1. openrouter
-2. codex
-3. gemini-cli
+Alasan:
 
-# Channel Plugins (Messaging Platforms)
-1. telegram
-2. whatsApp
+- skill ecosystem berguna, tetapi untuk fase early project ini belum sepenting runtime platform, observability, test, dan security
+- kalau terlalu cepat mengadopsi banyak skill, repo bisa cepat melebar sebelum core-nya stabil
 
-# Memory Plugins
-1. memory-core
-2. memory-lancedb
-3. memory-wiki
-4. activa-memory
+## Prioritas Extensions yang Perlu Diterapkan
 
-# Speech & Voice
-1. speech-core
-2. elevenlabs
-3. azure-speech
-4. microsoft
-5. deepgram
-6. tts-local-cli
+### High Priority
 
-# Image & Video Generation
-1. image-generation-core
-2. video-generation-core
-3. fal
-4. runway
-5. comfy
-6. vydra
+#### LLM Providers
 
-# Search & Web Tools
-1. brave
-2. duckduckgo
-3. perplexity
-4. exa
-5. tavily
-6. searxing
-7. firecrawl
-8. web-readablity
+1. `openai`
+2. `anthropic`
+3. `google`
 
-# Tool Plugins
-1. browser
-2. canvas
-3. openshell
-4. file-transfer
-5. document-extract
-6. diffs
-7. oc-path
-8. llm-tak
-9. lobster
-10. webhooks
-11. phone-control
+#### OpenAI-Compatible / Gateway Providers
 
-# Diagnostics & Observability
-1. diagnostics-otel
-2. diagnostics-prometheus
+1. `openrouter`
+2. `codex`
 
-# Infrastructure & Runtime
-1. acpx
-2. bonjour
-3. device-pair
-4. tokenjuice
-5. voyage
-6. media-understanding-core
-7. synthetic
+#### Channel Plugins
 
-# QA & Testing
-1. qa-channel
-2. qa-lab
-3. qa-matrix
-4. test-support
+1. `telegram`
 
-# Skills & Coding Agents
-1. skill-workshop
-2. open-prose
-3. thread-ownership
+#### Memory Plugins
+
+1. `memory-core`
+
+#### Tool Plugins
+
+1. `browser`
+2. `file-transfer`
+3. `webhooks`
+
+#### Infrastructure & Runtime
+
+1. `acpx`
+2. `media-understanding-core`
+
+Alasan:
+
+- provider inti dibutuhkan supaya runtime benar-benar bisa dipakai
+- `telegram` paling cepat jadi antarmuka operasional nyata
+- `memory-core` adalah fondasi sebelum memory yang lebih canggih
+- `browser`, `file-transfer`, dan `webhooks` sangat relevan untuk agent yang benar-benar bekerja
+- `acpx` dan runtime core lebih penting daripada extension tambahan yang sifatnya kosmetik
+
+### Medium Priority
+
+#### LLM Providers
+
+1. `anthropic-vertex`
+2. `groq`
+
+#### OpenAI-Compatible / Gateway Providers
+
+1. `gemini-cli`
+
+#### Channel Plugins
+
+1. `whatsapp`
+
+#### Memory Plugins
+
+1. `memory-lancedb`
+2. `memory-wiki`
+3. `active-memory`
+
+#### Speech & Voice
+
+1. `speech-core`
+2. `deepgram`
+3. `tts-local-cli`
+
+#### Image & Video Generation
+
+1. `image-generation-core`
+2. `video-generation-core`
+
+#### Search & Web Tools
+
+1. `brave`
+2. `duckduckgo`
+3. `exa`
+4. `tavily`
+5. `web-readability`
+
+#### Tool Plugins
+
+1. `canvas`
+2. `document-extract`
+3. `diffs`
+4. `oc-path`
+5. `llm-task`
+6. `lobster`
+
+#### Diagnostics & Observability
+
+1. `diagnostics-otel`
+2. `diagnostics-prometheus`
+
+#### Infrastructure & Runtime
+
+1. `bonjour`
+2. `device-pair`
+3. `tokenjuice`
+4. `voyage`
+5. `synthetic`
+
+#### QA & Testing
+
+1. `qa-channel`
+2. `test-support`
+
+#### Skills & Coding Agents
+
+1. `thread-ownership`
+
+Alasan:
+
+- extension ini penting untuk peningkatan kemampuan platform
+- mereka lebih cocok masuk setelah provider inti, runtime dasar, dan tools penting sudah jalan
+- observability dan enhanced memory sangat bernilai, tapi akan lebih efektif setelah fondasi stabil
+
+### Low Priority
+
+#### Speech & Voice
+
+1. `elevenlabs`
+2. `azure-speech`
+3. `microsoft`
+
+#### Image & Video Generation
+
+1. `fal`
+2. `runway`
+3. `comfy`
+4. `vydra`
+
+#### Search & Web Tools
+
+1. `perplexity`
+2. `firecrawl`
+3. `searxng`
+
+#### Tool Plugins
+
+1. `openshell`
+2. `phone-control`
+
+#### QA & Testing
+
+1. `qa-lab`
+2. `qa-matrix`
+
+#### Skills & Coding Agents
+
+1. `skill-workshop`
+2. `open-prose`
+
+Alasan:
+
+- banyak item di level ini lebih bersifat advanced capability, enrichment, atau ekspansi ekosistem
+- beberapa juga membawa kompleksitas operasional, biaya, atau security surface yang lebih besar
+- lebih aman dikerjakan setelah core platform benar-benar mapan
+
+## Urutan Eksekusi yang Disarankan
+
+Kalau mau dikerjakan bertahap, urutannya paling masuk akal untuk project ini:
+
+1. `src/`, `scripts/`, `security/`, `test`
+2. `packages/`, `ui`, `docs`
+3. provider inti dan tool inti
+4. `qa`, `git-hooks`, `patches`, `.agents`, `changelog`
+5. memory lanjutan, observability, channel tambahan
+6. `apps/swabble`, skills, dan advanced extensions lain
+
+## Catatan
+
+Prioritas ini dibuat berdasarkan kondisi repo sekarang:
+
+- project masih early-stage
+- runtime app sudah mulai terbentuk
+- operator UI sudah ada
+- struktur agent dan domain sudah lumayan jelas
+- kebutuhan terbesar saat ini adalah penguatan fondasi, bukan ekspansi fitur sebanyak mungkin
