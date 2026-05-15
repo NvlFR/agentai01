@@ -1,18 +1,28 @@
+import { createLogger } from '../logging/index.js'
 import { startRuntimeAppServer } from './server.js'
 
 if (import.meta.main) {
+  const logger = createLogger({
+    bindings: {
+      context: {
+        component: 'runtime-app-server',
+      },
+    },
+  })
   const server = startRuntimeAppServer()
 
-  console.log(
-    `[runtime-app] listening on http://${server.hostname}:${server.port} (${new Date().toISOString()})`,
-  )
+  logger.info('Runtime app server listening.', {
+    hostname: server.hostname,
+    port: server.port,
+    url: `http://${server.hostname}:${server.port}`,
+  })
 
   process.on('SIGINT', shutdown)
   process.on('SIGTERM', shutdown)
 
   function shutdown() {
     server.stop(true)
-    console.log('[runtime-app] stopped')
+    logger.info('Runtime app server stopped.')
     process.exit(0)
   }
 }

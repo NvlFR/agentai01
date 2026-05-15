@@ -6,12 +6,12 @@
 
 ## Task List
 
-- [ ] 1. Build Structured Logging Subsystem
-  - [ ] 1.1 Buat `src/logging/` dengan entry point tunggal `src/logging/index.ts`
-  - [ ] 1.2 Definisikan `LogLevel`, `LogEntry`, logger factory, dan child logger dengan `correlation_id`
-  - [ ] 1.3 Implementasikan environment-aware minimum log level untuk `development`, `test`, dan `production`
-  - [ ] 1.4 Implementasikan secret redaction untuk message string, context object, dan nested values
-  - [ ] 1.5 Migrasikan production-path `console.*` di `src/runtime-app/` ke structured logger
+- [x] 1. Build Structured Logging Subsystem
+  - [x] 1.1 Buat `src/logging/` dengan entry point tunggal `src/logging/index.ts`
+  - [x] 1.2 Definisikan `LogLevel`, `LogEntry`, logger factory, dan child logger dengan `correlation_id`
+  - [x] 1.3 Implementasikan environment-aware minimum log level untuk `development`, `test`, dan `production`
+  - [x] 1.4 Implementasikan secret redaction untuk message string, context object, dan nested values
+  - [x] 1.5 Migrasikan production-path `console.*` di `src/runtime-app/` ke structured logger
 
 - [ ] 2. Strengthen Config Loading and Validation
   - [ ] 2.1 Konsolidasikan config runtime app ke `src/runtime-app/config/` sebagai single source of truth `RuntimeAppConfig`

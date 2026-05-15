@@ -1,3 +1,4 @@
+import { createLogger, type Logger } from '../logging/index.js'
 import { loadRuntimeAppConfig } from './config.js'
 import { loadRuntimeConfig } from './config/runtimeConfig.js'
 import { mkdir, writeFile } from 'node:fs/promises'
@@ -29,6 +30,14 @@ type BotReply = {
   sourceLabel?: string
 }
 
+const logger = createLogger({
+  bindings: {
+    context: {
+      component: 'runtime-telegram',
+    },
+  },
+})
+
 export async function startTelegramBot(): Promise<void> {
   const runtimeConfig = await loadRuntimeConfig()
   const appConfig = loadRuntimeAppConfig()
@@ -55,7 +64,10 @@ export async function startTelegramBot(): Promise<void> {
 
   let offset = 0
 
-  console.log('[runtime-telegram] polling Telegram for chat messages')
+  logger.info('Telegram bot polling started.', {
+    allowed_chat_ids: allowedChatIds.size,
+    automation_mode: automationState.mode,
+  })
 
   while (true) {
     try {
@@ -73,10 +85,15 @@ export async function startTelegramBot(): Promise<void> {
           allowedChatIds,
           sessions,
           automationState,
+          logger: logger.child({
+            correlation_id: `telegram-update-${update.update_id}`,
+          }),
         })
       }
     } catch (error) {
-      console.error('[runtime-telegram] polling error', error)
+      logger.error('Telegram bot polling error.', {
+        error,
+      })
       await sleep(2_000)
     }
   }
@@ -91,6 +108,7 @@ async function handleUpdate(
     allowedChatIds: Set<string>
     sessions: Map<string, ChatSession>
     automationState: { mode: AutomationMode }
+    logger: Logger
   },
 ): Promise<void> {
   const message = update.message
@@ -104,6 +122,10 @@ async function handleUpdate(
   }
 
   const command = parseTelegramCommand(message.text)
+  context.logger.debug('Telegram update accepted.', {
+    chat_id: chatId,
+    command_kind: command.kind,
+  })
   const progressReply = buildProgressReply(command, context.state)
   if (progressReply) {
     await context.client.sendMessage({

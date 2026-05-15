@@ -116,4 +116,4 @@ const persistedStatePath = await persistence.operational.saveRuntimeState({
 })
 summary.scenario.recoveryStatePath = persistedStatePath
 
-console.log(JSON.stringify(summary, null, 2))
+process.stdout.write(`${JSON.stringify(summary, null, 2)}\n`)
