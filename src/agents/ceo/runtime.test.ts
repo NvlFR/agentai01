@@ -105,6 +105,26 @@ describe('CeoRuntime', () => {
       'natural',
       '2026-05-14T10:01:00Z',
     )
+    const runbook = runtime.parseOwnerCommand(
+      'tolong jalankan smoke test runtime sekarang',
+      'natural',
+      '2026-05-14T10:01:30Z',
+    )
+    const workspace = runtime.parseOwnerCommand(
+      'baca file src/runtime-app/state.ts',
+      'natural',
+      '2026-05-14T10:01:45Z',
+    )
+    const activity = runtime.parseOwnerCommand(
+      'apa yang sedang anda jalankan sekarang?',
+      'natural',
+      '2026-05-14T10:01:50Z',
+    )
+    const destructive = runtime.parseOwnerCommand(
+      'hapus semua proyek yang ada',
+      'natural',
+      '2026-05-14T10:01:55Z',
+    )
     const ambiguous = runtime.parseOwnerCommand(
       'tolong siapkan laporan',
       'natural',
@@ -121,6 +141,30 @@ describe('CeoRuntime', () => {
     if (natural.kind === 'parsed') {
       expect(natural.command.command_type).toBe('report')
       expect(natural.command.parameters['type']).toBe('daily')
+    }
+
+    expect(runbook.kind).toBe('parsed')
+    if (runbook.kind === 'parsed') {
+      expect(runbook.command.command_type).toBe('runbook')
+      expect(runbook.command.parameters['action']).toBe('smoke')
+    }
+
+    expect(workspace.kind).toBe('parsed')
+    if (workspace.kind === 'parsed') {
+      expect(workspace.command.command_type).toBe('workspace')
+      expect(workspace.command.parameters['action']).toBe('read_file')
+      expect(workspace.command.parameters['path']).toBe('src/runtime-app/state.ts')
+    }
+
+    expect(activity.kind).toBe('parsed')
+    if (activity.kind === 'parsed') {
+      expect(activity.command.command_type).toBe('activity')
+    }
+
+    expect(destructive.kind).toBe('parsed')
+    if (destructive.kind === 'parsed') {
+      expect(destructive.command.command_type).toBe('project_admin')
+      expect(destructive.command.parameters['action']).toBe('close_all_projects')
     }
 
     expect(ambiguous.kind).toBe('clarification_required')
@@ -359,5 +403,39 @@ describe('CeoRuntime', () => {
     expect(reportRun.ok).toBe(true)
     expect(reportRun.response).toContain('# Company Report')
     expect(runtime.getDirectiveLog(5)[0]?.status).toBe('completed')
+  })
+
+  it('can assess workforce needs and provision new agents through CEO staffing directives', () => {
+    const registry = new AgentRegistry()
+    registerFixtureState(registry)
+    const runtime = new CeoRuntime(registry, 'ceo-agent', {
+      config: {
+        owner_auth: {
+          owner_id: 'owner',
+          allowed_token_ids: ['token-1'],
+          failed_attempt_threshold: 5,
+          failed_attempt_window_seconds: 60,
+          temporary_lock_minutes: 15,
+        },
+      },
+    })
+
+    const plan = runtime.buildWorkforcePlan('2026-05-14T11:00:00Z')
+    expect(plan.recommendations.length).toBeGreaterThan(0)
+    expect(plan.recommendations.some(item => item.recommended_agent_type === 'product_agent')).toBe(true)
+
+    const provisionRun = runtime.executeOwnerDirective(
+      'staffing --action provision --type engineering_agent --count 2 --project proj-001',
+      { actor_id: 'owner', token_id: 'token-1', authenticated: true },
+      'structured',
+      '2026-05-14T11:05:00Z',
+    )
+
+    expect(provisionRun.ok).toBe(true)
+    expect(provisionRun.response).toContain('# Staffing Provisioned')
+
+    const engineeringAgents = registry.listAgents().filter(agent => agent.agent_type === 'engineering_agent')
+    expect(engineeringAgents.length).toBeGreaterThanOrEqual(3)
+    expect(registry.getProject('proj-001')?.active_agent_ids.some(agentId => agentId.startsWith('engineering-'))).toBe(true)
   })
 })

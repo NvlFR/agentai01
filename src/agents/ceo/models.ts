@@ -21,10 +21,15 @@ export type DirectiveExecutionStatus =
   | 'rejected'
 
 export type OwnerCommandType =
+  | 'activity'
   | 'status'
   | 'history'
   | 'report'
   | 'decisions'
+  | 'runbook'
+  | 'workspace'
+  | 'staffing'
+  | 'project_admin'
   | 'delegate'
 
 export type OwnerCommand = {
@@ -78,6 +83,24 @@ export type StrategicPlan = {
   estimated_completion_minutes: number
   risks: string[]
   needs_owner_approval: boolean
+}
+
+export type WorkforceRecommendation = {
+  recommended_agent_type: AgentType
+  quantity: number
+  reason: string
+  project_id?: string
+  urgency: PriorityLevel
+}
+
+export type WorkforcePlan = {
+  generated_at: string
+  objective: string
+  active_projects: number
+  active_agents: number
+  blocked_projects: string[]
+  offline_agents: string[]
+  recommendations: WorkforceRecommendation[]
 }
 
 export type DelegationTaskStatus =
@@ -321,7 +344,7 @@ export const defaultCeoRuntimeConfig: CeoRuntimeConfig = {
     delivery_team: ['product_agent', 'engineering_agent'],
     client_facing: ['sales_agent', 'support_agent'],
   },
-  commands_requiring_confirmation: ['delegate'],
+  commands_requiring_confirmation: ['delegate', 'project_admin'],
   monitoring: {
     active_project_interval_minutes: 5,
     idle_interval_minutes: 30,

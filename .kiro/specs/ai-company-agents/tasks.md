@@ -37,7 +37,7 @@
   - [x] 5.4 Definisikan artefak minimum untuk eskalasi support dan blocker lintas fungsi
   - [x] 5.5 Definisikan SLA acknowledgment handoff agar agent penerima wajib mengonfirmasi penerimaan
 
-- [~] 6. Align Parent Spec with Individual Agent Specs
+- [ ] 6. Align Parent Spec with Individual Agent Specs
   - [ ] 6.1 Tambahkan referensi eksplisit ke spec CEO Agent untuk orkestrasi, dashboard, registry, dan delegasi
   - [ ] 6.2 Tambahkan referensi eksplisit ke spec Sales Agent untuk lifecycle sales, proposal, approval, dan `lead_handoff`
   - [ ] 6.3 Tambahkan referensi ke Product, Engineering, Project Manager, Marketing, dan Support sebagai implementasi detail agent

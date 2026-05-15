@@ -1,0 +1,9 @@
+{
+  "project_id": "proj-acme-runtime",
+  "active_stage": "implementation_planning",
+  "context": {
+    "implementationPlanPath": "/home/rny/work/2026/05-mei/agentai01/.runtime-app-workspaces/acme-health/proj-acme-runtime/artifacts/implementation-plan.md",
+    "specTitle": "projects/acme-health/proj-acme-runtime/spec-v1.md"
+  },
+  "saved_at": "2026-05-14T10:10:00Z"
+}

@@ -27,6 +27,8 @@ import {
   type PriorityLevel,
   type StoredDirective,
   type StrategicDecision,
+  type WorkforcePlan,
+  type WorkforceRecommendation,
 } from './models.js'
 
 type DelegationTaskInput = {
@@ -120,6 +122,52 @@ function cloneAuditEntry(entry: CeoAuditLogEntry): CeoAuditLogEntry {
     ...entry,
     parameters: { ...entry.parameters },
   }
+}
+
+function isAgentType(value: unknown): value is AgentType {
+  return value === 'ceo_agent' ||
+    value === 'sales_agent' ||
+    value === 'marketing_agent' ||
+    value === 'product_agent' ||
+    value === 'engineering_agent' ||
+    value === 'project_manager_agent' ||
+    value === 'support_agent'
+}
+
+function requiredAgentsForLifecycle(lifecycleState: ProjectRegistryEntry['lifecycle_state']): AgentType[] {
+  switch (lifecycleState) {
+    case 'lead':
+    case 'qualified':
+    case 'proposal':
+      return ['sales_agent']
+    case 'won':
+    case 'discovery':
+      return ['product_agent', 'project_manager_agent']
+    case 'implementation':
+    case 'qa':
+      return ['engineering_agent', 'project_manager_agent']
+    case 'delivered':
+    case 'support':
+      return ['support_agent']
+    case 'closed':
+      return []
+  }
+}
+
+function dedupeRecommendations(
+  recommendations: WorkforceRecommendation[],
+): WorkforceRecommendation[] {
+  const merged = new Map<string, WorkforceRecommendation>()
+  for (const item of recommendations) {
+    const key = `${item.recommended_agent_type}:${item.project_id ?? '-'}:${item.reason}`
+    const existing = merged.get(key)
+    if (!existing) {
+      merged.set(key, { ...item })
+      continue
+    }
+    existing.quantity += item.quantity
+  }
+  return Array.from(merged.values())
 }
 
 export class CeoRuntime {
@@ -902,6 +950,8 @@ export class CeoRuntime {
 
   private runOwnerCommand(command: OwnerCommand, now: string): string {
     switch (command.command_type) {
+      case 'activity':
+        return 'Activity command accepted. Runtime application layer should summarize current activity.'
       case 'status':
         return this.serializeStatusResponse(this.buildDashboardSnapshot(now))
       case 'history':
@@ -917,6 +967,32 @@ export class CeoRuntime {
       }
       case 'decisions':
         return this.listDecisions(5).map(decision => `- ${decision.decision_id}: ${decision.chosen_option}`).join('\n') || '- No decisions recorded.'
+      case 'runbook':
+        return `Runbook command accepted for action=${String(command.parameters['action'] ?? 'unknown')}. Runtime application layer should execute it.`
+      case 'workspace':
+        return `Workspace command accepted for action=${String(command.parameters['action'] ?? 'unknown')}. Runtime application layer should execute it.`
+      case 'staffing': {
+        const action = String(command.parameters['action'] ?? 'assess')
+        if (action === 'provision') {
+          const agentType = command.parameters['agent_type']
+          if (!isAgentType(agentType)) {
+            return 'Staffing provision failed: agent_type is missing or invalid.'
+          }
+          const count = this.normalizeProvisionCount(command.parameters['count'])
+          const projectId = this.readOptionalParameterString(command.parameters['project_id'])
+          const created = this.provisionAgents({
+            agentType,
+            count,
+            projectId,
+          }, now)
+          return this.serializeProvisioningResult(created, agentType, projectId, now)
+        }
+
+        const projectId = this.readOptionalParameterString(command.parameters['project_id'])
+        return this.serializeWorkforcePlan(this.buildWorkforcePlan(now, projectId))
+      }
+      case 'project_admin':
+        return `Project administration command accepted for action=${String(command.parameters['action'] ?? 'unknown')}. Runtime application layer should execute it.`
       case 'delegate':
         return 'Delegation command parsed successfully. Use createDelegationTask to dispatch work.'
     }
@@ -928,6 +1004,13 @@ export class CeoRuntime {
     const tokens = rest
 
     switch (command) {
+      case 'activity':
+        return this.buildParsedDirective('structured', {
+          command_type: 'activity',
+          parameters: {},
+          raw_input: rawInput,
+          parsed_at: parsedAt,
+        })
       case 'status':
         return this.buildParsedDirective('structured', {
           command_type: 'status',
@@ -967,9 +1050,149 @@ export class CeoRuntime {
           raw_input: rawInput,
           parsed_at: parsedAt,
         })
+      case 'runbook': {
+        const action = this.readStringFlag(tokens, '--action')
+        if (!action) {
+          return this.buildClarification('structured', 'Runbook command is missing an action.', [
+            'Please use runbook --action check, runbook --action test, or runbook --action smoke.',
+          ])
+        }
+        return this.buildParsedDirective('structured', {
+          command_type: 'runbook',
+          parameters: { action },
+          raw_input: rawInput,
+          parsed_at: parsedAt,
+        })
+      }
+      case 'workspace': {
+        const action = this.readStringFlag(tokens, '--action')
+        if (!action) {
+          return this.buildClarification('structured', 'Workspace command is missing an action.', [
+            'Please use workspace --action read_file --path FILE or workspace --action search_code --query QUERY.',
+          ])
+        }
+        return this.buildParsedDirective('structured', {
+          command_type: 'workspace',
+          parameters: {
+            action,
+            path: this.readStringFlag(tokens, '--path'),
+            query: this.readStringFlag(tokens, '--query'),
+            lines: this.readNumericFlag(tokens, '--lines'),
+          },
+          raw_input: rawInput,
+          parsed_at: parsedAt,
+        })
+      }
+      case 'staffing': {
+        const action = this.readStringFlag(tokens, '--action') ?? 'assess'
+        return this.buildParsedDirective('structured', {
+          command_type: 'staffing',
+          parameters: {
+            action,
+            agent_type: this.readStringFlag(tokens, '--type'),
+            count: this.readNumericFlag(tokens, '--count') ?? 1,
+            project_id: this.readStringFlag(tokens, '--project'),
+          },
+          raw_input: rawInput,
+          parsed_at: parsedAt,
+        })
+      }
+      case 'spawn-agent':
+      case 'create-agent':
+        return this.buildParsedDirective('structured', {
+          command_type: 'staffing',
+          parameters: {
+            action: 'provision',
+            agent_type: this.readStringFlag(tokens, '--type') ?? tokens[0],
+            count: this.readNumericFlag(tokens, '--count') ?? 1,
+            project_id: this.readStringFlag(tokens, '--project'),
+          },
+          raw_input: rawInput,
+          parsed_at: parsedAt,
+        })
+      case 'project-admin':
+      case 'delete-projects':
+        return this.buildParsedDirective('structured', {
+          command_type: 'project_admin',
+          parameters: {
+            action: this.readStringFlag(tokens, '--action') ?? 'close_all_projects',
+          },
+          raw_input: rawInput,
+          parsed_at: parsedAt,
+        })
+      case 'read-file':
+        return this.buildParsedDirective('structured', {
+          command_type: 'workspace',
+          parameters: {
+            action: 'read_file',
+            path: this.readStringFlag(tokens, '--path') ?? tokens[0],
+          },
+          raw_input: rawInput,
+          parsed_at: parsedAt,
+        })
+      case 'search-code':
+        return this.buildParsedDirective('structured', {
+          command_type: 'workspace',
+          parameters: {
+            action: 'search_code',
+            query: this.readStringFlag(tokens, '--query') ?? tokens[0],
+            path: this.readStringFlag(tokens, '--path'),
+          },
+          raw_input: rawInput,
+          parsed_at: parsedAt,
+        })
+      case 'git-status':
+        return this.buildParsedDirective('structured', {
+          command_type: 'workspace',
+          parameters: {
+            action: 'git_status',
+          },
+          raw_input: rawInput,
+          parsed_at: parsedAt,
+        })
+      case 'git-diff':
+        return this.buildParsedDirective('structured', {
+          command_type: 'workspace',
+          parameters: {
+            action: 'git_diff',
+            path: this.readStringFlag(tokens, '--path') ?? tokens[0],
+          },
+          raw_input: rawInput,
+          parsed_at: parsedAt,
+        })
+      case 'read-log':
+        return this.buildParsedDirective('structured', {
+          command_type: 'workspace',
+          parameters: {
+            action: 'read_log',
+            path: this.readStringFlag(tokens, '--path') ?? tokens[0],
+            lines: this.readNumericFlag(tokens, '--lines'),
+          },
+          raw_input: rawInput,
+          parsed_at: parsedAt,
+        })
+      case 'list-files':
+        return this.buildParsedDirective('structured', {
+          command_type: 'workspace',
+          parameters: {
+            action: 'list_files',
+            path: this.readStringFlag(tokens, '--path') ?? tokens[0],
+          },
+          raw_input: rawInput,
+          parsed_at: parsedAt,
+        })
+      case 'check':
+      case 'test':
+      case 'smoke':
+        return this.buildParsedDirective('structured', {
+          command_type: 'runbook',
+          parameters: { action: command === 'test' ? 'tests' : command },
+          raw_input: rawInput,
+          parsed_at: parsedAt,
+        })
       default:
         return this.buildClarification('structured', 'Command is not recognized.', [
-          'Please use status, history --last N, report --type TYPE, or decisions.',
+          'Please use status, history --last N, report --type TYPE, staffing --action ACTION, runbook --action ACTION, or workspace --action ACTION.',
         ])
     }
   }
@@ -1017,8 +1240,191 @@ export class CeoRuntime {
       })
     }
 
+    if (
+      lower.includes('apa yang sedang anda jalankan') ||
+      lower.includes('apa yang sedang kamu jalankan') ||
+      lower.includes('sedang menjalankan apa') ||
+      lower.includes('current activity') ||
+      lower.includes('aktivitas sekarang')
+    ) {
+      return this.buildParsedDirective('natural', {
+        command_type: 'activity',
+        parameters: {},
+        raw_input: rawInput,
+        parsed_at: parsedAt,
+      })
+    }
+
+    if (
+      lower.includes('jalankan check') ||
+      lower.includes('run check') ||
+      lower.includes('typecheck')
+    ) {
+      return this.buildParsedDirective('natural', {
+        command_type: 'runbook',
+        parameters: { action: 'check' },
+        raw_input: rawInput,
+        parsed_at: parsedAt,
+      })
+    }
+
+    if (
+      lower.includes('jalankan test') ||
+      lower.includes('run test') ||
+      lower.includes('tes proyek') ||
+      lower.includes('test project')
+    ) {
+      return this.buildParsedDirective('natural', {
+        command_type: 'runbook',
+        parameters: { action: 'tests' },
+        raw_input: rawInput,
+        parsed_at: parsedAt,
+      })
+    }
+
+    if (
+      lower.includes('jalankan smoke') ||
+      lower.includes('run smoke') ||
+      lower.includes('smoke test')
+    ) {
+      return this.buildParsedDirective('natural', {
+        command_type: 'runbook',
+        parameters: { action: 'smoke' },
+        raw_input: rawInput,
+        parsed_at: parsedAt,
+      })
+    }
+
+    const readFileMatch = rawInput.match(/^(?:baca file|read file)\s+(.+)$/i)
+    if (readFileMatch?.[1]) {
+      return this.buildParsedDirective('natural', {
+        command_type: 'workspace',
+        parameters: {
+          action: 'read_file',
+          path: readFileMatch[1].trim(),
+        },
+        raw_input: rawInput,
+        parsed_at: parsedAt,
+      })
+    }
+
+    const searchCodeMatch = rawInput.match(/^(?:cari kode|search code)\s+(.+)$/i)
+    if (searchCodeMatch?.[1]) {
+      return this.buildParsedDirective('natural', {
+        command_type: 'workspace',
+        parameters: {
+          action: 'search_code',
+          query: searchCodeMatch[1].trim(),
+        },
+        raw_input: rawInput,
+        parsed_at: parsedAt,
+      })
+    }
+
+    if (lower === 'status git' || lower.includes('git status')) {
+      return this.buildParsedDirective('natural', {
+        command_type: 'workspace',
+        parameters: {
+          action: 'git_status',
+        },
+        raw_input: rawInput,
+        parsed_at: parsedAt,
+      })
+    }
+
+    const gitDiffMatch = rawInput.match(/^(?:diff git|git diff)(?:\s+(.+))?$/i)
+    if (gitDiffMatch) {
+      return this.buildParsedDirective('natural', {
+        command_type: 'workspace',
+        parameters: {
+          action: 'git_diff',
+          path: gitDiffMatch[1]?.trim(),
+        },
+        raw_input: rawInput,
+        parsed_at: parsedAt,
+      })
+    }
+
+    const readLogMatch = rawInput.match(/^(?:baca log|read log)\s+(.+)$/i)
+    if (readLogMatch?.[1]) {
+      return this.buildParsedDirective('natural', {
+        command_type: 'workspace',
+        parameters: {
+          action: 'read_log',
+          path: readLogMatch[1].trim(),
+        },
+        raw_input: rawInput,
+        parsed_at: parsedAt,
+      })
+    }
+
+    const listFilesMatch = rawInput.match(/^(?:list file|list files|daftar file)\s*(.*)$/i)
+    if (listFilesMatch) {
+      return this.buildParsedDirective('natural', {
+        command_type: 'workspace',
+        parameters: {
+          action: 'list_files',
+          path: listFilesMatch[1]?.trim() || undefined,
+        },
+        raw_input: rawInput,
+        parsed_at: parsedAt,
+      })
+    }
+
+    if (
+      lower.includes('kebutuhan agent') ||
+      lower.includes('kebutuhan tim') ||
+      lower.includes('analisa staffing') ||
+      lower.includes('analisa tim') ||
+      lower.includes('rancang agent')
+    ) {
+      return this.buildParsedDirective('natural', {
+        command_type: 'staffing',
+        parameters: {
+          action: 'assess',
+        },
+        raw_input: rawInput,
+        parsed_at: parsedAt,
+      })
+    }
+
+    const createAgentMatch = lower.match(/(?:buat|tambah|create|spawn)\s+(\d+)?\s*agent\s+([a-z_ ]+?)(?:\s+baru)?(?:\s+untuk\s+([a-z0-9-_]+))?$/i)
+    if (createAgentMatch) {
+      const count = createAgentMatch[1] ? Number(createAgentMatch[1]) : 1
+      const agentType = this.inferAgentType(createAgentMatch[2] ?? '')
+      if (agentType) {
+        return this.buildParsedDirective('natural', {
+          command_type: 'staffing',
+          parameters: {
+            action: 'provision',
+            agent_type: agentType,
+            count,
+            project_id: createAgentMatch[3]?.trim(),
+          },
+          raw_input: rawInput,
+          parsed_at: parsedAt,
+        })
+      }
+    }
+
+    if (
+      lower.includes('hapus semua proyek') ||
+      lower.includes('hapus seluruh proyek') ||
+      lower.includes('delete all projects') ||
+      lower.includes('clear all projects')
+    ) {
+      return this.buildParsedDirective('natural', {
+        command_type: 'project_admin',
+        parameters: {
+          action: 'close_all_projects',
+        },
+        raw_input: rawInput,
+        parsed_at: parsedAt,
+      })
+    }
+
     return this.buildClarification('natural', 'Directive intent is ambiguous.', [
-      'Do you need a status summary, directive history, or a report?',
+      'Do you need a status summary, current activity, directive history, a report, staffing help, a runbook action, or a workspace action like baca file/cari kode/status git?',
     ])
   }
 
@@ -1044,6 +1450,190 @@ export class CeoRuntime {
         max_questions: 3,
       },
     }
+  }
+
+  buildWorkforcePlan(
+    now = new Date().toISOString(),
+    scopedProjectId?: string,
+  ): WorkforcePlan {
+    const agents = this.registry.listAgents()
+    const projects = this.registry
+      .listProjects()
+      .filter(project => !scopedProjectId || project.project_id === scopedProjectId)
+
+    const blockedProjects = projects
+      .filter(project => project.lifecycle_state !== 'closed' && project.active_agent_ids.length === 0)
+      .map(project => project.project_id)
+
+    const offlineAgents = agents
+      .filter(agent => agent.status === 'offline' || agent.status === 'error')
+      .map(agent => agent.agent_id)
+
+    const recommendations: WorkforceRecommendation[] = []
+
+    for (const project of projects) {
+      const required = requiredAgentsForLifecycle(project.lifecycle_state)
+      for (const agentType of required) {
+        const activeMatches = agents.filter(
+          agent =>
+            agent.agent_type === agentType &&
+            agent.status !== 'offline' &&
+            agent.status !== 'error' &&
+            (agent.current_project_id === undefined || agent.current_project_id === project.project_id),
+        )
+        if (activeMatches.length === 0) {
+          recommendations.push({
+            recommended_agent_type: agentType,
+            quantity: 1,
+            project_id: project.project_id,
+            urgency: project.active_agent_ids.length === 0 ? 'critical' : 'high',
+            reason: `Project ${project.project_id} (${project.lifecycle_state}) membutuhkan ${agentType} aktif.`,
+          })
+        }
+      }
+    }
+
+    for (const agent of agents.filter(item => item.status === 'offline' || item.status === 'error')) {
+      recommendations.push({
+        recommended_agent_type: agent.agent_type,
+        quantity: 1,
+        project_id: agent.current_project_id,
+        urgency: 'high',
+        reason: `Agent ${agent.agent_id} sedang ${agent.status}; perlu pengganti untuk menjaga operasional.`,
+      })
+    }
+
+    const busyCounts = new Map<AgentType, number>()
+    for (const agent of agents) {
+      if (agent.status === 'busy') {
+        busyCounts.set(agent.agent_type, (busyCounts.get(agent.agent_type) ?? 0) + 1)
+      }
+    }
+    for (const [agentType, count] of busyCounts.entries()) {
+      const idleCount = agents.filter(agent => agent.agent_type === agentType && agent.status === 'idle').length
+      if (count >= 2 && idleCount === 0) {
+        recommendations.push({
+          recommended_agent_type: agentType,
+          quantity: 1,
+          urgency: 'medium',
+          reason: `Semua ${agentType} sedang sibuk (${count} busy, 0 idle). Tambahan kapasitas disarankan.`,
+        })
+      }
+    }
+
+    return {
+      generated_at: now,
+      objective: scopedProjectId
+        ? `Analisis kebutuhan agent untuk ${scopedProjectId}`
+        : 'Analisis kebutuhan agent lintas organisasi',
+      active_projects: projects.filter(project => project.lifecycle_state !== 'closed').length,
+      active_agents: agents.filter(agent => agent.status === 'busy' || agent.status === 'idle').length,
+      blocked_projects: blockedProjects,
+      offline_agents: offlineAgents,
+      recommendations: dedupeRecommendations(recommendations),
+    }
+  }
+
+  provisionAgents(input: {
+    agentType: AgentType
+    count: number
+    projectId?: string
+  }, now = new Date().toISOString()): AgentRegistryEntry[] {
+    const created: AgentRegistryEntry[] = []
+    const count = Math.max(1, Math.min(10, input.count))
+
+    for (let index = 0; index < count; index += 1) {
+      const agentId = this.buildProvisionedAgentId(input.agentType)
+      const entry: AgentRegistryEntry = {
+        agent_id: agentId,
+        agent_type: input.agentType,
+        status: 'idle',
+        current_project_id: input.projectId,
+        last_activity_timestamp: now,
+      }
+      this.registry.registerAgent(entry)
+      created.push({ ...entry })
+    }
+
+    if (input.projectId) {
+      const project = this.registry.getProject(input.projectId)
+      if (project) {
+        const nextAgentIds = Array.from(new Set([
+          ...project.active_agent_ids,
+          ...created.map(agent => agent.agent_id),
+        ]))
+        this.registry.updateProject(input.projectId, {
+          active_agent_ids: nextAgentIds,
+          updated_at: now,
+        })
+      }
+    }
+
+    this.touch(now)
+    this.audit('staffing_provisioned', this.ceoAgentId, input.projectId ?? 'runtime', {
+      agent_type: input.agentType,
+      count,
+      created_agent_ids: created.map(agent => agent.agent_id),
+    }, 'ok')
+
+    return created
+  }
+
+  serializeWorkforcePlan(plan: WorkforcePlan): string {
+    const recommendations = plan.recommendations.length > 0
+      ? plan.recommendations.map(
+          item =>
+            `- ${item.recommended_agent_type} x${item.quantity}${item.project_id ? ` [${item.project_id}]` : ''} (${item.urgency}) -> ${item.reason}`,
+        ).join('\n')
+      : '- Tidak ada kebutuhan agent baru yang mendesak.'
+
+    const blockedProjects = plan.blocked_projects.length > 0
+      ? plan.blocked_projects.map(projectId => `- ${projectId}`).join('\n')
+      : '- None'
+
+    const offlineAgents = plan.offline_agents.length > 0
+      ? plan.offline_agents.map(agentId => `- ${agentId}`).join('\n')
+      : '- None'
+
+    return [
+      '# Workforce Plan',
+      '',
+      `Generated: ${plan.generated_at}`,
+      `Objective: ${plan.objective}`,
+      '',
+      '## Overview',
+      `- active_projects: ${plan.active_projects}`,
+      `- active_agents: ${plan.active_agents}`,
+      '',
+      '## Blocked Projects',
+      blockedProjects,
+      '',
+      '## Offline Agents',
+      offlineAgents,
+      '',
+      '## Recommendations',
+      recommendations,
+    ].join('\n')
+  }
+
+  private serializeProvisioningResult(
+    created: AgentRegistryEntry[],
+    agentType: AgentType,
+    projectId: string | undefined,
+    now: string,
+  ): string {
+    const lines = created.map(agent => `- ${agent.agent_id} (${agent.status})${agent.current_project_id ? ` -> ${agent.current_project_id}` : ''}`)
+    return [
+      '# Staffing Provisioned',
+      '',
+      `Generated: ${now}`,
+      `Agent Type: ${agentType}`,
+      `Count: ${created.length}`,
+      `Project: ${projectId ?? '-'}`,
+      '',
+      '## Created Agents',
+      ...(lines.length > 0 ? lines : ['- None']),
+    ].join('\n')
   }
 
   private selectAgent(
@@ -1249,6 +1839,55 @@ export class CeoRuntime {
     if (input.includes('today') || input.includes('hari ini')) return 'today'
     if (input.includes('this week') || input.includes('minggu ini')) return 'this-week'
     return undefined
+  }
+
+  private inferAgentType(input: string): AgentType | undefined {
+    const normalized = input.trim().toLowerCase()
+    if (normalized.includes('sales')) return 'sales_agent'
+    if (normalized.includes('marketing')) return 'marketing_agent'
+    if (normalized.includes('product')) return 'product_agent'
+    if (normalized.includes('engineering') || normalized.includes('engineer') || normalized.includes('developer') || normalized.includes('dev')) {
+      return 'engineering_agent'
+    }
+    if (normalized.includes('project manager') || normalized === 'pm' || normalized.includes(' pm ')) {
+      return 'project_manager_agent'
+    }
+    if (normalized.includes('support')) return 'support_agent'
+    return undefined
+  }
+
+  private readOptionalParameterString(value: unknown): string | undefined {
+    if (typeof value !== 'string') {
+      return undefined
+    }
+    const normalized = value.trim()
+    return normalized || undefined
+  }
+
+  private normalizeProvisionCount(value: unknown): number {
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return Math.max(1, Math.min(10, Math.floor(value)))
+    }
+    if (typeof value === 'string' && value.trim()) {
+      const parsed = Number(value)
+      if (Number.isFinite(parsed)) {
+        return Math.max(1, Math.min(10, Math.floor(parsed)))
+      }
+    }
+    return 1
+  }
+
+  private buildProvisionedAgentId(agentType: AgentType): string {
+    const prefix = agentType.replace('_agent', '')
+    const next = this.registry
+      .listAgents()
+      .filter(agent => agent.agent_type === agentType)
+      .reduce((maxValue, agent) => {
+        const match = agent.agent_id.match(/-(\d+)$/)
+        const numericSuffix = match ? Number(match[1]) : 0
+        return Number.isFinite(numericSuffix) ? Math.max(maxValue, numericSuffix) : maxValue
+      }, 0) + 1
+    return `${prefix}-${next}`
   }
 
   private findDelegation(taskId: string): DelegationTaskRecord | undefined {

@@ -4,6 +4,12 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "dev": "bun --watch src/runtime-app/index.ts",
+    "runtime:app": "bun run src/runtime-app/index.ts",
+    "runtime:worker": "bun run src/runtime-app/worker.ts",
+    "runtime:scheduler": "bun run src/runtime-app/scheduler.ts",
+    "runtime:smoke": "bun run src/runtime-app/smoke.ts",
+    "runtime:telegram": "bun run src/runtime-app/telegramBot.ts",
     "check": "tsc -p tsconfig.json --noEmit",
     "build": "tsc -p tsconfig.json",
     "test": "bun test"
