@@ -2,6 +2,8 @@ import { describe, expect, it } from 'bun:test'
 
 import {
   createLogger,
+  createSubsystemLogger,
+  formatLogEntry,
   getMinimumLogLevelForEnvironment,
   redactLogContext,
   redactLogMessage,
@@ -61,6 +63,22 @@ describe('createLogger', () => {
         queued_jobs: 2,
       },
     })
+  })
+
+  it('supports subsystem loggers and development text formatting', () => {
+    const entries: LogEntry[] = []
+    const logger = createSubsystemLogger('runtime-app', {
+      minLevel: 'debug',
+      writer: entry => entries.push(entry),
+    }).child({ correlation_id: 'corr-1' })
+
+    logger.info('ready')
+
+    expect(entries[0]).toMatchObject({
+      subsystem: 'runtime-app',
+      correlation_id: 'corr-1',
+    })
+    expect(formatLogEntry(entries[0]!, 'text')).toContain('[runtime-app]')
   })
 })
 

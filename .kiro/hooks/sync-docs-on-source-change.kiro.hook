@@ -1,0 +1,22 @@
+{
+  "enabled": true,
+  "name": "Sync Docs on Source Change",
+  "description": "When TypeScript source files, config files, or other relevant project files are edited, ask the agent to update the README or /docs folder to reflect the changes.",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "src/**/*.ts",
+      "src/**/*.tsx",
+      "package.json",
+      "bunfig.toml",
+      ".env"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "A source file was just edited. Review the change and determine if any documentation needs to be updated. If the change affects public APIs, configuration, agent behavior, runtime behavior, environment variables, or project structure, update the relevant section in README.md or the appropriate file in the docs/ folder. Keep documentation accurate and concise — only update what actually changed."
+  },
+  "workspaceFolderName": "agentai01",
+  "shortName": "sync-docs-on-source-change"
+}

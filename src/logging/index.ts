@@ -1,18 +1,23 @@
+import { appendFileSync } from 'node:fs'
+
 import { formatIso8601, mapDeep } from '../shared/index.js'
 
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error'
 
 export type LogContext = Record<string, unknown>
+export type LogOutputFormat = 'json' | 'text'
 
 export type LogEntry = {
   timestamp: string
   level: LogLevel
   message: string
+  subsystem?: string
   correlation_id?: string
   context?: LogContext
 }
 
 export type LoggerChildBindings = {
+  subsystem?: string
   correlation_id?: string
   context?: LogContext
 }
@@ -28,9 +33,12 @@ export type Logger = {
 export type CreateLoggerOptions = {
   env?: string
   minLevel?: LogLevel
-  writer?: (entry: LogEntry) => void
+  writer?: LogWriter
   bindings?: LoggerChildBindings
+  format?: LogOutputFormat
 }
+
+export type LogWriter = (entry: LogEntry) => void
 
 const SECRET_KEY_PATTERN = /(api[_-]?key|token|secret|password|authorization|cookie|session)/i
 const REDACTED = '[REDACTED]'
@@ -50,7 +58,7 @@ const KEY_VALUE_SECRET_PATTERN =
 
 export function createLogger(options: CreateLoggerOptions = {}): Logger {
   const minLevel = options.minLevel ?? getMinimumLogLevelForEnvironment(options.env)
-  const writer = options.writer ?? writeLogEntry
+  const writer = options.writer ?? createConsoleLogWriter(options.format ?? 'json')
   const bindings = normalizeBindings(options.bindings)
 
   return {
@@ -95,6 +103,47 @@ export function getMinimumLogLevelForEnvironment(env: string = 'development'): L
   }
 
   return 'debug'
+}
+
+export function createSubsystemLogger(
+  subsystem: string,
+  options: Omit<CreateLoggerOptions, 'bindings'> = {},
+): Logger {
+  return createLogger({
+    ...options,
+    bindings: {
+      subsystem,
+    },
+  })
+}
+
+export function createConsoleLogWriter(format: LogOutputFormat = 'json'): LogWriter {
+  return entry => {
+    const serialized = `${formatLogEntry(entry, format)}\n`
+    if (entry.level === 'error') {
+      process.stderr.write(serialized)
+      return
+    }
+
+    process.stdout.write(serialized)
+  }
+}
+
+export function createFileLogWriter(filePath: string): LogWriter {
+  return entry => {
+    appendFileSync(filePath, `${formatLogEntry(entry, 'json')}\n`, 'utf8')
+  }
+}
+
+export function formatLogEntry(entry: LogEntry, format: LogOutputFormat): string {
+  if (format === 'json') {
+    return JSON.stringify(entry)
+  }
+
+  const subsystem = entry.subsystem ? ` [${entry.subsystem}]` : ''
+  const correlation = entry.correlation_id ? ` (${entry.correlation_id})` : ''
+  const context = entry.context ? ` ${JSON.stringify(entry.context)}` : ''
+  return `${entry.timestamp} ${entry.level.toUpperCase()}${subsystem}${correlation} ${entry.message}${context}`
 }
 
 export function redactLogMessage(message: string): string {
@@ -176,6 +225,10 @@ function buildEntry(
     message: redactLogMessage(message),
   }
 
+  if (bindings.subsystem) {
+    entry.subsystem = bindings.subsystem
+  }
+
   if (bindings.correlation_id) {
     entry.correlation_id = bindings.correlation_id
   }
@@ -191,22 +244,13 @@ function shouldLog(level: LogLevel, minLevel: LogLevel): boolean {
   return LOG_LEVEL_PRIORITY[level] >= LOG_LEVEL_PRIORITY[minLevel]
 }
 
-function writeLogEntry(entry: LogEntry): void {
-  const serialized = `${JSON.stringify(entry)}\n`
-  if (entry.level === 'error') {
-    process.stderr.write(serialized)
-    return
-  }
-
-  process.stdout.write(serialized)
-}
-
 function normalizeBindings(bindings: LoggerChildBindings | undefined): LoggerChildBindings {
   if (!bindings) {
     return {}
   }
 
   return {
+    subsystem: bindings.subsystem,
     correlation_id: bindings.correlation_id,
     context: bindings.context ? { ...bindings.context } : undefined,
   }
@@ -217,6 +261,7 @@ function mergeBindings(
   child: LoggerChildBindings,
 ): LoggerChildBindings {
   return {
+    subsystem: child.subsystem ?? parent.subsystem,
     correlation_id: child.correlation_id ?? parent.correlation_id,
     context: mergeContexts(parent.context, child.context),
   }

@@ -2,13 +2,23 @@ import { describe, expect, it } from 'bun:test'
 
 import {
   err,
+  coerceBoolean,
+  coerceNumber,
+  coerceString,
+  createDeferred,
+  createLazyAsync,
   formatIso8601,
   generateCorrelationId,
   generateId,
+  isBoolean,
+  isNumber,
   isRecord,
+  isString,
   mapDeep,
   none,
+  normalizeWhitespace,
   ok,
+  paginate,
   parseIso8601,
   some,
 } from './index.js'
@@ -82,6 +92,46 @@ describe('helpers', () => {
       nested: {
         token: '[REDACTED]',
       },
+    })
+  })
+
+  it('normalizes and coerces external values predictably', () => {
+    expect(normalizeWhitespace(' hello   runtime\nplatform ')).toBe(
+      'hello runtime platform',
+    )
+    expect(coerceString(null, 'fallback')).toBe('fallback')
+    expect(coerceNumber('42', 0)).toBe(42)
+    expect(coerceBoolean('yes')).toBe(true)
+    expect(isString('x')).toBe(true)
+    expect(isNumber(Number.NaN)).toBe(false)
+    expect(isBoolean(false)).toBe(true)
+  })
+
+  it('creates deferred and lazy async helpers', async () => {
+    const deferred = createDeferred<string>()
+    deferred.resolve('ready')
+    await expect(deferred.promise).resolves.toBe('ready')
+
+    let calls = 0
+    const lazy = createLazyAsync(async () => {
+      calls += 1
+      return calls
+    })
+
+    await expect(lazy()).resolves.toBe(1)
+    await expect(lazy()).resolves.toBe(1)
+    expect(calls).toBe(1)
+  })
+
+  it('paginates arrays with explicit metadata', () => {
+    expect(paginate(['a', 'b', 'c'], { page: 2, pageSize: 2 })).toEqual({
+      items: ['c'],
+      page: 2,
+      pageSize: 2,
+      totalItems: 3,
+      totalPages: 2,
+      hasNextPage: false,
+      hasPreviousPage: true,
     })
   })
 })

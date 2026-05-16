@@ -995,7 +995,6 @@ Kalau mau dikerjakan bertahap:
 
 ## Catatan
 
-- Ini adalah roadmap lengkap. Tidak semua harus dikerjakan sekarang.
 - Batch 1-3 adalah yang paling critical untuk fondasi runtime.
 - Batch 4-6 penting untuk agent capability.
 - Batch 7-14 bisa dikerjakan sesuai kebutuhan fitur.

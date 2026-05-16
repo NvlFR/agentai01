@@ -2,9 +2,13 @@ import { describe, expect, it } from 'bun:test'
 
 import {
   assertNoBoundaryViolation,
+  constantTimeEquals,
   createAuditTrail,
+  detectDangerousConfig,
+  generateSecurityAuditReport,
   sanitizeInput,
   serializeAuditSafe,
+  validateOperatorTokenMatch,
   validateOperatorToken,
   validateRuleMetadata,
 } from './index.js'
@@ -67,6 +71,40 @@ describe('validation helpers', () => {
     expect(validateOperatorToken(' owner-token ')).toEqual({
       ok: true,
       value: 'owner-token',
+    })
+  })
+
+  it('compares operator tokens with a constant-time helper', () => {
+    expect(constantTimeEquals('same-token', 'same-token')).toBe(true)
+    expect(constantTimeEquals('same-token', 'other-token')).toBe(false)
+    expect(validateOperatorTokenMatch(' owner-token ', 'owner-token')).toEqual({
+      ok: true,
+      value: true,
+    })
+    expect(validateOperatorTokenMatch('owner-token', 'bad-token')).toEqual({
+      ok: false,
+      error: 'invalid',
+    })
+  })
+
+  it('detects dangerous runtime config and emits audit reports', () => {
+    const findings = detectDangerousConfig({
+      appHost: '0.0.0.0',
+      operatorToken: 'short',
+      aiApiKey: '',
+    })
+
+    expect(findings.map(finding => finding.code)).toEqual([
+      'public_bind',
+      'weak_operator_token',
+      'missing_ai_api_key',
+    ])
+    expect(generateSecurityAuditReport({ operatorToken: 'long-enough-token' })).toMatchObject({
+      findings: [
+        {
+          code: 'missing_ai_api_key',
+        },
+      ],
     })
   })
 

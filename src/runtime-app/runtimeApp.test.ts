@@ -26,8 +26,9 @@ describe('Runtime app operator server', () => {
     expect(health.data.ok).toBe(true)
     expect(readyResponse.status).toBe(200)
     expect(ready.data.readiness.ready).toBe(true)
-    expect(html).toContain('AI Company Runtime')
-    expect(html).toContain('Approval Queue')
+    expect(html).toContain('AgentAI 01')
+    expect(html).toContain('Dashboard')
+    expect(html).toContain('Approvals')
   })
 
   test('requires confirmation for risky operator actions and mutates state after confirmation', async () => {

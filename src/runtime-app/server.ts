@@ -1,4 +1,4 @@
-import { generateCorrelationId } from '../shared/index.js'
+import { getCorrelationId, jsonResponse, textResponse } from '../web/index.js'
 import { renderOperatorShell } from './ui/render.js'
 import { RuntimeAppState } from './state.js'
 import { loadRuntimeAppConfig } from './config.js'
@@ -40,7 +40,7 @@ export function startRuntimeAppServer(state = createRuntimeAppState()): RuntimeA
     },
     fetch: async req => {
       const url = new URL(req.url)
-      const correlationId = buildCorrelationId()
+      const correlationId = getCorrelationId(req)
 
       if (req.method === 'GET' && url.pathname.startsWith('/api/projects/')) {
         const snapshot = state.getSnapshot()
@@ -99,7 +99,7 @@ function withMeta(
   data: unknown,
 ) {
   return {
-    correlation_id: req.headers.get('x-correlation-id') ?? buildCorrelationId(),
+    correlation_id: getCorrelationId(req),
     generated_at: snapshot.generated_at,
     data,
   }
@@ -140,16 +140,19 @@ function actionResponse(
   )
 }
 
-async function readJson(req: Request): Promise<Record<string, any>> {
+async function readJson(req: Request): Promise<Record<string, unknown>> {
   if (!req.headers.get('content-type')?.includes('application/json')) {
     return {}
   }
 
-  return (await req.json()) as Record<string, any>
+  const body = await req.json()
+  return typeof body === 'object' && body !== null && !Array.isArray(body)
+    ? body as Record<string, unknown>
+    : {}
 }
 
 function html(body: string, status = 200): Response {
-  return new Response(body, {
+  return textResponse(body, {
     status,
     headers: {
       'content-type': 'text/html; charset=utf-8',
@@ -158,14 +161,5 @@ function html(body: string, status = 200): Response {
 }
 
 function json(data: unknown, status = 200): Response {
-  return new Response(JSON.stringify(data, null, 2), {
-    status,
-    headers: {
-      'content-type': 'application/json; charset=utf-8',
-    },
-  })
-}
-
-function buildCorrelationId(): string {
-  return generateCorrelationId('req')
+  return jsonResponse(data, { status })
 }
