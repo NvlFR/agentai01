@@ -10,9 +10,16 @@ export * from './config-schema.js'
 export * from './channel-config-helpers.js'
 export * from './secure-random.js'
 export * from './lazy-value.js'
-export * from './gateway-utils.js'
+export {
+  DEFAULT_ACCOUNT_ID,
+  buildAgentSessionKey,
+  normalizeAccountId,
+  resolveGatewayBindUrl,
+  resolveGatewayPort,
+  resolveThreadSessionKeys,
+} from './gateway-utils.js'
 export * from './secret-file.js'
-export * from './subsystem-logger.js'
+export { createSubsystemLogger } from './subsystem-logger.js'
 export * from './acp-binding.js'
 export * from './pairing-helpers.js'
 export * from './action-gate.js'
