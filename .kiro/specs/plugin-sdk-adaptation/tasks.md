@@ -266,7 +266,7 @@ src/config/index.ts      — re-exports only (runtime-app-bridge.ts tetap ada)
 
 ---
 
-### Task 2.1 — Pecah `src/provider-runtime/` ke Sub-Files
+### Task 2.1 [x] — Pecah `src/provider-runtime/` ke Sub-Files
 
 **Requirements:** Req 10, 73
 
