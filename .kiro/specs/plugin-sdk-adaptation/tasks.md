@@ -233,7 +233,7 @@ src/secrets/index.ts      — re-exports only
 
 ---
 
-### Task 1.7 — Pecah `src/config/` ke Sub-Files
+### Task 1.7 [x] — Pecah `src/config/` ke Sub-Files
 
 **Requirements:** Req 9, 73
 
@@ -256,6 +256,7 @@ src/config/index.ts      — re-exports only (runtime-app-bridge.ts tetap ada)
 2. `bun test src/config/`
 3. `npm run runtime:smoke` clean
 4. `validasi dengan smoke custom`
+
 
 
 ---
@@ -299,7 +300,7 @@ src/provider-runtime/index.ts          — re-exports only
 
 ---
 
-### Task 2.2 — Pecah `src/channels/` ke Sub-Files
+### Task 2.2 [x] — Pecah `src/channels/` ke Sub-Files
 
 **Requirements:** Req 12, 73
 
@@ -327,7 +328,7 @@ src/channels/index.ts        — re-exports only
 
 ---
 
-### Task 2.3 — Pecah `src/sessions/` ke Sub-Files
+### Task 2.3 [x] — Pecah `src/sessions/` ke Sub-Files
 
 **Requirements:** Req 13, 73
 
@@ -355,7 +356,7 @@ src/sessions/index.ts       — re-exports only
 
 ---
 
-### Task 2.4 — Pecah `src/memory/` ke Sub-Files
+### Task 2.4 [x] — Pecah `src/memory/` ke Sub-Files
 
 **Requirements:** Req 14, 73
 
@@ -412,7 +413,7 @@ src/context-engine/index.ts    — re-exports only
 
 ---
 
-### Task 2.6 — Pecah `src/tools/`, `src/hooks/`, `src/flows/`, `src/tasks/`, `src/routing/`, `src/plugin-state/`
+### Task 2.6 [x] — Pecah `src/tools/`, `src/hooks/`, `src/flows/`, `src/tasks/`, `src/routing/`, `src/plugin-state/`
 
 **Requirements:** Req 16–21, 73
 
@@ -490,7 +491,7 @@ index.ts   — re-exports only
 
 ---
 
-### Task 3.1 — Implementasi Plugin SDK Core Types dan Entry Contract
+### Task 3.1 [x] — Implementasi Plugin SDK Core Types dan Entry Contract
 
 **Requirements:** Req 11, 23, 44, 45, 73
 **Referensi:** `referensi/openclaw/src/plugin-sdk/index.ts`, `plugin-entry.ts`, `config-schema.ts`
@@ -551,7 +552,7 @@ src/plugin-sdk/channel-core.ts — createChatChannelPlugin, createChannelPluginB
 
 ---
 
-### Task 3.3 — Implementasi Plugin SDK Queue, Approval, dan Session Route Utilities
+### Task 3.3 [x] — Implementasi Plugin SDK Queue, Approval, dan Session Route Utilities
 
 **Requirements:** Req 25, 26, 27, 45
 **Referensi:** `referensi/openclaw/src/plugin-sdk/keyed-async-queue.ts`, `approval-renderers.ts`, `core.ts`
@@ -608,7 +609,7 @@ src/plugin-sdk/channel-config-helpers.ts  — clear/delete/set/apply/migrate acc
 
 ---
 
-### Task 3.5 — Implementasi Plugin SDK Runtime Utilities
+### Task 3.5 [x] — Implementasi Plugin SDK Runtime Utilities
 
 **Requirements:** Req 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 45
 **Referensi:** `referensi/openclaw/src/plugin-sdk/core.ts`, `lazy-value.ts`, `reply-dedupe.ts`, `persistent-dedupe.ts`, `secret-file-runtime.ts`, `acp-runtime-backend.ts`, `acp-binding-resolve-runtime.ts`, `channel-setup.ts`, `provider-tools.ts`, `security-runtime.ts`, `runtime.ts`, `error-runtime.ts`
