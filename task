@@ -1,0 +1,449 @@
+# TASK: Adaptasi Source OpenClaw ke AgentAI01
+
+## Konteks Project
+
+**Project:** AgentAI01 — AI Company Runtime (multi-agent system)
+**Stack:** Bun 1.3.x + TypeScript 5.8.x + Node 20+
+**Module system:** ESM (`"type": "module"`)
+**Referensi:** `referensi/openclaw/src/` (jangan diedit, hanya dibaca)
+
+### Struktur Target AgentAI01
+
+```
+src/
+├── domain/              # types + kontrak utama
+├── agents/              # ceo, engineering, marketing, product, dll
+├── runtime/             # runtime/orchestrator
+├── runtime-app/
+│   ├── speech/          # TTS / STT
+│   ├── generation/      # image/file generation
+│   ├── integration/     # koneksi sistem eksternal
+│   ├── diagnostics/     # monitoring & logging
+│   ├── orchestration/   # koordinasi antar agent
+│   ├── providers/       # AI provider adapter
+│   ├── queue/           # job queue
+│   ├── skills/          # skill runner
+│   ├── tools/           # tool definitions per agent
+│   ├── workers/         # background workers
+│   └── memory/          # memory layer
+├── plugin-sdk/          # plugin system
+├── provider-runtime/    # provider abstraction
+├── memory/              # memory + storage
+├── web-search/          # web search
+└── web-fetch/           # web fetch + content extraction
+```
+
+---
+
+## Aturan Adaptasi (WAJIB DIIKUTI)
+
+1. **Jangan edit folder `referensi/`** — hanya baca sebagai sumber
+2. **Semua import harus disesuaikan** — hapus import dari path internal OpenClaw, ganti ke path relatif AgentAI01
+3. **Hapus dependency ke package internal OpenClaw** seperti:
+   - `@openclaw/fs-safe`
+   - `@openclaw/proxyline`
+   - `@earendil-works/pi-*`
+   - `openclaw/plugin-sdk/*`
+4. **Ganti dengan package yang sudah diinstall** di AgentAI01 (lihat bagian Dependencies)
+5. **Setiap file yang diadaptasi harus bisa di-typecheck** dengan `bun run check`
+6. **Tambahkan komentar** `// Adapted from referensi/openclaw/src/...` di baris pertama setiap file
+
+---
+
+## Dependencies yang Tersedia di AgentAI01
+
+```json
+{
+  "openai": "latest",
+  "zod": "latest",
+  "@modelcontextprotocol/sdk": "latest",
+  "express": "latest",
+  "grammy": "latest",
+  "@grammyjs/runner": "latest",
+  "@grammyjs/transformer-throttler": "latest",
+  "kysely": "latest",
+  "@mozilla/readability": "latest",
+  "linkedom": "latest",
+  "pdfjs-dist": "latest",
+  "croner": "latest",
+  "chokidar": "latest",
+  "tslog": "latest",
+  "dotenv": "latest",
+  "yaml": "latest",
+  "json5": "latest",
+  "@clack/core": "latest",
+  "@clack/prompts": "latest",
+  "chalk": "latest",
+  "commander": "latest",
+  "file-type": "latest",
+  "jszip": "latest",
+  "ipaddr.js": "latest",
+  "web-push": "latest",
+  "undici": "latest",
+  "ws": "latest",
+  "@google/genai": "latest"
+}
+```
+
+Bun native APIs yang tersedia (tanpa install):
+- `Bun.serve()` — HTTP server
+- `bun:sqlite` — SQLite built-in
+- `Bun.file()` — File I/O
+- `fetch` — Native fetch
+
+---
+
+## STEP 1 — Adaptasi `src/utils/`
+
+### File yang diadaptasi dari `referensi/openclaw/src/utils/`
+
+Buat folder `src/utils/` jika belum ada, lalu adaptasi file-file berikut:
+
+#### `src/utils/fetch-timeout.ts`
+Sumber: `referensi/openclaw/src/utils/fetch-timeout.ts`
+- Utility untuk fetch dengan timeout
+- Dependency yang mungkin perlu diganti: gunakan native `fetch` + `AbortController`
+
+#### `src/utils/safe-json.ts`
+Sumber: `referensi/openclaw/src/utils/safe-json.ts`
+- Safe JSON parse/stringify
+- Tidak ada dependency eksternal — copy langsung, sesuaikan import
+
+#### `src/utils/mask-api-key.ts`
+Sumber: `referensi/openclaw/src/utils/mask-api-key.ts`
+- Mask API key untuk logging
+- Tidak ada dependency eksternal
+
+#### `src/utils/timer-delay.ts`
+Sumber: `referensi/openclaw/src/utils/timer-delay.ts`
+- Sleep/delay utility
+- Tidak ada dependency eksternal
+
+#### `src/utils/with-timeout.ts`
+Sumber: `referensi/openclaw/src/utils/with-timeout.ts`
+- Promise dengan timeout wrapper
+- Tidak ada dependency eksternal
+
+#### `src/utils/zod-parse.ts`
+Sumber: `referensi/openclaw/src/utils/zod-parse.ts`
+- Safe zod parse helpers
+- Dependency: `zod` (sudah tersedia)
+
+#### `src/utils/queue-helpers.ts`
+Sumber: `referensi/openclaw/src/utils/queue-helpers.ts`
+- Queue utility functions
+- Sesuaikan import jika ada
+
+#### `src/utils/run-with-concurrency.ts`
+Sumber: `referensi/openclaw/src/utils/run-with-concurrency.ts`
+- Run async tasks dengan concurrency limit
+- Tidak ada dependency eksternal
+
+#### `src/utils/parse-json-compat.ts`
+Sumber: `referensi/openclaw/src/utils/parse-json-compat.ts`
+- JSON parse dengan compatibility handling
+- Tidak ada dependency eksternal
+
+#### `src/utils/usage-format.ts`
+Sumber: `referensi/openclaw/src/utils/usage-format.ts`
+- Format token usage stats
+- Tidak ada dependency eksternal
+
+#### `src/utils/chunk-items.ts`
+Sumber: `referensi/openclaw/src/utils/chunk-items.ts`
+- Array chunking utility
+- Tidak ada dependency eksternal
+
+---
+
+## STEP 2 — Adaptasi `src/web-fetch/`
+
+### File yang diadaptasi dari `referensi/openclaw/src/web-fetch/`
+
+#### `src/web-fetch/runtime.ts`
+Sumber: `referensi/openclaw/src/web-fetch/runtime.ts`
+- Web fetch runtime — ambil konten dari URL
+- Ganti dependency internal OpenClaw dengan:
+  - `@mozilla/readability` (sudah tersedia)
+  - `linkedom` (sudah tersedia) — sebagai pengganti DOM parser
+  - Native `fetch`
+
+#### `src/web-fetch/content-extractors.ts`
+Sumber: `referensi/openclaw/src/web-fetch/content-extractors.runtime.ts`
+- Extract konten dari HTML (article, text, metadata)
+- Dependency: `@mozilla/readability`, `linkedom`
+
+#### `src/web-fetch/types.ts`
+Buat file baru dengan type definitions untuk web-fetch:
+```ts
+export interface WebFetchResult {
+  url: string
+  title?: string
+  content: string
+  excerpt?: string
+  fetchedAt: string
+  error?: string
+}
+
+export interface WebFetchOptions {
+  timeoutMs?: number
+  maxContentLength?: number
+  userAgent?: string
+}
+```
+
+---
+
+## STEP 3 — Adaptasi `src/web-search/`
+
+### File yang diadaptasi dari `referensi/openclaw/src/web-search/`
+
+#### `src/web-search/runtime-types.ts`
+Sumber: `referensi/openclaw/src/web-search/runtime-types.ts`
+- Type definitions untuk web search
+- Sesuaikan, hapus import internal OpenClaw
+
+#### `src/web-search/runtime.ts`
+Sumber: `referensi/openclaw/src/web-search/runtime.ts`
+- Web search runtime
+- OpenClaw pakai provider pattern — adaptasi ke interface sederhana dulu:
+  - Default provider: Tavily (`tavily` package — belum diinstall, tambahkan: `bun add tavily`)
+  - Fallback: bisa pakai DuckDuckGo API (free, no key)
+
+**Tambahan install yang dibutuhkan:**
+```bash
+bun add tavily
+```
+
+---
+
+## STEP 4 — Adaptasi `src/runtime-app/speech/`
+
+### File yang diadaptasi dari `referensi/openclaw/src/tts/`
+
+#### `src/runtime-app/speech/types.ts`
+Sumber: `referensi/openclaw/src/tts/tts-types.ts`
+- Type definitions TTS
+- Hapus dependency internal OpenClaw
+- Sederhanakan ke interface yang dibutuhkan AgentAI01
+
+#### `src/runtime-app/speech/provider.ts`
+Sumber: `referensi/openclaw/src/tts/openai-compatible-speech-provider.ts`
+- OpenAI-compatible TTS provider
+- Dependency: `openai` SDK (sudah tersedia)
+- Ganti import path internal ke path relatif
+
+#### `src/runtime-app/speech/core.ts`
+Sumber: `referensi/openclaw/src/tts/tts-core.ts`
+- Core TTS logic
+- Sesuaikan import
+
+---
+
+## STEP 5 — Adaptasi `src/runtime-app/generation/`
+
+### Referensi dari `referensi/openclaw/src/video-generation/` dan image generation
+
+Untuk generation layer, ambil **pola arsitektur** saja (provider registry pattern), bukan code langsung.
+
+Buat struktur berikut:
+
+#### `src/runtime-app/generation/types.ts`
+```ts
+export type GenerationType = 'image' | 'audio' | 'document'
+
+export interface GenerationRequest {
+  type: GenerationType
+  prompt: string
+  options?: Record<string, unknown>
+}
+
+export interface GenerationResult {
+  type: GenerationType
+  url?: string
+  base64?: string
+  mimeType?: string
+  error?: string
+}
+
+export interface GenerationProvider {
+  id: string
+  supports: GenerationType[]
+  generate(req: GenerationRequest): Promise<GenerationResult>
+}
+```
+
+#### `src/runtime-app/generation/registry.ts`
+- Provider registry pattern (sama seperti OpenClaw `provider-registry.ts`)
+- Register/resolve provider berdasarkan type
+
+#### `src/runtime-app/generation/openai-image.ts`
+- OpenAI DALL-E provider
+- Dependency: `openai` (sudah tersedia)
+
+---
+
+## STEP 6 — Adaptasi `src/runtime-app/diagnostics/`
+
+### Referensi dari OpenClaw logging patterns
+
+Buat dari scratch berdasarkan pola OpenClaw, menggunakan `tslog`:
+
+#### `src/runtime-app/diagnostics/logger.ts`
+```ts
+// Adapted from referensi/openclaw/src/utils/ logging patterns
+import { Logger } from 'tslog'
+
+export const createLogger = (name: string) => new Logger({
+  name,
+  prettyLogTemplate: '{{dateIsoStr}} {{logLevelName}} [{{name}}] ',
+})
+
+export const rootLogger = createLogger('agentai01')
+```
+
+#### `src/runtime-app/diagnostics/health.ts`
+- Health check state management
+- Dipake oleh `GET /health` dan `GET /ready` endpoint
+
+---
+
+## STEP 7 — Adaptasi Skills dari `referensi/openclaw/skills/`
+
+### Copy dan adaptasi contoh skill
+
+```bash
+# Lihat struktur skill OpenClaw sebagai referensi
+ls referensi/openclaw/skills/
+```
+
+Setiap skill OpenClaw terdiri dari:
+- `SKILL.md` — deskripsi dan instruksi skill
+- Optional: config files, scripts
+
+Adaptasi 2 contoh skill dari OpenClaw ke `skills/` AgentAI01:
+
+#### `skills/web-search/SKILL.md`
+Buat skill baru berdasarkan pattern OpenClaw untuk web search.
+
+#### `skills/summarize/SKILL.md`
+Buat skill untuk summarize konten — ini relevan untuk semua agent.
+
+Format SKILL.md mengikuti pattern OpenClaw:
+```md
+---
+name: nama-skill
+description: Deskripsi singkat
+version: 0.1.0
+---
+
+# Nama Skill
+
+## Tujuan
+...
+
+## Cara Pakai
+...
+
+## Parameter
+...
+```
+
+---
+
+## STEP 8 — Adaptasi `src/plugin-sdk/`
+
+### Referensi dari `referensi/openclaw/` exports di `package.json`
+
+OpenClaw mengekspos plugin SDK lewat subpath exports. AgentAI01 perlu sistem serupa tapi lebih sederhana.
+
+Buat file-file berikut di `src/plugin-sdk/`:
+
+#### `src/plugin-sdk/types.ts`
+Type definitions untuk plugin system:
+```ts
+export interface PluginManifest {
+  id: string
+  name: string
+  version: string
+  description: string
+  author?: string
+  tools?: ToolDefinition[]
+  skills?: string[]
+}
+
+export interface ToolDefinition {
+  name: string
+  description: string
+  parameters: Record<string, unknown> // JSON Schema
+  execute: (params: unknown) => Promise<unknown>
+}
+
+export interface Plugin {
+  manifest: PluginManifest
+  register(api: PluginAPI): void
+}
+
+export interface PluginAPI {
+  registerTool(tool: ToolDefinition): void
+  registerSkill(skillPath: string): void
+  log(level: 'info' | 'warn' | 'error', message: string): void
+}
+```
+
+#### `src/plugin-sdk/registry.ts`
+- Plugin registry — load, enable, disable plugin
+- Gunakan `chokidar` untuk hot-reload dari folder `extensions/`
+
+#### `src/plugin-sdk/loader.ts`
+- Load plugin dari folder atau npm package
+- Validasi manifest dengan `zod`
+
+#### `src/plugin-sdk/index.ts`
+- Re-export semua public API plugin SDK
+
+---
+
+## Checklist Verifikasi
+
+Setelah selesai setiap step, jalankan:
+
+```bash
+# TypeScript check
+bun run check
+
+# Test (jika ada)
+bun test
+
+# Pastikan tidak ada import yang masih mengarah ke openclaw internal
+grep -r "from.*openclaw" src/ --include="*.ts"
+grep -r "from.*@openclaw" src/ --include="*.ts"
+grep -r "from.*@earendil" src/ --include="*.ts"
+```
+
+Output dari grep di atas harus **kosong** (tidak ada hasil).
+
+---
+
+## Prioritas Pengerjaan
+
+```
+STEP 1 (utils)        → kerjain dulu, semua step lain butuh ini
+STEP 2 (web-fetch)    → butuh setelah utils
+STEP 3 (web-search)   → butuh setelah utils
+STEP 4 (speech)       → bisa paralel dengan step 2-3
+STEP 5 (generation)   → bisa paralel dengan step 2-4
+STEP 6 (diagnostics)  → kerjain early, butuh oleh semua layer lain
+STEP 7 (skills)       → setelah step 1-3 selesai
+STEP 8 (plugin-sdk)   → kerjain terakhir, butuh semua layer selesai
+```
+
+---
+
+## Catatan untuk AI
+
+- Baca file sumber di `referensi/openclaw/src/` sebelum menulis adaptasi
+- Jangan hapus atau ubah apapun di dalam folder `referensi/`
+- Kalau ada import yang tidak bisa diselesaikan, buat stub dengan `// TODO: implement` dan catat di `TODO.md`
+- Kalau ada pola yang terlalu terikat ke arsitektur OpenClaw, buat ulang dari scratch mengikuti pola yang sama tapi lebih sederhana
+- Semua file output harus valid TypeScript dan lolos `bun run check`

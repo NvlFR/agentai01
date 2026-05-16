@@ -6,6 +6,10 @@ import path from 'node:path'
 import { CeoRuntime } from '../agents/ceo/runtime.js'
 import type { OwnerCommand } from '../agents/ceo/models.js'
 import { executeWorkspaceCapability } from './capabilities.js'
+import {
+  createLowPriorityExtensionRegistry,
+  type ExtensionSnapshot,
+} from './extensions/index.js'
 import type {
   Agent_Message,
   AgentType,
@@ -102,6 +106,7 @@ export type RuntimeAppSnapshot = {
     ai_model: string
     ai_api_key_masked: string
   }
+  extensions: ExtensionSnapshot[]
 }
 
 export type DirectiveSubmission = {
@@ -140,6 +145,7 @@ export class RuntimeAppState {
   private readonly operatorAudit: OperatorAuditEntry[] = []
   private readonly approvalTimeline: Array<Approval_Request | Approval_Response> = []
   private readonly rejectedMessages: Map<string, RetryMessageRecord> = new Map()
+  private readonly extensionRegistry = createLowPriorityExtensionRegistry()
 
   constructor(config: RuntimeAppConfig) {
     this.config = config
@@ -221,6 +227,7 @@ export class RuntimeAppState {
         ai_model: this.config.ai.model,
         ai_api_key_masked: this.config.ai.apiKey ? redact(this.config.ai.apiKey) : '(missing)',
       },
+      extensions: this.extensionRegistry.list(),
     }
   }
 

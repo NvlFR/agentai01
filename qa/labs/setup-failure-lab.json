@@ -1,0 +1,19 @@
+{
+  "name": "setup-failure-lab",
+  "description": "Fixture for verifying partial teardown after a setup failure.",
+  "steps": {
+    "setup": [
+      {
+        "type": "seed-text",
+        "path": "${RUN_DIR}/scratch/should-clean.txt",
+        "content": "cleanup me"
+      },
+      {
+        "type": "fail",
+        "message": "forced setup failure for rollback verification"
+      }
+    ],
+    "run": [],
+    "teardown": []
+  }
+}

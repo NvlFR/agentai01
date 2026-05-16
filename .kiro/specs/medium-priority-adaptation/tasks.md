@@ -41,68 +41,68 @@
   - [ ] 5.4 Implementasikan `changelog/compile.mjs` dengan grouping per tipe dan sorting kronologis
   - [ ] 5.5 Tambahkan flag `--version` dan perpindahan fragment yang sudah dirilis
 
-- [ ] 6. Build Swabble Voice Interface App
-  - [ ] 6.1 Buat shell aplikasi standalone di `apps/swabble/`
-  - [ ] 6.2 Hubungkan input mikrofon ke `Speech_Core` untuk transkripsi
-  - [ ] 6.3 Hubungkan output runtime ke TTS untuk playback suara
-  - [ ] 6.4 Tambahkan fallback ke text mode jika speech backend unavailable
-  - [ ] 6.5 Tambahkan indikator visual `listening`, `processing`, `speaking`, dan `error`
+- [x] 6. Build Swabble Voice Interface App
+  - [x] 6.1 Buat shell aplikasi standalone di `apps/swabble/`
+  - [x] 6.2 Hubungkan input mikrofon ke `Speech_Core` untuk transkripsi
+  - [x] 6.3 Hubungkan output runtime ke TTS untuk playback suara
+  - [x] 6.4 Tambahkan fallback ke text mode jika speech backend unavailable
+  - [x] 6.5 Tambahkan indikator visual `listening`, `processing`, `speaking`, dan `error`
 
-- [ ] 7. Add Additional LLM Provider Adapters
-  - [ ] 7.1 Implementasikan adapter `anthropic-vertex` di atas provider contract yang sama dengan provider existing
-  - [ ] 7.2 Implementasikan adapter `groq` dengan config `GROQ_API_KEY` dan `GROQ_MODEL`
-  - [ ] 7.3 Implementasikan adapter `gemini-cli` dengan config `GEMINI_API_KEY` dan `GEMINI_MODEL`
-  - [ ] 7.4 Normalisasi provider errors: rate limit, timeout, invalid key, dan provider unavailable
-  - [ ] 7.5 Tambahkan activation via config tanpa mengubah core runtime code path
+- [x] 7. Add Additional LLM Provider Adapters
+  - [x] 7.1 Implementasikan adapter `anthropic-vertex` di atas provider contract yang sama dengan provider existing
+  - [x] 7.2 Implementasikan adapter `groq` dengan config `GROQ_API_KEY` dan `GROQ_MODEL`
+  - [x] 7.3 Implementasikan adapter `gemini-cli` dengan config `GEMINI_API_KEY` dan `GEMINI_MODEL`
+  - [x] 7.4 Normalisasi provider errors: rate limit, timeout, invalid key, dan provider unavailable
+  - [x] 7.5 Tambahkan activation via config tanpa mengubah core runtime code path
 
-- [ ] 8. Add WhatsApp Channel
-  - [ ] 8.1 Buat channel WhatsApp untuk inbound dan outbound message runtime
-  - [ ] 8.2 Tambahkan config `WHATSAPP_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, dan `WHATSAPP_VERIFY_TOKEN`
-  - [ ] 8.3 Implementasikan validasi webhook signature Meta
-  - [ ] 8.4 Tambahkan allowlist `WHATSAPP_ALLOWED_NUMBERS`
-  - [ ] 8.5 Pastikan inbound valid message di-ack dalam 5 detik dan tidak menulis konten ke disk di luar audit log
+- [x] 8. Add WhatsApp Channel
+  - [x] 8.1 Buat channel WhatsApp untuk inbound dan outbound message runtime
+  - [x] 8.2 Tambahkan config `WHATSAPP_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, dan `WHATSAPP_VERIFY_TOKEN`
+  - [x] 8.3 Implementasikan validasi webhook signature Meta
+  - [x] 8.4 Tambahkan allowlist `WHATSAPP_ALLOWED_NUMBERS`
+  - [x] 8.5 Pastikan inbound valid message di-ack dalam 5 detik dan tidak menulis konten ke disk di luar audit log
 
-- [ ] 9. Add Advanced Memory Backends
-  - [ ] 9.1 Definisikan interface `Memory_Backend` yang konsisten untuk `store`, `retrieve`, `search`, dan `delete`
-  - [ ] 9.2 Implementasikan `memory-lancedb` dengan vector similarity search
-  - [ ] 9.3 Implementasikan `memory-wiki` untuk structured/full-text retrieval
-  - [ ] 9.4 Implementasikan `active-memory` untuk working memory sesi aktif
-  - [ ] 9.5 Tambahkan fallback ke `memory-core` saat backend opsional tidak tersedia
+- [x] 9. Add Advanced Memory Backends
+  - [x] 9.1 Definisikan interface `Memory_Backend` yang konsisten untuk `store`, `retrieve`, `search`, dan `delete`
+  - [x] 9.2 Implementasikan `memory-lancedb` dengan vector similarity search
+  - [x] 9.3 Implementasikan `memory-wiki` untuk structured/full-text retrieval
+  - [x] 9.4 Implementasikan `active-memory` untuk working memory sesi aktif
+  - [x] 9.5 Tambahkan fallback ke `memory-core` saat backend opsional tidak tersedia
 
-- [ ] 10. Build Speech and Voice Core
-  - [ ] 10.1 Definisikan `Speech_Core` abstraction untuk STT dan TTS
-  - [ ] 10.2 Implementasikan backend STT `deepgram`
-  - [ ] 10.3 Implementasikan backend TTS `tts-local-cli`
-  - [ ] 10.4 Tambahkan normalized errors dan non-persistent audio handling
-  - [ ] 10.5 Pastikan consumer seperti `apps/swabble/` dapat tukar backend tanpa perubahan logic
+- [x] 10. Build Speech and Voice Core
+  - [x] 10.1 Definisikan `Speech_Core` abstraction untuk STT dan TTS
+  - [x] 10.2 Implementasikan backend STT `deepgram`
+  - [x] 10.3 Implementasikan backend TTS `tts-local-cli`
+  - [x] 10.4 Tambahkan normalized errors dan non-persistent audio handling
+  - [x] 10.5 Pastikan consumer seperti `apps/swabble/` dapat tukar backend tanpa perubahan logic
 
-- [ ] 11. Build Image and Video Generation Core
-  - [ ] 11.1 Definisikan `Image_Generation_Core` untuk prompt-to-image
-  - [ ] 11.2 Definisikan `Video_Generation_Core` untuk prompt/image-to-video
-  - [ ] 11.3 Tambahkan konfigurasi `model`, ukuran/resolusi, format, dan timeout
-  - [ ] 11.4 Tambahkan normalized error path untuk backend unavailable atau quota exhausted
-  - [ ] 11.5 Siapkan pluggable interface agar provider low-priority bisa langsung menempel nanti
+- [x] 11. Build Image and Video Generation Core
+  - [x] 11.1 Definisikan `Image_Generation_Core` untuk prompt-to-image
+  - [x] 11.2 Definisikan `Video_Generation_Core` untuk prompt/image-to-video
+  - [x] 11.3 Tambahkan konfigurasi `model`, ukuran/resolusi, format, dan timeout
+  - [x] 11.4 Tambahkan normalized error path untuk backend unavailable atau quota exhausted
+  - [x] 11.5 Siapkan pluggable interface agar provider low-priority bisa langsung menempel nanti
 
-- [ ] 12. Add Search and Web Tools
-  - [ ] 12.1 Definisikan `Search_Tool` contract dan `SearchResult` normalized shape
-  - [ ] 12.2 Implementasikan tool `brave`, `duckduckgo`, `exa`, dan `tavily`
-  - [ ] 12.3 Implementasikan tool `web-readability` untuk ekstraksi konten readable dari URL
-  - [ ] 12.4 Tambahkan config handling untuk provider yang butuh API keys
-  - [ ] 12.5 Tambahkan descriptive error handling tanpa crash atau `undefined` returns
+- [x] 12. Add Search and Web Tools
+  - [x] 12.1 Definisikan `Search_Tool` contract dan `SearchResult` normalized shape
+  - [x] 12.2 Implementasikan tool `brave`, `duckduckgo`, `exa`, dan `tavily`
+  - [x] 12.3 Implementasikan tool `web-readability` untuk ekstraksi konten readable dari URL
+  - [x] 12.4 Tambahkan config handling untuk provider yang butuh API keys
+  - [x] 12.5 Tambahkan descriptive error handling tanpa crash atau `undefined` returns
 
-- [ ] 13. Add Tool Plugins
-  - [ ] 13.1 Definisikan `Extension_Contract` yang dipakai tool plugins medium priority
-  - [ ] 13.2 Implementasikan `canvas`, `document-extract`, `diffs`, `oc-path`, `llm-task`, dan `lobster`
-  - [ ] 13.3 Tambahkan path validation untuk semua plugin yang menerima file path
-  - [ ] 13.4 Tambahkan normalized error output tanpa internal stack trace leakage
+- [/] 13. Add Tool Plugins
+  - [x] 13.1 Definisikan `Extension_Contract` yang dipakai tool plugins medium priority
+  - [/] 13.2 Implementasikan `canvas`, `document-extract`, `diffs`, `oc-path`, `llm-task`, dan `lobster`
+  - [x] 13.3 Tambahkan path validation untuk semua plugin yang menerima file path
+  - [x] 13.4 Tambahkan normalized error output tanpa internal stack trace leakage
   - [ ] 13.5 Integrasikan registry/loading mechanism untuk plugins ini di runtime app
 
-- [ ] 14. Add Diagnostics and Observability
+- [/] 14. Add Diagnostics and Observability
   - [ ] 14.1 Implementasikan backend `diagnostics-otel`
-  - [ ] 14.2 Implementasikan backend `diagnostics-prometheus` dengan endpoint `/metrics`
-  - [ ] 14.3 Tambahkan spans/traces untuk handoff, approval, provider call, dan message routing
-  - [ ] 14.4 Tambahkan metrics minimum: request count, error rate, LLM latency, dan message throughput
-  - [ ] 14.5 Pastikan observability best-effort dan tidak pernah mengekspos secret values
+  - [x] 14.2 Implementasikan backend `diagnostics-prometheus` dengan endpoint `/metrics`
+  - [x] 14.3 Tambahkan spans/traces untuk handoff, approval, provider call, dan message routing
+  - [x] 14.4 Tambahkan metrics minimum: request count, error rate, LLM latency, dan message throughput
+  - [x] 14.5 Pastikan observability best-effort dan tidak pernah mengekspos secret values
 
 - [ ] 15. Add Infrastructure Extensions
   - [ ] 15.1 Implementasikan `bonjour` untuk local runtime discovery via mDNS

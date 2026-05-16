@@ -209,8 +209,8 @@ export class OperatorApiServer {
     }
   }
 
-  start(options?: OperatorApiListenOptions): Bun.Server<undefined> {
-    return Bun.serve<undefined, never>({
+  start(options?: OperatorApiListenOptions): Bun.Server {
+    return Bun.serve({
       ...options,
       fetch: (request: Request) => this.fetch(request),
     })

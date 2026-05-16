@@ -1,0 +1,29 @@
+{
+  "name": "sample-matrix",
+  "command": [
+    "node",
+    "qa/fixtures/matrix-scenario.mjs"
+  ],
+  "cwd": "..",
+  "baseEnv": {
+    "QA_MATRIX_MODE": "sample"
+  },
+  "envMap": {
+    "provider": "QA_PROVIDER",
+    "model": "QA_MODEL",
+    "temperature": "QA_TEMPERATURE"
+  },
+  "dimensions": {
+    "provider": [
+      "stub-openai",
+      "stub-local"
+    ],
+    "model": [
+      "gpt-4.1-mini",
+      "gpt-4.1-nano"
+    ],
+    "temperature": [
+      "0"
+    ]
+  }
+}

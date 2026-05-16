@@ -1,0 +1,16 @@
+#!/usr/bin/env sh
+# pre-push hook — runs unit tests before pushing.
+# Bypass: git push --no-verify
+
+set -e
+
+echo "⟳  pre-push: running tests (bun test)..."
+
+if ! bun test; then
+  echo ""
+  echo "✖  pre-push: tests failed. Fix failing tests before pushing."
+  echo "   To bypass (emergency only): git push --no-verify"
+  exit 1
+fi
+
+echo "✔  pre-push: all tests passed."

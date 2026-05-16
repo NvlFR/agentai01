@@ -32,6 +32,7 @@ node_modules/
 .turbo/
 .next/
 dist/
+src/runtime-app/ui/dist/
 build/
 coverage/
 *.tsbuildinfo
@@ -127,3 +128,4 @@ extract-sources.js
 .opengrep-out/
 .venv-semgrep/
 AI-WORKFLOW.md
+PROMPTING.no-acces.md

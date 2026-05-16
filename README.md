@@ -151,7 +151,7 @@ APP_PORT=3310
 OPERATOR_TOKEN=dev-owner-token
 AI_BASE_URL=http://127.0.0.1:8045/v1
 AI_API_KEY=sk-local-demo
-AI_MODEL=gpt-4.1-mini
+AI_MODEL=gemini-3-flash
 AI_TIMEOUT_MS=30000
 STORAGE_ARTIFACTS_ROOT=runtime/artifacts
 ```

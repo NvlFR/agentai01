@@ -90,17 +90,40 @@ Telegraph style. Root rules only. Baca scoped `AGENTS.md` sebelum kerja di subtr
 - UI harus mask `AI_API_KEY`; jangan tampilkan raw secret ke operator.
 - Lihat `SECURITY.md` untuk full security policy.
 
-## Telegram Bot
+## Aturan Global (berlaku untuk SEMUA task)
 
-- Bot hanya merespons chat ID yang ada di `ID_CHAT` (comma-separated).
-- Pesan biasa (non-command) diteruskan ke AI provider — butuh provider aktif.
-- Command `/directive` menjalankan aksi runtime nyata; aksi destruktif butuh konfirmasi.
-- Mode `semi` hanya jalankan aksi aman: audit, check/test/smoke, self-heal operasional terbatas.
-- Jangan klaim deployment/provisioning/aktivasi terjadi kalau belum dieksekusi via directive.
+**Larangan keras di setiap task:**
+- Dilarang menghasilkan file yang hanya berisi `export type {}` atau type definitions tanpa runtime code
+- Dilarang menggunakan `throw new Error('not implemented')` sebagai implementasi final
+- Dilarang menggunakan `() => {}` sebagai body function yang seharusnya punya behavior
+- Dilarang meninggalkan `// TODO` di production code path — catat di `TODO.md` root jika benar-benar blocked
+- Dilarang menggunakan `any`; gunakan real types, `unknown`, atau narrow adapter
+- Dilarang import relatif tanpa suffix `.js` pada TypeScript ESM
+- Dilarang copy platform-specific OpenClaw code (iOS, macOS native, browser extension, product-specific glue)
+- Dilarang commit jika `npm run check` masih error
+- Dilarang commit jika `bun test` masih failing untuk file yang disentuh
 
+**Verifikasi wajib di setiap task:**
+1. `npm run check` — zero TypeScript errors
+2. `bun test <file>.test.ts` — semua test pass
+3. **AI smoke test** — jalankan `npm run runtime:smoke` dan pastikan output tidak ada error baru yang disebabkan oleh perubahan task ini. Smoke test memanggil AI provider nyata via `AI_BASE_URL` + `AI_API_KEY`.
+
+**Test dan boundary rules:**
+- External boundary wajib pakai Zod atau schema helper yang sudah ada.
+- Module parse/serialize wajib punya round-trip behavior test.
+- Time-dependent behavior wajib pakai injected `now`, bukan `Date.now()` langsung di test.
+- Timer, env, globals, mocks, dan temp dirs wajib dibersihkan.
+- Filesystem test wajib pakai `createTempDirectory()` setelah tersedia.
+- Index barrel hanya re-export; implementasi tetap di sub-file.
+
+**Format bukti selesai:**
+Setiap task dianggap selesai hanya jika ada bukti nyata:
+- Output `npm run check` clean
+- Output `bun test` semua pass
+- Output `npm run runtime:smoke` tidak ada regression
 ## Provider
 
 - Provider untuk saat ini development pake OpenAI-compatible (base URL + API key + model).
-- Default: `AI_BASE_URL=http://127.0.0.1:8045/v1`, `AI_MODEL=gpt-4.1-mini`.
+- Default: `AI_BASE_URL=http://127.0.0.1:8045/v1`, `AI_MODEL=gemini-3-flash`.
 - `AI_API_KEY` wajib ada agar `/ready` menjadi ready.
 - Timeout default: 30 detik (`AI_TIMEOUT_MS`).

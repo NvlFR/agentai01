@@ -1,8 +1,17 @@
 import { describe, expect, it } from 'bun:test'
 
-import { redactLogContext, redactLogMessage } from './index.js'
+import { REDACT_PATTERNS, redactLogContext, redactLogMessage, redactSecrets } from './redaction.js'
 
 describe('logging redaction safety', () => {
+  it('exposes redact patterns and redacts bearer tokens in freeform text', () => {
+    expect(REDACT_PATTERNS.length).toBeGreaterThan(0)
+    expect(redactSecrets('Bearer sk-abc123')).toBe('Bearer [REDACTED]')
+  })
+
+  it('redacts JSON secret fields without breaking the string shape', () => {
+    expect(redactSecrets('{"api_key":"secret"}')).toBe('{"api_key":"[REDACTED]"}')
+  })
+
   it('redacts sk- secrets without leaking the original value', () => {
     const secret = 'sk-live-super-secret-token'
     const output = redactLogMessage(`provider failed with ${secret}`)
