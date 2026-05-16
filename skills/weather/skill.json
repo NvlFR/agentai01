@@ -1,0 +1,63 @@
+{
+  "name": "weather",
+  "version": "1.0.0",
+  "description": "Fetch current weather or forecasts from wttr.in without secrets.",
+  "deterministic": false,
+  "implementation": "./index.mjs",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "location": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 120,
+        "pattern": "^[^\\r\\n?#]+$"
+      },
+      "format": {
+        "type": "string",
+        "enum": ["brief", "current", "forecast", "json"]
+      },
+      "unitSystem": {
+        "type": "string",
+        "enum": ["metric", "us"]
+      },
+      "timeoutMs": {
+        "type": "integer",
+        "minimum": 1000,
+        "maximum": 30000
+      }
+    },
+    "required": ["location"],
+    "additionalProperties": false
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "location": {
+        "type": "string",
+        "minLength": 1
+      },
+      "format": {
+        "type": "string",
+        "enum": ["brief", "current", "forecast", "json"]
+      },
+      "unitSystem": {
+        "type": "string",
+        "enum": ["metric", "us"]
+      },
+      "sourceUrl": {
+        "type": "string",
+        "minLength": 1
+      },
+      "text": {
+        "type": "string",
+        "minLength": 1
+      },
+      "data": {
+        "type": "object"
+      }
+    },
+    "required": ["location", "format", "unitSystem", "sourceUrl", "text"],
+    "additionalProperties": false
+  }
+}

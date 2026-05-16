@@ -96,6 +96,7 @@ export function validateWebhookSignature(
  */
 export function parseInboundWebhook(payload: unknown): WhatsAppInboundMessage[] {
   const messages: WhatsAppInboundMessage[] = []
+  if (typeof payload !== 'object' || payload === null) return messages
 
   const entry = (payload as {
     entry?: Array<{
