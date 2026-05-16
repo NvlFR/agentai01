@@ -203,7 +203,7 @@ src/security/index.ts           — re-exports only
 1. `npm run check` clean
 2. `bun test src/security/`
 3. `npm run runtime:smoke` clean
-
+4. `validasi dengan smoke custom`
 ---
 
 ### Task 1.6 — Pecah `src/secrets/` ke Sub-Files
@@ -228,6 +228,8 @@ src/secrets/index.ts      — re-exports only
 1. `npm run check` clean
 2. `bun test src/secrets/`
 3. `npm run runtime:smoke` clean
+4. `validasi dengan smoke custom`
+
 
 ---
 
@@ -253,6 +255,8 @@ src/config/index.ts      — re-exports only (runtime-app-bridge.ts tetap ada)
 1. `npm run check` clean
 2. `bun test src/config/`
 3. `npm run runtime:smoke` clean
+4. `validasi dengan smoke custom`
+
 
 ---
 
@@ -291,6 +295,7 @@ src/provider-runtime/index.ts          — re-exports only
 1. `npm run check` clean
 2. `bun test src/provider-runtime/` — termasuk test circuit breaker open/half-open/closed cycle
 3. **AI smoke test:** `npm run runtime:smoke` — smoke test memanggil provider nyata, pastikan retry dan timeout bekerja dengan `AI_BASE_URL` yang dikonfigurasi
+4. `validasi dengan smoke custom`
 
 ---
 
@@ -318,6 +323,7 @@ src/channels/index.ts        — re-exports only
 1. `npm run check` clean
 2. `bun test src/channels/`
 3. `npm run runtime:smoke` clean
+4. `validasi dengan smoke custom`
 
 ---
 
@@ -345,6 +351,7 @@ src/sessions/index.ts       — re-exports only
 1. `npm run check` clean
 2. `bun test src/sessions/` — termasuk test full lifecycle: create → active → close
 3. `npm run runtime:smoke` clean
+4. `validasi dengan smoke custom`
 
 ---
 
@@ -373,6 +380,7 @@ src/memory/index.ts    — re-exports only
 1. `npm run check` clean
 2. `bun test src/memory/` — gunakan `createTempDirectory()` dari `src/infra/temp.ts`, dispose di `afterEach`
 3. `npm run runtime:smoke` clean
+4. `validasi dengan smoke custom`
 
 ---
 
@@ -400,6 +408,7 @@ src/context-engine/index.ts    — re-exports only
 1. `npm run check` clean
 2. `bun test src/context-engine/`
 3. **AI smoke test:** `npm run runtime:smoke` — context engine dipakai saat agent memproses pesan, pastikan tidak ada regression
+4. `validasi dengan smoke custom`
 
 ---
 
@@ -470,6 +479,7 @@ index.ts   — re-exports only
 1. `npm run check` clean
 2. `bun test src/tools/ src/hooks/ src/flows/ src/tasks/ src/routing/ src/plugin-state/`
 3. `npm run runtime:smoke` clean
+4. `validasi dengan smoke custom`
 
 ---
 
@@ -508,6 +518,8 @@ src/plugin-sdk/index.ts        — re-export semua public sub-module, tidak ada 
 2. `bun test src/plugin-sdk/types.test.ts src/plugin-sdk/plugin-entry.test.ts`
 3. `bun test src/plugin-sdk/`
 4. `npm run runtime:smoke` clean
+5. `validasi dengan smoke custom`
+
 
 ---
 
@@ -534,6 +546,8 @@ src/plugin-sdk/channel-core.ts — createChatChannelPlugin, createChannelPluginB
 1. `npm run check` clean
 2. `bun test src/plugin-sdk/channel-core.test.ts`
 3. `npm run runtime:smoke` clean
+4. `validasi dengan smoke custom`
+
 
 ---
 
@@ -562,6 +576,7 @@ src/plugin-sdk/session-route.ts      — buildChannelOutboundSessionRoute, build
 1. `npm run check` clean
 2. `bun test src/plugin-sdk/keyed-async-queue.test.ts src/plugin-sdk/approval-renderers.test.ts src/plugin-sdk/session-route.test.ts`
 3. `npm run runtime:smoke` clean
+4. `validasi dengan smoke custom`
 
 ---
 
@@ -589,6 +604,7 @@ src/plugin-sdk/channel-config-helpers.ts  — clear/delete/set/apply/migrate acc
 1. `npm run check` clean
 2. `bun test src/plugin-sdk/provider-entry.test.ts src/plugin-sdk/memory-core.test.ts src/plugin-sdk/config-schema.test.ts src/plugin-sdk/channel-config-helpers.test.ts`
 3. `npm run runtime:smoke` clean
+4. `validasi dengan smoke custom`
 
 ---
 
@@ -628,6 +644,7 @@ src/plugin-sdk/tailscale.ts          — resolveTailnetHostWithRunner
 1. `npm run check` clean
 2. `bun test src/plugin-sdk/secure-random.test.ts src/plugin-sdk/lazy-value.test.ts src/plugin-sdk/gateway-utils.test.ts src/plugin-sdk/secret-file.test.ts src/plugin-sdk/subsystem-logger.test.ts src/plugin-sdk/acp-binding.test.ts src/plugin-sdk/pairing-helpers.test.ts src/plugin-sdk/action-gate.test.ts src/plugin-sdk/network-utils.test.ts src/plugin-sdk/runtime-handlers.test.ts src/plugin-sdk/backup-utils.test.ts src/plugin-sdk/tailscale.test.ts`
 3. `npm run runtime:smoke` clean
+4. `validasi dengan smoke custom`
 
 ---
 
@@ -656,6 +673,7 @@ src/plugin-sdk/hot-reload.ts — watchExtensions menggunakan chokidar
 2. `bun test src/plugin-sdk/registry.test.ts src/plugin-sdk/loader.test.ts src/plugin-sdk/hot-reload.test.ts`
 3. `bun test src/plugin-sdk/`
 4. `npm run runtime:smoke` clean
+5. `validasi dengan smoke custom`
 
 ---
 
@@ -694,6 +712,7 @@ src/channels/telegram/error-policy.ts
 1. `npm run check` clean
 2. `bun test src/channels/telegram/token.test.ts src/channels/telegram/fetch.test.ts src/channels/telegram/normalize.test.ts src/channels/telegram/update-offset-store.test.ts src/channels/telegram/polling-status.test.ts src/channels/telegram/error-policy.test.ts`
 3. `npm run runtime:smoke` clean
+5. `validasi dengan smoke custom`
 
 ---
 
@@ -725,6 +744,7 @@ src/channels/telegram/index.ts
 2. `bun test src/channels/telegram/draft-chunking.test.ts src/channels/telegram/draft-stream.test.ts src/channels/telegram/bot-updates.test.ts src/channels/telegram/send.test.ts`
 3. `bun test src/channels/telegram/`
 4. `npm run runtime:smoke` clean
+5. `validasi dengan smoke custom`
 
 ---
 
@@ -758,6 +778,7 @@ src/channels/whatsapp/inbound/dedupe.ts
 1. `npm run check` clean
 2. `bun test src/channels/whatsapp/normalize-target.test.ts src/channels/whatsapp/socket-timing.test.ts src/channels/whatsapp/reconnect.test.ts src/channels/whatsapp/group-session-key.test.ts src/channels/whatsapp/inbound/extract.test.ts src/channels/whatsapp/inbound/access-control.test.ts src/channels/whatsapp/inbound/dedupe.test.ts`
 3. `npm run runtime:smoke` clean
+4. `validasi dengan smoke custom`
 
 ---
 
@@ -792,6 +813,7 @@ src/channels/whatsapp/index.ts
 2. `bun test src/channels/whatsapp/send.test.ts src/channels/whatsapp/auth-store.test.ts src/channels/whatsapp/connection-controller.test.ts src/channels/whatsapp/auto-reply/monitor-state.test.ts src/channels/whatsapp/auto-reply/monitor/process-message.test.ts`
 3. `bun test src/channels/whatsapp/`
 4. `npm run runtime:smoke` clean
+5. `validasi dengan smoke custom`
 
 ---
 
@@ -825,6 +847,7 @@ src/web-fetch/index.ts              — re-exports only
 1. `npm run check` clean
 2. `bun test src/web-fetch/`
 3. `npm run runtime:smoke` clean
+4. `validasi dengan smoke custom`
 
 ---
 
@@ -854,6 +877,7 @@ src/web-search/index.ts
 1. `npm run check` clean
 2. `bun test src/web-search/`
 3. `npm run runtime:smoke` clean
+4. `validasi dengan smoke custom`
 
 ---
 
@@ -884,6 +908,7 @@ src/runtime-app/memory/lancedb/lancedbMemoryBackend.ts — createEmbeddingFuncti
 1. `npm run check` clean
 2. `bun test src/runtime-app/memory/lancedb/`
 3. `npm run runtime:smoke` clean
+4. `validasi dengan smoke custom`
 
 ---
 
@@ -912,6 +937,7 @@ src/runtime-app/speech/index.ts
 1. `npm run check` clean
 2. `bun test src/runtime-app/speech/`
 3. `npm run runtime:smoke` clean
+4. `validasi dengan smoke custom`
 
 ---
 
@@ -940,6 +966,7 @@ src/runtime-app/generation/index.ts
 1. `npm run check` clean
 2. `bun test src/runtime-app/generation/`
 3. `npm run runtime:smoke` clean
+4. `validasi dengan smoke custom`
 
 ---
 
@@ -967,6 +994,7 @@ src/runtime-app/diagnostics/index.ts
 1. `npm run check` clean
 2. `bun test src/runtime-app/diagnostics/`
 3. `npm run runtime:smoke` clean
+4. `validasi dengan smoke custom`
 
 ---
 
@@ -998,6 +1026,7 @@ skills/summarize/SKILL.md
 1. `npm run check` clean
 2. `bun test` clean
 3. `npm run runtime:smoke` clean
+4. `validasi dengan smoke custom`
 
 ---
 
