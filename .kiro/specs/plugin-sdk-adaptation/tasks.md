@@ -384,7 +384,7 @@ src/memory/index.ts    — re-exports only
 
 ---
 
-### Task 2.5 — Pecah `src/context-engine/` ke Sub-Files
+### Task 2.5 [x] — Pecah `src/context-engine/` ke Sub-Files
 
 **Requirements:** Req 15, 73
 

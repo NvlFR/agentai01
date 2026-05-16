@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'bun:test'
-import { buildContextBatch, scoreContextItem, type ContextItem } from './index.js'
+import { buildContextBatch, type ContextItem } from './batch.js'
 
-describe('context-engine', () => {
-  it('prioritizes attributable context within the available window', async () => {
+describe('buildContextBatch', () => {
+  it('prioritizes matching items within the available window', async () => {
     const items: ContextItem[] = [
       {
         id: 'low',
@@ -39,10 +39,8 @@ describe('context-engine', () => {
     )
 
     expect(batch.included.map(item => item.id)).toEqual(['critical'])
+    expect(batch.compressed).toHaveLength(0)
     expect(batch.omitted.map(item => item.id)).toEqual(['low'])
-    expect(scoreContextItem(items[1] ?? items[0], new Date('2026-05-16T00:00:00.000Z'))).toBeGreaterThan(
-      scoreContextItem(items[0], new Date('2026-05-16T00:00:00.000Z')),
-    )
   })
 
   it('uses compression hook for overflow when budget remains', async () => {
