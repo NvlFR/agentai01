@@ -115,4 +115,4 @@
   - [x] 17.2 Migrasikan helper/helper runtime-app yang sudah cocok ke modul `src/` baru secara bertahap
   - [x] 17.3 Jalankan `npm run check` setelah batch yang disentuh stabil
   - [~] 17.4 Jalankan `bun test` untuk memastikan seluruh modul adaptasi dan regresi existing tetap hijau
-  - [~] 17.5 Jalankan `npm run runtime:smoke` bila batch yang disentuh memengaruhi provider, bootstrap, process lifecycle, atau communication paths
+  - [x] 17.5 Jalankan `npm run runtime:smoke` bila batch yang disentuh memengaruhi provider, bootstrap, process lifecycle, atau communication paths

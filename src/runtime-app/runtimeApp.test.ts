@@ -1,34 +1,90 @@
 import { afterEach, describe, expect, test } from 'bun:test'
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+
 import { RuntimeAppState } from './state.js'
 import { startRuntimeAppServer } from './server.js'
 import type { RuntimeAppConfig } from './config.js'
 
 const servers: Array<ReturnType<typeof startRuntimeAppServer>> = []
+const tempDirs: string[] = []
 
-afterEach(() => {
+afterEach(async () => {
   while (servers.length > 0) {
     servers.pop()?.stop(true)
+  }
+  while (tempDirs.length > 0) {
+    const tempDir = tempDirs.pop()
+    if (tempDir !== undefined) {
+      await rm(tempDir, { recursive: true, force: true })
+    }
   }
 })
 
 describe('Runtime app operator server', () => {
-  test('serves health, readiness, and html shell', async () => {
+  test('serves health, readiness, and built operator UI', async () => {
+    const staticDir = await createBuiltStaticDir()
     const state = new RuntimeAppState(createConfig())
-    const server = startRuntimeAppServer(state)
+    const server = startRuntimeAppServer(state, { staticDir })
     servers.push(server)
 
     const baseUrl = `http://${server.hostname}:${server.port}`
     const health = await fetch(`${baseUrl}/health`).then(response => response.json())
     const readyResponse = await fetch(`${baseUrl}/ready`)
     const ready = await readyResponse.json()
-    const html = await fetch(`${baseUrl}/`).then(response => response.text())
+    const uiResponse = await fetch(`${baseUrl}/`)
+    const html = await uiResponse.text()
 
     expect(health.data.ok).toBe(true)
     expect(readyResponse.status).toBe(200)
     expect(ready.data.readiness.ready).toBe(true)
-    expect(html).toContain('AgentAI 01')
-    expect(html).toContain('Dashboard')
-    expect(html).toContain('Approvals')
+    expect(uiResponse.headers.get('content-type')).toBe('text/html; charset=utf-8')
+    expect(html).toContain('AgentAI 01 Built UI')
+  })
+
+  test('serves static assets and falls back to index for SPA routes without changing API misses', async () => {
+    const staticDir = await createBuiltStaticDir()
+    const state = new RuntimeAppState(createConfig())
+    const server = startRuntimeAppServer(state, { staticDir })
+    servers.push(server)
+
+    const baseUrl = `http://${server.hostname}:${server.port}`
+    const jsResponse = await fetch(`${baseUrl}/assets/app.js`)
+    const cssResponse = await fetch(`${baseUrl}/assets/app.css`)
+    const fallbackResponse = await fetch(`${baseUrl}/projects/alpha`)
+    const missingApiResponse = await fetch(`${baseUrl}/api/not-found`)
+
+    expect(jsResponse.status).toBe(200)
+    expect(jsResponse.headers.get('content-type')).toBe('application/javascript; charset=utf-8')
+    expect(await jsResponse.text()).toContain('operator-ui')
+
+    expect(cssResponse.status).toBe(200)
+    expect(cssResponse.headers.get('content-type')).toBe('text/css; charset=utf-8')
+    expect(await cssResponse.text()).toContain('color')
+
+    expect(fallbackResponse.status).toBe(200)
+    expect(fallbackResponse.headers.get('content-type')).toBe('text/html; charset=utf-8')
+    expect(await fallbackResponse.text()).toContain('AgentAI 01 Built UI')
+
+    expect(missingApiResponse.status).toBe(404)
+    expect(missingApiResponse.headers.get('content-type')).toBe('application/json; charset=utf-8')
+    expect(await missingApiResponse.json()).toMatchObject({ ok: false, message: 'Route not found: /api/not-found' })
+  })
+
+  test('returns build instructions when operator UI dist index is missing', async () => {
+    const staticDir = await createEmptyStaticDir()
+    const state = new RuntimeAppState(createConfig())
+    const server = startRuntimeAppServer(state, { staticDir })
+    servers.push(server)
+
+    const baseUrl = `http://${server.hostname}:${server.port}`
+    const response = await fetch(`${baseUrl}/`)
+    const body = await response.text()
+
+    expect(response.status).toBe(503)
+    expect(response.headers.get('content-type')).toBe('text/html; charset=utf-8')
+    expect(body).toContain('npm run ui:build')
   })
 
   test('requires confirmation for risky operator actions and mutates state after confirmation', async () => {
@@ -177,4 +233,23 @@ function createConfig(): RuntimeAppConfig {
       checklist: ['test readiness'],
     },
   }
+}
+
+async function createEmptyStaticDir(): Promise<string> {
+  const tempDir = await mkdtemp(join(tmpdir(), 'agentai-runtime-ui-'))
+  tempDirs.push(tempDir)
+  return tempDir
+}
+
+async function createBuiltStaticDir(): Promise<string> {
+  const tempDir = await createEmptyStaticDir()
+  await mkdir(join(tempDir, 'assets'))
+  await writeFile(
+    join(tempDir, 'index.html'),
+    '<!doctype html><html><head><title>AgentAI 01 Built UI</title><script type="module" src="./assets/app.js"></script><link rel="stylesheet" href="./assets/app.css"></head><body><agent-runtime-shell></agent-runtime-shell></body></html>',
+    'utf8',
+  )
+  await writeFile(join(tempDir, 'assets', 'app.js'), 'console.log("operator-ui")', 'utf8')
+  await writeFile(join(tempDir, 'assets', 'app.css'), 'body { color: white; }', 'utf8')
+  return tempDir
 }

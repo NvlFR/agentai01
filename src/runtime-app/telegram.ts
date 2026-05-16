@@ -16,6 +16,7 @@ export type TelegramUpdate = {
   update_id: number
   message?: {
     message_id: number
+    message_thread_id?: number
     date: number
     text?: string
     chat: {
@@ -27,6 +28,7 @@ export type TelegramUpdate = {
       is_bot: boolean
       username?: string
       first_name?: string
+      last_name?: string
     }
   }
 }

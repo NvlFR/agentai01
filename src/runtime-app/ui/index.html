@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en" data-theme-mode="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark light" />
+    <title>AgentAI 01 Operator</title>
+    <script>
+      (() => {
+        const key = 'agentai01.operator.settings.v1'
+        const fallback = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+        try {
+          const saved = JSON.parse(localStorage.getItem(key) || '{}')
+          const mode = saved.themeMode === 'dark' || saved.themeMode === 'light' ? saved.themeMode : fallback
+          document.documentElement.dataset.themeMode = mode
+        } catch {
+          document.documentElement.dataset.themeMode = fallback
+        }
+      })()
+    </script>
+  </head>
+  <body>
+    <agent-runtime-shell></agent-runtime-shell>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

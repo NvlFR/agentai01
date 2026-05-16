@@ -7,8 +7,15 @@ import {
   createOpenAICompatibleProvider,
   type ProviderMessage,
 } from './providers/openaiCompatibleProvider.js'
+import { buildOperatorRuntimePrompt } from './prompt/promptPlumbing.js'
 import { RuntimeAppState } from './state.js'
 import { TelegramBotClient, type TelegramUpdate } from './telegram.js'
+import {
+  loadTelegramChannelConfig,
+  resolveTelegramTurnContext,
+  type TelegramChannelConfig,
+  type TelegramTurnContext,
+} from './telegramChannel.js'
 
 type ChatSession = {
   messages: ProviderMessage[]
@@ -57,6 +64,7 @@ export async function startTelegramBot(): Promise<void> {
     retryLimit: appConfig.ai.retryLimit,
   })
   const allowedChatIds = new Set(appConfig.allowedChatIds)
+  const channelConfig = loadTelegramChannelConfig()
   const sessions = new Map<string, ChatSession>()
   const automationState: { mode: AutomationMode } = {
     mode: 'semi',
@@ -83,6 +91,7 @@ export async function startTelegramBot(): Promise<void> {
           client,
           provider,
           allowedChatIds,
+          channelConfig,
           sessions,
           automationState,
           logger: logger.child({
@@ -106,6 +115,7 @@ async function handleUpdate(
     client: TelegramBotClient
     provider: ReturnType<typeof createOpenAICompatibleProvider>
     allowedChatIds: Set<string>
+    channelConfig: TelegramChannelConfig
     sessions: Map<string, ChatSession>
     automationState: { mode: AutomationMode }
     logger: Logger
@@ -121,9 +131,20 @@ async function handleUpdate(
     return
   }
 
+  const turnContext = resolveTelegramTurnContext({
+    update,
+    config: context.channelConfig,
+  })
+  if (!turnContext || !turnContext.allowed) {
+    return
+  }
+
   const command = parseTelegramCommand(message.text)
   context.logger.debug('Telegram update accepted.', {
     chat_id: chatId,
+    session_key: turnContext.sessionKey,
+    agent_id: turnContext.agentId,
+    thread_id: turnContext.threadId,
     command_kind: command.kind,
   })
   const progressReply = buildProgressReply(command, context.state)
@@ -136,7 +157,7 @@ async function handleUpdate(
   }
 
   const startedAt = Date.now()
-  const replies = await executeTelegramCommand(chatId, command, context)
+  const replies = await executeTelegramCommand(turnContext, command, context)
   const decoratedReplies = decorateProcessReplies(command, replies, startedAt)
   for (const reply of decoratedReplies) {
     const sourcedReply = attachReplySource(reply)
@@ -202,7 +223,7 @@ export function parseTelegramCommand(input: string): TelegramCommand {
 }
 
 async function executeTelegramCommand(
-  chatId: string,
+  turnContext: TelegramTurnContext,
   command: TelegramCommand,
   context: {
     state: RuntimeAppState
@@ -233,7 +254,7 @@ async function executeTelegramCommand(
         sourceLabel: 'Runtime lokal',
       }]
     case 'reset':
-      context.sessions.delete(chatId)
+      context.sessions.delete(turnContext.sessionKey)
       return [{
         text: '<b>Riwayat chat direset.</b>\nSilakan lanjut tanya dari nol.',
         parseMode: 'HTML',
@@ -299,14 +320,14 @@ async function executeTelegramCommand(
         return [directIntentReply]
       }
 
-      const session = context.sessions.get(chatId) ?? { messages: [] }
+      const session = context.sessions.get(turnContext.sessionKey) ?? { messages: [] }
       const snapshot = context.state.getSnapshot()
       try {
         const response = await context.provider.generateText({
           messages: [
             {
               role: 'system',
-              content: buildSystemPrompt(snapshot),
+              content: buildTelegramSystemPrompt(snapshot, turnContext),
             },
             ...session.messages,
             {
@@ -325,7 +346,7 @@ async function executeTelegramCommand(
           { role: 'user', content: command.input },
           { role: 'assistant', content: normalizedReply },
         ])
-        context.sessions.set(chatId, session)
+        context.sessions.set(turnContext.sessionKey, session)
 
         return [{ text: normalizedReply, sourceLabel: 'AI provider' }]
       } catch (error) {
@@ -578,27 +599,37 @@ function buildApprovalsText(snapshot: ReturnType<RuntimeAppState['getSnapshot']>
   ].join('\n')
 }
 
-function buildSystemPrompt(snapshot: ReturnType<RuntimeAppState['getSnapshot']>): string {
-  return [
-    'You are the AI Company Runtime assistant for Telegram.',
-    'Answer in Indonesian unless the user clearly asks otherwise.',
-    'Be concise, practical, and operations-oriented.',
-    'Do not use markdown syntax like **, #, backticks, or code fences.',
-    'Use clean plain text only.',
-    'Prefer short paragraphs and simple bullet points using "-".',
-    'If the user asks runtime status, use the provided snapshot.',
-    'For greetings or general questions, answer directly without redirecting to /directive.',
-    'Only mention /directive when the user explicitly wants you to execute a system change, modify files, run checks, or trigger an operational action.',
-    'Never claim that deployment, provisioning, file creation, background processing, or activation has happened unless it was actually executed through a directive in this runtime.',
-    'If the user asks status for a specific agent and it is not clearly present in the runtime snapshot, say that the agent is not found in the current runtime state.',
-    '',
-    `Runtime ID: ${snapshot.runtime.runtime_id}`,
-    `Shell status: ${snapshot.runtime.shell_status}`,
-    `Ready: ${snapshot.readiness.ready}`,
-    `Projects: ${snapshot.dashboard.pipeline.total_projects}`,
-    `Pending approvals: ${snapshot.dashboard.approvals.pending_count}`,
-    `Open issues: ${snapshot.dashboard.operational_issues.length}`,
-  ].join('\n')
+function buildTelegramSystemPrompt(
+  snapshot: ReturnType<RuntimeAppState['getSnapshot']>,
+  turnContext: TelegramTurnContext,
+): string {
+  return buildOperatorRuntimePrompt({
+    snapshot,
+    channel: 'telegram',
+    additions: [
+      {
+        id: 'Telegram Channel Context',
+        content: [
+          `Account ID: ${turnContext.accountId}`,
+          `Agent ID: ${turnContext.agentId}`,
+          `Chat ID: ${turnContext.chatId}`,
+          `Chat type: ${turnContext.chatType}`,
+          turnContext.threadId ? `Topic/thread ID: ${turnContext.threadId}` : '',
+          turnContext.senderName ? `Sender: ${turnContext.senderName}` : '',
+          turnContext.senderId ? `Sender ID: ${turnContext.senderId}` : '',
+        ].filter(Boolean).join('\n'),
+      },
+      turnContext.promptSettings.groupSystemPrompt
+        ? {
+            id: 'Telegram Group System Prompt',
+            content: turnContext.promptSettings.groupSystemPrompt,
+          }
+        : {
+            id: '',
+            content: '',
+          },
+    ],
+  })
 }
 
 function trimConversation(messages: ProviderMessage[]): ProviderMessage[] {

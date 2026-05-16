@@ -44,7 +44,7 @@ referensi/         # referensi OpenClaw (JANGAN EDIT)
 |----------|------------|
 | `AI_BASE_URL` | Base URL provider (default: `http://127.0.0.1:8045/v1`) |
 | `AI_API_KEY` | API key provider — wajib untuk `/ready` |
-| `AI_MODEL` | Model yang dipakai (default: `gpt-4.1-mini`) |
+| `AI_MODEL` | Model yang dipakai (default: `gemini-3-flash`) |
 | `OPERATOR_TOKEN` | Token operator untuk aksi mutasi |
 | `TOKEN_TELE` | Telegram bot token |
 | `ID_CHAT` | Allowed Telegram chat IDs (comma-separated) |

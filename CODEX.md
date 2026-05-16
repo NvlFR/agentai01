@@ -68,24 +68,42 @@ npm run runtime:scheduler    # scheduler loop
 - `OPERATOR_TOKEN`, `AI_API_KEY`, `TOKEN_TELE` harus dari env — tidak pernah hardcoded.
 - UI harus mask `AI_API_KEY`.
 - Lihat `SECURITY.md` untuk full policy.
+## Aturan Global (berlaku untuk SEMUA task)
+
+**Larangan keras di setiap task:**
+- Dilarang menghasilkan file yang hanya berisi `export type {}` atau type definitions tanpa runtime code
+- Dilarang menggunakan `throw new Error('not implemented')` sebagai implementasi final
+- Dilarang menggunakan `() => {}` sebagai body function yang seharusnya punya behavior
+- Dilarang meninggalkan `// TODO` di production code path — catat di `TODO.md` root jika benar-benar blocked
+- Dilarang menggunakan `any`; gunakan real types, `unknown`, atau narrow adapter
+- Dilarang import relatif tanpa suffix `.js` pada TypeScript ESM
+- Dilarang copy platform-specific OpenClaw code (iOS, macOS native, browser extension, product-specific glue)
+- Dilarang commit jika `npm run check` masih error
+- Dilarang commit jika `bun test` masih failing untuk file yang disentuh
+
+**Verifikasi wajib di setiap task:**
+1. `npm run check` — zero TypeScript errors
+2. `bun test <file>.test.ts` — semua test pass
+3. **AI smoke test** — jalankan `npm run runtime:smoke` dan pastikan output tidak ada error baru yang disebabkan oleh perubahan task ini. Smoke test memanggil AI provider nyata via `AI_BASE_URL` + `AI_API_KEY`.
+
+**Test dan boundary rules:**
+- External boundary wajib pakai Zod atau schema helper yang sudah ada.
+- Module parse/serialize wajib punya round-trip behavior test.
+- Time-dependent behavior wajib pakai injected `now`, bukan `Date.now()` langsung di test.
+- Timer, env, globals, mocks, dan temp dirs wajib dibersihkan.
+- Filesystem test wajib pakai `createTempDirectory()` setelah tersedia.
+- Index barrel hanya re-export; implementasi tetap di sub-file.
+
+**Format bukti selesai:**
+Setiap task dianggap selesai hanya jika ada bukti nyata:
+- Output `npm run check` clean
+- Output `bun test` semua pass
+- Output `npm run runtime:smoke` tidak ada regression
 
 ## Specs
 
 Semua specs ada di `.kiro/specs/`. Setiap spec punya `requirements.md`, `design.md`, dan `tasks.md`.
 **Baca `tasks.md` untuk daftar task yang perlu dikerjakan.**
-
-| Spec | Path |
-|------|------|
-| AI Company Agents (parent) | `.kiro/specs/ai-company-agents/tasks.md` |
-| AI Company Runtime Platform | `.kiro/specs/ai-company-runtime-platform/tasks.md` |
-| CEO Agent | `.kiro/specs/ceo-agent/tasks.md` |
-| Engineering Agent | `.kiro/specs/engineering-agent/tasks.md` |
-| Marketing Agent | `.kiro/specs/marketing-agent/tasks.md` |
-| Product Agent | `.kiro/specs/product-agent/tasks.md` |
-| Project Manager Agent | `.kiro/specs/project-manager-agent/tasks.md` |
-| Sales Agent | `.kiro/specs/sales-agent/tasks.md` |
-| Support Agent | `.kiro/specs/support-agent/tasks.md` |
-
 Konvensi task status di `tasks.md`:
 - `[x]` — selesai
 - `[ ]` — belum dikerjakan
@@ -96,6 +114,4 @@ Konvensi task status di `tasks.md`:
 - Full policy: `AGENTS.md`
 - Security: `SECURITY.md`
 - Vision: `VISION.md`
-- Roadmap adaptasi: `TODO.md`
-- Workflow AI tools: `AI-WORKFLOW.md`
 - Referensi OpenClaw: `referensi/openclaw/` (jangan edit)

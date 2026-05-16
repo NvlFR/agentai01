@@ -68,7 +68,7 @@ for (const patchFile of patchFiles) {
   } catch (err) {
     // --forward exits non-zero if already applied — that's OK (idempotent).
     const output = err instanceof Error && 'stdout' in err
-      ? String((err as NodeJS.ErrnoException & { stdout: unknown }).stdout)
+      ? String(err.stdout)
       : ''
     if (output.includes('Skipping patch') || output.includes('already applied')) {
       console.log(`–  apply-patches: already applied (skipped): ${patchFile}`)
