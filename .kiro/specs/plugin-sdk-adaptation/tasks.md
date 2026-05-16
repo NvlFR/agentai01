@@ -176,7 +176,7 @@ src/logging/index.ts       — re-exports only
 
 ---
 
-### Task 1.5 — Pecah `src/security/` ke Sub-Files
+### Task 1.5 [x] — Pecah `src/security/` ke Sub-Files
 
 **Requirements:** Req 7, 73
 
@@ -206,7 +206,7 @@ src/security/index.ts           — re-exports only
 4. `validasi dengan smoke custom`
 ---
 
-### Task 1.6 — Pecah `src/secrets/` ke Sub-Files
+### Task 1.6 [x] — Pecah `src/secrets/` ke Sub-Files
 
 **Requirements:** Req 8, 73
 
