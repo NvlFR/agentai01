@@ -106,7 +106,7 @@ src/infra/index.ts    — re-exports only
 
 ---
 
-### Task 1.3 — Pecah `src/utils/` ke Sub-Files dari Referensi
+### Task 1.3 [x] — Pecah `src/utils/` ke Sub-Files dari Referensi
 
 **Requirements:** Req 74, 73
 **Referensi:** `referensi/openclaw/src/utils/fetch-timeout.ts`, `mask-api-key.ts`, `timer-delay.ts`, `with-timeout.ts`, `queue-helpers.ts`, `run-with-concurrency.ts`, `parse-json-compat.ts`, `usage-format.ts`, `chunk-items.ts`
@@ -145,7 +145,7 @@ src/utils/index.ts                — re-exports only
 
 ---
 
-### Task 1.4 — Pecah `src/logging/` ke Sub-Files
+### Task 1.4 [x] — Pecah `src/logging/` ke Sub-Files
 
 **Requirements:** Req 6, 73
 
