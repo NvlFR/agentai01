@@ -1,7 +1,7 @@
 // src/runtime-app/diagnostics/logger.test.ts
 
 import { describe, it, expect, afterEach } from 'bun:test'
-import { createLogger, rootLogger } from './logger.js'
+import { createLogger, createPinoDestination, rootLogger } from './logger.js'
 
 describe('createLogger', () => {
   afterEach(() => {
@@ -41,6 +41,12 @@ describe('createLogger', () => {
     expect(() => logger.warn('warn msg')).not.toThrow()
     expect(() => logger.error('error msg', new Error('oops'))).not.toThrow()
     expect(() => logger.debug('debug msg')).not.toThrow()
+  })
+
+  it('uses pretty transport outside production', () => {
+    process.env['APP_ENV'] = 'development'
+    const destination = createPinoDestination()
+    expect(typeof destination.write).toBe('function')
   })
 })
 

@@ -1,4 +1,5 @@
 export * from './types.js'
 export * from './runtime.js'
 export * from './providers/tavily.js'
+export * from './providers/tavily-sdk.js'
 export * from './providers/duckduckgo.js'

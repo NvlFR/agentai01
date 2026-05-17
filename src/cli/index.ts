@@ -1,6 +1,8 @@
 import { err, ok, type Result } from '../shared/index.js'
 import { renderProgressBar } from '../terminal/index.js'
 
+export * from './operatorCli.js'
+
 export type ParsedArgs = {
   command: string[]
   options: Record<string, string | boolean>
