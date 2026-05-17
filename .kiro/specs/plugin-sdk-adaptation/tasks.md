@@ -971,7 +971,7 @@ src/runtime-app/generation/index.ts
 
 ---
 
-### Task 6.4 — Implementasi Runtime App Diagnostics Layer
+### Task 6.4 [x] — Implementasi Runtime App Diagnostics Layer
 
 **Requirements:** Req 79
 **Referensi:** logging dan health patterns dari `referensi/openclaw/src/utils/`
@@ -1005,7 +1005,7 @@ src/runtime-app/diagnostics/index.ts
 
 ---
 
-### Task 7.1 — Tambah Skills Web Search dan Summarize
+### Task 7.1 [x] — Tambah Skills Web Search dan Summarize
 
 **Requirements:** Req 81
 **Referensi:** `referensi/openclaw/skills/` dan existing `skills/*/SKILL.md`
