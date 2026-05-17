@@ -2,7 +2,7 @@
 
 ## Overview
 
-Dokumen ini mendeskripsikan arsitektur dan desain teknis untuk implementasi **Hierarchical Sub-Agent Infrastructure (Tree of Agents)** pada platform `agentai01`. Arsitektur ini mengubah paradigma dari agen tunggal monolitik menjadi struktur organisasi otonom berbasis departemen.
+Dokumen ini mendeskripsikan arsitektur dan desain teknis untuk implementasi **Hierarchical Sub-Agent Infrastructure (Tree of Agents)** pada platform `agentai01`. Arsitektur ini mengubah paradigma dari agen tunggal monolitik menjadi struktur organisasi otonom 4 tingkat (4-tier hierarchy) berbasis departemen.
 
 Semua rancangan mematuhi prinsip: **Pemisahan wewenang yang tegas, isolasi konteks memori lokal, dan spesialisasi alat bantu (MCP tools) yang presisi.**
 
@@ -12,9 +12,13 @@ Semua rancangan mematuhi prinsip: **Pemisahan wewenang yang tegas, isolasi konte
 
 ```text
 ┌───────────────────────────────────────────────────────────────────────────┐
-│              👑 CEO / OPERATOR (Human / AI Mission Control)               │
+│              👑 OWNER (Human Operator / Mission Control)                  │
 └─────────────────────────────────────┬─────────────────────────────────────┘
-                                      │ (OperatorEventBus)
+                                      │ (Strategic Directives & Approvals)
+┌─────────────────────────────────────▼─────────────────────────────────────┐
+│              👔 CEO AGENT (AI Agent Orchestrator / Leader)                │
+└─────────────────────────────────────┬─────────────────────────────────────┘
+                                      │ (OperatorEventBus / Dept Targets)
 ┌─────────────────────────────────────▼─────────────────────────────────────┐
 │                 📢 MARKETING AGENT (Department Head)                      │
 │                                     │                                     │
@@ -23,7 +27,7 @@ Semua rancangan mematuhi prinsip: **Pemisahan wewenang yang tegas, isolasi konte
 │     ▼                               ▼                               ▼     │
 │ ┌───────────────┐           ┌───────────────┐           ┌───────────────┐ │
 │ │  Lead Hunter  │ ──Baton──►│Content Analyst│ ──Baton──►│Content Creator│ │
-│ │     Agent     │           │     Agent     │           │     Agent     │ │
+│ │  Agent (AI)   │           │  Agent (AI)   │           │  Agent (AI)   │ │
 │ └───────────────┘           └───────────────┘           └───────────────┘ │
 │     │ (web_search)              │ (seo_trends)              │ (dalle/fal) │
 └─────┼───────────────────────────┼───────────────────────────┼─────────────┘
@@ -38,11 +42,11 @@ Semua rancangan mematuhi prinsip: **Pemisahan wewenang yang tegas, isolasi konte
 ## Komponen Arsitektur Utama
 
 ### 1. `SubAgentRegistry` & Ekstensi Metadata
-Struktur data agen akan diperluas dengan antarmuka TypeScript baru untuk mendukung hierarki pohon:
+Struktur data agen akan diperluas dengan antarmuka TypeScript baru untuk mendukung hierarki pohon 4 tingkat:
 
 ```typescript
 export interface AgentHierarchyConfig {
-  roleType: 'head' | 'specialist';
+  roleType: 'ceo' | 'head' | 'specialist';
   parentAgentId?: string;
   subAgentIds: string[];
   departmentName: string;
@@ -55,11 +59,12 @@ Untuk mencegah kebocoran informasi dan *spam* pada bus peristiwa utama perusahaa
 
 ### 3. Protokol `Baton Passing` (Oper Tongkat)
 Alur kerja otonom antar sub-agen diatur melalui mesin status (state machine) serah terima tongkat:
-1. `Department Head` menerima tugas tingkat tinggi dari CEO dan memecahnya menjadi *sub-tasks*.
-2. `Department Head` menyerahkan *baton* pertama ke sub-agen pertama (misal: `Lead Hunter`).
-3. Setelah selesai, `Lead Hunter` melampirkan hasil temuannya ke dalam *scratchpad* dan menyerahkan *baton* ke `Content Analyst`.
-4. Proses berlanjut hingga sub-agen terakhir (misal: `Promotion Agent`) mengembalikan *baton* ke `Department Head`.
-5. `Department Head` menyusun laporan akhir ringkas dan mempublikasikannya ke `OperatorEventBus` utama.
+1. `CEO Agent` menerima arahan strategis dari `Owner (Human)` dan merumuskan target tingkat departemen.
+2. `Department Head` menerima target departemen dari `CEO Agent` dan memecahnya menjadi *sub-tasks*.
+3. `Department Head` menyerahkan *baton* pertama ke sub-agen pertama (misal: `Lead Hunter`).
+4. Setelah selesai, `Lead Hunter` melampirkan hasil temuannya ke dalam *scratchpad* dan menyerahkan *baton* ke `Content Analyst`.
+5. Proses berlanjut hingga sub-agen terakhir (misal: `Promotion Agent`) mengembalikan *baton* ke `Department Head`.
+6. `Department Head` menyusun laporan akhir ringkas dan mempublikasikannya ke `OperatorEventBus` utama untuk dievaluasi oleh `CEO Agent` dan `Owner`.
 
 ---
 

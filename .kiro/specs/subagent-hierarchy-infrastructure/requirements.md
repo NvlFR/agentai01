@@ -4,15 +4,17 @@
 
 Fitur ini merancang dan mendefinisikan spesifikasi arsitektur untuk **Hierarchical Sub-Agent Infrastructure (Tree of Agents)** di dalam ekosistem `agentai01` (AI Company Runtime Platform). Saat ini, agen utama (seperti `Marketing Agent`, `Sales Agent`, `Product Agent`, `Engineering Agent`, dan `Project Manager Agent`) beroperasi secara monolitik dan langsung memanggil AI Provider untuk seluruh cakupan tugas mereka.
 
-Tujuan utama dari spesifikasi ini adalah memecah struktur monolitik tersebut menjadi topologi hierarkis di mana setiap agen utama bertindak sebagai **Manajer / Orkestrator Departemen (Department Head)** yang mendelegasikan tugas-tugas spesifik ke sub-agen spesialis di bawahnya (seperti `Lead Hunter`, `Content Analyst`, `Content Creator`, `QA Agent`, `DevSecOps Agent`, dll.). Semua sub-agen harus beroperasi secara terisolasi dengan *scratchpad* memori lokal dan alat bantu (MCP tools) yang sangat terfokus.
+Tujuan utama dari spesifikasi ini adalah memecah struktur monolitik tersebut menjadi topologi hierarkis 4 tingkat (4-tier hierarchy) yang terdiri dari: **Owner (Human Operator)** di puncak pimpinan, **CEO Agent (AI Agent Orchestrator)** sebagai pemimpin eksekutif AI, **Department Heads (AI Agents)** sebagai manajer departemen, dan **Sub-Agents (AI Specialists)** sebagai eksekutor teknis di bawah komando Department Head. Semua sub-agen harus beroperasi secara terisolasi dengan *scratchpad* memori lokal dan alat bantu (MCP tools) yang sangat terfokus.
 
 Semua implementasi modul yang diusulkan nantinya harus mematuhi standar proyek: colocated `*.test.ts`, lulus typecheck TypeScript ESM strict tanpa `any`, dan terintegrasi mulus dengan `AgentRegistry` serta `OperatorEventBus`.
 
 ## Glossary
 
-- **Hierarchical_Agent_Topology**: Struktur organisasi agen AI yang berbentuk pohon (tree), di mana agen tingkat atas bertindak sebagai manajer dan agen tingkat bawah bertindak sebagai spesialis teknis.
-- **Department_Head**: Agen utama (contoh: `Marketing Agent`) yang bertanggung jawab atas orkestrasi alur kerja, dekomposisi tugas dari CEO, dan sintesis laporan akhir departemen tanpa melakukan pekerjaan teknis langsung.
-- **Sub_Agent**: Agen spesialis yang berada di bawah komando Department Head, memiliki *prompt persona* sempit, *tools* spesifik, dan memori terisolasi.
+- **Hierarchical_Agent_Topology**: Struktur organisasi agen AI yang berbentuk pohon (tree) 4 tingkat: Owner (Human) $\rightarrow$ CEO Agent (AI) $\rightarrow$ Department Heads (AI) $\rightarrow$ Sub-Agents (AI).
+- **Owner**: Manusia (Human Operator / Mission Control) yang bertindak sebagai pemilik perusahaan, memberikan arahan strategis tingkat tinggi, menyetujui anggaran, dan melakukan *approval* akhir.
+- **CEO_Agent**: Agen AI tingkat tertinggi (`ceo_agent`) yang menerima arahan strategis dari Owner (Human), merumuskan strategi perusahaan, dan memberikan komando/target kepada para Department Head.
+- **Department_Head**: Agen AI utama (contoh: `Marketing Agent`, `Sales Agent`) yang bertanggung jawab atas orkestrasi alur kerja departemen, dekomposisi tugas dari CEO Agent, dan sintesis laporan akhir departemen tanpa melakukan pekerjaan teknis langsung.
+- **Sub_Agent**: Agen AI spesialis yang berada di bawah komando Department Head, memiliki *prompt persona* sempit, *tools* spesifik, dan memori terisolasi.
 - **Baton_Passing**: Mekanisme pendelegasian dan serah terima tugas berantai antar sub-agen di dalam satu departemen sebelum hasilnya diserahkan kembali ke Department Head.
 - **Intra_Department_Bus**: Saluran komunikasi internal atau *memory scratchpad* lokal di dalam satu departemen untuk mencegah polusi informasi pada `OperatorEventBus` utama perusahaan.
 - **MCP_Tools**: Model Context Protocol tools spesifik yang di-binding ke sub-agen tertentu (misal: `web_search_mcp`, `email_outreach_mcp`, `sast_scanner_mcp`).
@@ -24,7 +26,7 @@ Semua implementasi modul yang diusulkan nantinya harus mematuhi standar proyek: 
 
 ### 1. Arsitektur Sub-Agen & Registrasi
 - Sistem harus mendukung pendaftaran sub-agen di dalam `AgentRegistry` atau `SubAgentRegistry` terpisah.
-- Setiap entitas agen harus memiliki atribut hierarki yang jelas: `roleType: 'head' | 'specialist'`, `parentAgentId: string | null`, dan `subAgentIds: string[]`.
+- Setiap entitas agen harus memiliki atribut hierarki yang jelas: `roleType: 'ceo' | 'head' | 'specialist'`, `parentAgentId: string | null`, dan `subAgentIds: string[]`.
 - Manifest sub-agen harus divalidasi menggunakan skema Zod yang ketat.
 
 ### 2. Mekanisme Komunikasi Internal & Baton Passing

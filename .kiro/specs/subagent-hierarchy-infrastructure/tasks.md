@@ -36,11 +36,11 @@ Setiap task dianggap selesai hanya jika ada bukti nyata:
 
 ## Phase 1 — Sub-Agent Registry & Core Hierarchy Contracts
 
-> Fokus: Membangun fondasi struktur data hierarki, validasi Zod, dan registrasi sub-agen.
+> Fokus: Membangun fondasi struktur data hierarki 4 tingkat (Owner -> CEO -> Dept Head -> Sub-Agent), validasi Zod, dan registrasi sub-agen.
 
 | Task ID | Nama Task | Deskripsi & Kontrak Implementasi | Status |
 | :--- | :--- | :--- | :---: |
-| **1.1** | `SubAgentHierarchyTypes` | Buat antarmuka `AgentHierarchyConfig` dan skema Zod `AgentHierarchyConfigSchema` di `src/domain/hierarchy.ts` untuk memvalidasi atribut `roleType`, `parentAgentId`, dan `subAgentIds`. | [ ] |
+| **1.1** | `SubAgentHierarchyTypes` | Buat antarmuka `AgentHierarchyConfig` dan skema Zod `AgentHierarchyConfigSchema` di `src/domain/hierarchy.ts` untuk memvalidasi atribut `roleType: 'ceo' \| 'head' \| 'specialist'`, `parentAgentId`, dan `subAgentIds`. | [ ] |
 | **1.2** | `SubAgentRegistry` | Implementasikan class `SubAgentRegistry` di `src/registry/subAgentRegistry.ts` dengan metode pendaftaran, pencarian berdasarkan induk, dan validasi duplikasi ID. | [ ] |
 | **1.3** | `SubAgentRegistryTest` | Buat pengujian colocated `src/registry/subAgentRegistry.test.ts` untuk memverifikasi pendaftaran hierarki dan penanganan error duplikasi. | [ ] |
 
