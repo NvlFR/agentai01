@@ -1,2785 +1,2802 @@
-# Analisis Detail File-per-File (restored-src/src)
+# Analisis Detail File-per-File (`restored-src`)
 
-Dokumen ini mengurai 1.902 file dengan membaca isi kodenya (mengekstrak JSDoc atau deklarasi export) agar penjelasannya relevan dengan fungsi aslinya.
+Dokumen ini dibuat ulang langsung dari source di `restored-src/` dengan parser TypeScript, lalu diringkas file per file supaya penjelasan lebih akurat daripada ekstraksi komentar mentah.
+
+Total file source yang dipetakan: **1906**.
 
 ## Direktori: `restored-src/src`
 
-- **`QueryEngine.ts`**: Mengekspor: QueryEngineConfig, QueryEngine.
-- **`Task.ts`**: True when a task is in a terminal state and will not transition further. Used to guard against injecting messages into dead teammates, evicting finish...
-- **`Tool.ts`**: Mengekspor: ToolInputJSONSchema, QueryChainTracking, ValidationResult.
-- **`commands.ts`**: Mengekspor: INTERNAL_ONLY_COMMANDS, builtInCommandNames, meetsAvailabilityRequirement.
-- **`context.ts`**: Mengekspor: getSystemPromptInjection, setSystemPromptInjection, getGitStatus.
-- **`cost-tracker.ts`**: Mengekspor: getStoredSessionCosts, restoreCostStateForSession, saveCurrentSessionCosts.
-- **`costHook.ts`**: Mengekspor: useCostSummary.
-- **`dialogLaunchers.tsx`**: Thin launchers for one-off dialog JSX sites in main.tsx. Each launcher dynamically imports its component and wires the `done` callback identically to ...
-- **`history.ts`**: Stored paste content - either inline content or a hash reference to paste store.
-- **`ink.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`interactiveHelpers.tsx`**: Mengekspor: completeOnboarding, showDialog, showSetupDialog.
-- **`main.tsx`**: Mengekspor: startDeferredPrefetches.
-- **`projectOnboardingState.ts`**: Mengekspor: Step, getSteps, isProjectOnboardingComplete.
-- **`query.ts`**: Mengekspor: QueryParams.
-- **`replLauncher.tsx`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`setup.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`tasks.ts`**: Mengekspor: getAllTasks, getTaskByType.
-- **`tools.ts`**: Mengekspor: TOOL_PRESETS, ToolPreset, parseToolPreset.
+- **`QueryEngine.ts`** (`restored-src/src/QueryEngine.ts`): QueryEngine owns the query lifecycle and session state for a conversation. It extracts the core logic from ask() into a standalone class that can be used by both the headless/SDK path and (in a future phase) the REPL. One QueryEngine per conversation. Each... Mengimplementasikan class utama untuk area fitur ini. Export utama: `QueryEngineConfig`, `QueryEngine`, `ask`.
+- **`Task.ts`** (`restored-src/src/Task.ts`): True when a task is in a terminal state and will not transition further. Used to guard against injecting messages into dead teammates, evicting finished tasks from AppState, and orphan-cleanup paths. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `TaskType`, `TaskStatus`, `isTerminalTaskStatus`, `TaskHandle`, dan lainnya.
+- **`Tool.ts`** (`restored-src/src/Tool.ts`): Checks if a tool matches the given name (primary name or alias). Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `ToolInputJSONSchema`, `AgentToolProgress`, `BashProgress`, `MCPProgress`, dan lainnya.
+- **`commands.ts`** (`restored-src/src/commands.ts`): Filters commands by their declared 'availability' (auth/provider requirement). Commands without 'availability' are treated as universal. This runs before 'isEnabled()' so that provider-gated commands are hidden regardless of feature-flag state. Not memoized... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `Command`, `CommandBase`, `CommandResultDisplay`, `LocalCommandResult`, dan lainnya.
+- **`context.ts`** (`restored-src/src/context.ts`): This context is prepended to each conversation, and cached for the duration of the conversation. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getSystemPromptInjection`, `setSystemPromptInjection`, `getGitStatus`, `getSystemContext`, dan lainnya.
+- **`cost-tracker.ts`** (`restored-src/src/cost-tracker.ts`): Gets stored cost state from project config for a specific session. Returns the cost data if the session ID matches, or undefined otherwise. Use this to read costs BEFORE overwriting the config with saveCurrentSessionCosts(). Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getTotalCost`, `getTotalDuration`, `getTotalAPIDuration`, `getTotalAPIDurationWithoutRetries`, dan lainnya.
+- **`costHook.ts`** (`restored-src/src/costHook.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `useCostSummary`.
+- **`dialogLaunchers.tsx`** (`restored-src/src/dialogLaunchers.tsx`): Site ~3173: SnapshotUpdateDialog (agent memory snapshot update prompt). Original callback wiring: onComplete={done}, onCancel={() => done('keep')}. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `launchSnapshotUpdateDialog`, `launchInvalidSettingsDialog`, `launchAssistantSessionChooser`, `launchAssistantInstallWizard`, dan lainnya.
+- **`history.ts`** (`restored-src/src/history.ts`): Claude Code parses history for pasted content references to match back to pasted content. The references look like: Text: [Pasted text #1 +10 lines] Image: [Image #2] The numbers are expected to be unique within a single prompt but not across prompts. We ch... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getPastedTextRefNumLines`, `formatPastedTextRef`, `formatImageRef`, `parseReferences`, dan lainnya.
+- **`ink.ts`** (`restored-src/src/ink.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `RenderOptions`, `Instance`, `Root`, `render`, dan lainnya.
+- **`interactiveHelpers.tsx`** (`restored-src/src/interactiveHelpers.tsx`): Render an error message through Ink, then unmount and exit. Use this for fatal errors after the Ink root has been created — console.error is swallowed by Ink's patchConsole, so we render through the React tree instead. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `completeOnboarding`, `showDialog`, `exitWithError`, `exitWithMessage`, dan lainnya.
+- **`main.tsx`** (`restored-src/src/main.tsx`): Start background prefetches and housekeeping that are NOT needed before first render. These are deferred from setup() to reduce event loop contention and child process spawning during the critical startup path. Call this after the REPL has been rendered. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `startDeferredPrefetches`, `main`.
+- **`projectOnboardingState.ts`** (`restored-src/src/projectOnboardingState.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `Step`, `getSteps`, `isProjectOnboardingComplete`, `maybeMarkProjectOnboardingComplete`, dan lainnya.
+- **`query.ts`** (`restored-src/src/query.ts`): The rules of thinking are lengthy and fortuitous. They require plenty of thinking of most long duration and deep meditation for a wizard to wrap one's noggin around. The rules follow: 1. A message that contains a thinking or redacted_thinking block must be... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `QueryParams`, `query`.
+- **`replLauncher.tsx`** (`restored-src/src/replLauncher.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `launchRepl`.
+- **`setup.ts`** (`restored-src/src/setup.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `setup`.
+- **`tasks.ts`** (`restored-src/src/tasks.ts`): Get all tasks. Mirrors the pattern from tools.ts Note: Returns array inline to avoid circular dependency issues with top-level const. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getAllTasks`, `getTaskByType`.
+- **`tools.ts`** (`restored-src/src/tools.ts`): Predefined tool presets that can be used with --tools flag. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `ALL_AGENT_DISALLOWED_TOOLS`, `CUSTOM_AGENT_DISALLOWED_TOOLS`, `ASYNC_AGENT_ALLOWED_TOOLS`, `COORDINATOR_MODE_ALLOWED_TOOLS`, dan lainnya.
 
 ## Direktori: `restored-src/src/assistant`
 
-- **`sessionHistory.ts`**: Chronological order within the page.
+- **`sessionHistory.ts`** (`restored-src/src/assistant/sessionHistory.ts`): Prepare auth + headers + base URL once, reuse across pages. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `HISTORY_PAGE_SIZE`, `HistoryPage`, `HistoryAuthCtx`, `createHistoryAuthCtx`, dan lainnya.
 
 ## Direktori: `restored-src/src/bootstrap`
 
-- **`state.ts`**: Mengekspor: ChannelEntry, AttributedCounter, getSessionId.
+- **`state.ts`** (`restored-src/src/bootstrap/state.ts`): Atomically switch the active session. 'sessionId' and 'sessionProjectDir' always change together — there is no separate setter for either, so they cannot drift out of sync (CC-34). @param projectDir — directory containing '<sessionId>.jsonl'. Omit (or pass... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `ChannelEntry`, `AttributedCounter`, `getSessionId`, `regenerateSessionId`, dan lainnya.
 
 ## Direktori: `restored-src/src/bridge`
 
-- **`bridgeApi.ts`**: Called on 401 to attempt OAuth token refresh. Returns true if refreshed, in which case the request is retried once. Injected because handleOAuth401Err...
-- **`bridgeConfig.ts`**: Shared bridge auth/URL resolution. Consolidates the ant-only CLAUDE_BRIDGE_ dev overrides that were previously copy-pasted across a dozen files — inbo...
-- **`bridgeDebug.ts`**: Ant-only fault injection for manually testing bridge recovery paths.  Real failure modes this targets (BQ 2026-03-12, 7-day window): poll 404 not_foun...
-- **`bridgeEnabled.ts`**: Runtime check for bridge mode entitlement.  Remote Control requires a claude.ai subscription (the bridge auths to CCR with the claude.ai OAuth token)....
-- **`bridgeMain.ts`**: Mengekspor: BackoffConfig, isConnectionError, isServerError.
-- **`bridgeMessaging.ts`**: Shared transport-layer helpers for bridge message handling.  Extracted from replBridge.ts so both the env-based core (initBridgeCore) and the env-less...
-- **`bridgePermissionCallbacks.ts`**: Cancel a pending control_request so the web app can dismiss its prompt.
-- **`bridgePointer.ts`**: Upper bound on worktree fanout. git worktree list is naturally bounded (50 is a LOT), but this caps the parallel stat() burst and guards against patho...
-- **`bridgeStatusUtil.ts`**: Bridge status state machine states.
-- **`bridgeUI.ts`**: Mengekspor: createBridgeLogger.
-- **`capacityWake.ts`**: Shared capacity-wake primitive for bridge poll loops.  Both replBridge.ts and bridgeMain.ts need to sleep while "at capacity" but wake early when eith...
-- **`codeSessionApi.ts`**: Thin HTTP wrappers for the CCR v2 code-session API.  Separate file from remoteBridgeCore.ts so the SDK /bridge subpath can export createCodeSession + ...
-- **`createSession.ts`**: Create a session on a bridge environment via POST /v1/sessions.  Used by both `claude remote-control` (empty session so the user has somewhere to type...
-- **`debugUtils.ts`**: Mengekspor: redactSecrets, debugTruncate, debugBody.
-- **`envLessBridgeConfig.ts`**: Mengekspor: EnvLessBridgeConfig, DEFAULT_ENV_LESS_BRIDGE_CONFIG.
-- **`flushGate.ts`**: State machine for gating message writes during an initial flush.  When a bridge session starts, historical messages are flushed to the server via a si...
-- **`inboundAttachments.ts`**: Resolve file_uuid attachments on inbound bridge user messages.  Web composer uploads via cookie-authed /api/{org}/upload, sends file_uuid alongside th...
-- **`inboundMessages.ts`**: Process an inbound user message from the bridge, extracting content and UUID for enqueueing. Supports both string content and ContentBlockParam[] (e.g...
-- **`initReplBridge.ts`**: REPL-specific wrapper around initBridgeCore. Owns the parts that read bootstrap state — gates, cwd, session ID, git context, OAuth, title derivation —...
-- **`jwtUtils.ts`**: Format a millisecond duration as a human-readable string (e.g. "5m 30s").
-- **`pollConfig.ts`**: Mengekspor: getPollIntervalConfig.
-- **`pollConfigDefaults.ts`**: Bridge poll interval defaults. Extracted from pollConfig.ts so callers that don't need live GrowthBook tuning (daemon via Agent SDK) can avoid the gro...
-- **`remoteBridgeCore.ts`**: Env-less Remote Control bridge core.  "Env-less" = no Environments API layer. Distinct from "CCR v2" (the /worker/ transport protocol) — the env-based...
-- **`replBridge.ts`**: Mengekspor: ReplBridgeHandle, BridgeState, BridgeCoreParams.
-- **`replBridgeHandle.ts`**: Global pointer to the active REPL bridge handle, so callers outside useReplBridge's React tree (tools, slash commands) can invoke handle methods like ...
-- **`replBridgeTransport.ts`**: Transport abstraction for replBridge. Covers exactly the surface that replBridge.ts uses against HybridTransport so the v1/v2 choice is confined to th...
-- **`sessionIdCompat.ts`**: Session ID tag translation helpers for the CCR v2 compat layer.  Lives in its own file (rather than workSecret.ts) so that sessionHandle.ts and replBr...
-- **`sessionRunner.ts`**: Sanitize a session ID for use in file names. Strips any characters that could cause path traversal (e.g. `../`, `/`) or other filesystem issues, repla...
-- **`trustedDevice.ts`**: Trusted device token source for bridge (remote-control) sessions.  Bridge sessions have SecurityTier=ELEVATED on the server (CCR v2). The server gates...
-- **`types.ts`**: Default per-session timeout (24 hours).
-- **`workSecret.ts`**: Decode a base64url-encoded work secret and validate its version.
+- **`bridgeApi.ts`** (`restored-src/src/bridge/bridgeApi.ts`): Validate that a server-provided ID is safe to interpolate into a URL path. Prevents path traversal (e.g. '../../admin') and injection via IDs that contain slashes, dots, or other special characters. Mengimplementasikan class utama untuk area fitur ini. Export utama: `validateBridgeId`, `BridgeFatalError`, `createBridgeApiClient`, `isExpiredErrorType`, dan lainnya.
+- **`bridgeConfig.ts`** (`restored-src/src/bridge/bridgeConfig.ts`): Ant-only dev override: CLAUDE_BRIDGE_OAUTH_TOKEN, else undefined. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getBridgeTokenOverride`, `getBridgeBaseUrlOverride`, `getBridgeAccessToken`, `getBridgeBaseUrl`.
+- **`bridgeDebug.ts`** (`restored-src/src/bridge/bridgeDebug.ts`): Wrap a BridgeApiClient so each call first checks the fault queue. If a matching fault is queued, throw the specified error instead of calling through. Delegates everything else to the real client. Only called when USER_TYPE === 'ant' — zero overhead in exte... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `BridgeDebugHandle`, `registerBridgeDebugHandle`, `clearBridgeDebugHandle`, `getBridgeDebugHandle`, dan lainnya.
+- **`bridgeEnabled.ts`** (`restored-src/src/bridge/bridgeEnabled.ts`): Runtime check for bridge mode entitlement. Remote Control requires a claude.ai subscription (the bridge auths to CCR with the claude.ai OAuth token). isClaudeAISubscriber() excludes Bedrock/Vertex/Foundry, apiKeyHelper/gateway deployments, env-var API keys,... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `isBridgeEnabled`, `isBridgeEnabledBlocking`, `getBridgeDisabledReason`, `isEnvLessBridgeEnabled`, dan lainnya.
+- **`bridgeMain.ts`** (`restored-src/src/bridge/bridgeMain.ts`): Detect HTTP 5xx errors from axios (code: 'ERR_BAD_RESPONSE'). Mengimplementasikan class utama untuk area fitur ini. Export utama: `BackoffConfig`, `runBridgeLoop`, `isConnectionError`, `isServerError`, dan lainnya.
+- **`bridgeMessaging.ts`** (`restored-src/src/bridge/bridgeMessaging.ts`): Type predicate for parsed WebSocket messages. SDKMessage is a discriminated union on 'type' — validating the discriminant is sufficient for the predicate; callers narrow further via the union. Mengimplementasikan class utama untuk area fitur ini. Export utama: `isSDKMessage`, `isSDKControlResponse`, `isSDKControlRequest`, `isEligibleBridgeMessage`, dan lainnya.
+- **`bridgePermissionCallbacks.ts`** (`restored-src/src/bridge/bridgePermissionCallbacks.ts`): Type predicate for validating a parsed control_response payload as a BridgePermissionResponse. Checks the required 'behavior' discriminant rather than using an unsafe 'as' cast. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `isBridgePermissionResponse`, `BridgePermissionCallbacks`, `BridgePermissionResponse`.
+- **`bridgePointer.ts`** (`restored-src/src/bridge/bridgePointer.ts`): Crash-recovery pointer for Remote Control sessions. Written immediately after a bridge session is created, periodically refreshed during the session, and cleared on clean shutdown. If the process dies unclean (crash, kill -9, terminal closed), the pointer p... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `BRIDGE_POINTER_TTL_MS`, `BridgePointer`, `getBridgePointerPath`, `writeBridgePointer`, dan lainnya.
+- **`bridgeStatusUtil.ts`** (`restored-src/src/bridge/bridgeStatusUtil.ts`): Bridge status state machine states. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `StatusState`, `TOOL_DISPLAY_EXPIRY_MS`, `SHIMMER_INTERVAL_MS`, `timestamp`, dan lainnya.
+- **`bridgeUI.ts`** (`restored-src/src/bridge/bridgeUI.ts`): Generate a QR code and return its lines. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `createBridgeLogger`.
+- **`capacityWake.ts`** (`restored-src/src/bridge/capacityWake.ts`): Shared capacity-wake primitive for bridge poll loops. Both replBridge.ts and bridgeMain.ts need to sleep while "at capacity" but wake early when either (a) the outer loop signal aborts (shutdown), or (b) capacity frees up (session done / transport lost). Th... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `CapacitySignal`, `CapacityWake`, `createCapacityWake`.
+- **`codeSessionApi.ts`** (`restored-src/src/bridge/codeSessionApi.ts`): Credentials from POST /bridge. JWT is opaque — do not decode. Each /bridge call bumps worker_epoch server-side (it IS the register). Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `createCodeSession`, `RemoteCredentials`, `fetchRemoteCredentials`.
+- **`createSession.ts`** (`restored-src/src/bridge/createSession.ts`): Create a session on a bridge environment via POST /v1/sessions. Used by both 'claude remote-control' (empty session so the user has somewhere to type immediately) and '/remote-control' (session pre-populated with conversation history). Returns the session I... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `createBridgeSession`, `getBridgeSession`, `archiveBridgeSession`, `updateBridgeSessionTitle`.
+- **`debugUtils.ts`** (`restored-src/src/bridge/debugUtils.ts`): Truncate a string for debug logging, collapsing newlines. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `redactSecrets`, `debugTruncate`, `debugBody`, `describeAxiosError`, dan lainnya.
+- **`envLessBridgeConfig.ts`** (`restored-src/src/bridge/envLessBridgeConfig.ts`): Fetch the env-less bridge timing config from GrowthBook. Read once per initEnvLessBridgeCore call — config is fixed for the lifetime of a bridge session. Uses the blocking getter (not _CACHED_MAY_BE_STALE) because /remote-control runs well after GrowthBook... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `EnvLessBridgeConfig`, `DEFAULT_ENV_LESS_BRIDGE_CONFIG`, `getEnvLessBridgeConfig`, `checkEnvLessBridgeMinVersion`, dan lainnya.
+- **`flushGate.ts`** (`restored-src/src/bridge/flushGate.ts`): State machine for gating message writes during an initial flush. When a bridge session starts, historical messages are flushed to the server via a single HTTP POST. During that flush, new messages must be queued to prevent them from arriving at the server i... Mengimplementasikan class utama untuk area fitur ini. Export utama: `FlushGate`.
+- **`inboundAttachments.ts`** (`restored-src/src/bridge/inboundAttachments.ts`): Pull file_attachments off a loosely-typed inbound message. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `InboundAttachment`, `extractInboundAttachments`, `resolveInboundAttachments`, `prependPathRefs`, dan lainnya.
+- **`inboundMessages.ts`** (`restored-src/src/bridge/inboundMessages.ts`): Process an inbound user message from the bridge, extracting content and UUID for enqueueing. Supports both string content and ContentBlockParam[] (e.g. messages containing images). Normalizes image blocks from bridge clients that may use camelCase 'mediaTyp... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `extractInboundMessageFields`, `normalizeImageBlocks`.
+- **`initReplBridge.ts`** (`restored-src/src/bridge/initReplBridge.ts`): Quick placeholder title: strip display tags, take the first sentence, collapse whitespace, truncate to 50 chars. Returns undefined if the result is empty (e.g. message was only <local-command-stdout>). Replaced by generateSessionTitle once Haiku resolves (~... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `InitBridgeOptions`, `initReplBridge`.
+- **`jwtUtils.ts`** (`restored-src/src/bridge/jwtUtils.ts`): Decode a JWT's payload segment without verifying the signature. Strips the 'sk-ant-si-' session-ingress prefix if present. Returns the parsed JSON payload as 'unknown', or 'null' if the token is malformed or the payload is not valid JSON. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `decodeJwtPayload`, `decodeJwtExpiry`, `createTokenRefreshScheduler`.
+- **`pollConfig.ts`** (`restored-src/src/bridge/pollConfig.ts`): Fetch the bridge poll interval config from GrowthBook with a 5-minute refresh window. Validates the served JSON against the schema; falls back to defaults if the flag is absent, malformed, or partially-specified. Shared by bridgeMain.ts (standalone) and rep... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getPollIntervalConfig`.
+- **`pollConfigDefaults.ts`** (`restored-src/src/bridge/pollConfigDefaults.ts`): Bridge poll interval defaults. Extracted from pollConfig.ts so callers that don't need live GrowthBook tuning (daemon via Agent SDK) can avoid the growthbook.ts → config.ts → file.ts → sessionStorage.ts → commands.ts transitive dependency chain. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `PollIntervalConfig`, `DEFAULT_POLL_CONFIG`.
+- **`remoteBridgeCore.ts`** (`restored-src/src/bridge/remoteBridgeCore.ts`): Create a session, fetch a worker JWT, connect the v2 transport. Returns null on any pre-flight failure (session create failed, /bridge failed, transport setup failed). Caller (initReplBridge) surfaces this as a generic "initialization failed" state. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `EnvLessBridgeParams`, `initEnvLessBridgeCore`, `createCodeSession`, `RemoteCredentials`, dan lainnya.
+- **`replBridge.ts`** (`restored-src/src/bridge/replBridge.ts`): Explicit-param input to initBridgeCore. Everything initReplBridge reads from bootstrap state (cwd, session ID, git, OAuth) becomes a field here. A daemon caller (Agent SDK, PR 4) that never runs main.tsx fills these in itself. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `ReplBridgeHandle`, `BridgeState`, `BridgeCoreParams`, `BridgeCoreHandle`, dan lainnya.
+- **`replBridgeHandle.ts`** (`restored-src/src/bridge/replBridgeHandle.ts`): Our own bridge session ID in the session_* compat format the API returns in /v1/sessions responses — or undefined if bridge isn't connected. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `setReplBridgeHandle`, `getReplBridgeHandle`, `getSelfBridgeCompatId`.
+- **`replBridgeTransport.ts`** (`restored-src/src/bridge/replBridgeTransport.ts`): Transport abstraction for replBridge. Covers exactly the surface that replBridge.ts uses against HybridTransport so the v1/v2 choice is confined to the construction site. - v1: HybridTransport (WS reads + POST writes to Session-Ingress) - v2: SSETransport (... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `ReplBridgeTransport`, `createV1ReplTransport`, `createV2ReplTransport`.
+- **`sessionIdCompat.ts`** (`restored-src/src/bridge/sessionIdCompat.ts`): Register the GrowthBook gate for the cse_ shim. Called from bridge init code that already imports bridgeEnabled.ts. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `setCseShimGate`, `toCompatSessionId`, `toInfraSessionId`.
+- **`sessionRunner.ts`** (`restored-src/src/bridge/sessionRunner.ts`): Sanitize a session ID for use in file names. Strips any characters that could cause path traversal (e.g. '../', '/') or other filesystem issues, replacing them with underscores. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `safeFilenameId`, `PermissionRequest`, `createSessionSpawner`, `_extractActivitiesForTesting`.
+- **`trustedDevice.ts`** (`restored-src/src/bridge/trustedDevice.ts`): Clear the stored trusted device token from secure storage and the memo cache. Called before enrollTrustedDevice() during /login so a stale token from the previous account isn't sent as X-Trusted-Device-Token while enrollment is in-flight (enrollTrustedDevic... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getTrustedDeviceToken`, `clearTrustedDeviceTokenCache`, `clearTrustedDeviceToken`, `enrollTrustedDevice`.
+- **`types.ts`** (`restored-src/src/bridge/types.ts`): Default per-session timeout (24 hours). Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `DEFAULT_SESSION_TIMEOUT_MS`, `BRIDGE_LOGIN_INSTRUCTION`, `BRIDGE_LOGIN_ERROR`, `REMOTE_CONTROL_DISCONNECTED_MSG`, dan lainnya.
+- **`workSecret.ts`** (`restored-src/src/bridge/workSecret.ts`): Decode a base64url-encoded work secret and validate its version. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `decodeWorkSecret`, `buildSdkUrl`, `sameSessionId`, `buildCCRv2SdkUrl`, dan lainnya.
 
 ## Direktori: `restored-src/src/buddy`
 
-- **`CompanionSprite.tsx`**: Mengekspor: MIN_COLS_FOR_FULL_SPRITE, companionReservedColumns, CompanionSprite.
-- **`companion.ts`**: Mengekspor: Roll, roll, rollWithSeed.
-- **`prompt.ts`**: Mengekspor: companionIntroText, getCompanionIntroAttachment.
-- **`sprites.ts`**: Mengekspor: renderSprite, spriteFrameCount, renderFace.
-- **`types.ts`**: Mengekspor: RARITIES, Rarity, duck.
-- **`useBuddyNotification.tsx`**: Mengekspor: isBuddyTeaserWindow, isBuddyLive, useBuddyNotification.
+- **`CompanionSprite.tsx`** (`restored-src/src/buddy/CompanionSprite.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `MIN_COLS_FOR_FULL_SPRITE`, `companionReservedColumns`, `CompanionSprite`, `CompanionFloatingBubble`.
+- **`companion.ts`** (`restored-src/src/buddy/companion.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `Roll`, `roll`, `rollWithSeed`, `companionUserId`, dan lainnya.
+- **`prompt.ts`** (`restored-src/src/buddy/prompt.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `companionIntroText`, `getCompanionIntroAttachment`.
+- **`sprites.ts`** (`restored-src/src/buddy/sprites.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `renderSprite`, `spriteFrameCount`, `renderFace`.
+- **`types.ts`** (`restored-src/src/buddy/types.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `RARITIES`, `Rarity`, `duck`, `goose`, dan lainnya.
+- **`useBuddyNotification.tsx`** (`restored-src/src/buddy/useBuddyNotification.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `isBuddyTeaserWindow`, `isBuddyLive`, `useBuddyNotification`, `findBuddyTriggerPositions`.
 
 ## Direktori: `restored-src/src/cli`
 
-- **`exit.ts`**: CLI exit helpers for subcommand handlers.  Consolidates the 4-5 line "print + lint-suppress + exit" block that was copy-pasted ~60 times across `claud...
-- **`ndjsonSafeStringify.ts`**: JSON.stringify for one-message-per-line transports. Escapes U+2028 LINE SEPARATOR and U+2029 PARAGRAPH SEPARATOR so the serialized output cannot be br...
-- **`print.ts`**: Mengekspor: joinPromptValues, canBatchWith, createCanUseToolWithPermissionPrompt.
-- **`remoteIO.ts`**: Mengekspor: RemoteIO.
-- **`structuredIO.ts`**: Mengekspor: SANDBOX_NETWORK_ACCESS_TOOL_NAME, StructuredIO.
-- **`update.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
+- **`exit.ts`** (`restored-src/src/cli/exit.ts`): CLI exit helpers for subcommand handlers. Consolidates the 4-5 line "print + lint-suppress + exit" block that was copy-pasted ~60 times across 'claude mcp *' / 'claude plugin *' handlers. The ': never' return type lets TypeScript narrow control flow at call... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `cliError`, `cliOk`.
+- **`ndjsonSafeStringify.ts`** (`restored-src/src/cli/ndjsonSafeStringify.ts`): JSON.stringify for one-message-per-line transports. Escapes U+2028 LINE SEPARATOR and U+2029 PARAGRAPH SEPARATOR so the serialized output cannot be broken by a line-splitting receiver. Output is still valid JSON and parses to the same value. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `ndjsonSafeStringify`.
+- **`print.ts`** (`restored-src/src/cli/print.ts`): Join prompt values from multiple queued commands into one. Strings are newline-joined; if any value is a block array, all values are normalized to blocks and concatenated. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `joinPromptValues`, `canBatchWith`, `runHeadless`, `createCanUseToolWithPermissionPrompt`, dan lainnya.
+- **`remoteIO.ts`** (`restored-src/src/cli/remoteIO.ts`): Bidirectional streaming for SDK mode with session tracking Supports WebSocket transport. Mengimplementasikan class utama untuk area fitur ini. Export utama: `RemoteIO`.
+- **`structuredIO.ts`** (`restored-src/src/cli/structuredIO.ts`): Synthetic tool name used when forwarding sandbox network permission requests via the can_use_tool control_request protocol. SDK hosts see this as a normal tool permission prompt. Mengimplementasikan class utama untuk area fitur ini. Export utama: `SANDBOX_NETWORK_ACCESS_TOOL_NAME`, `StructuredIO`.
+- **`update.ts`** (`restored-src/src/cli/update.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `update`.
 
 ## Direktori: `restored-src/src/cli/handlers`
 
-- **`agents.ts`**: Agents subcommand handler — prints the list of configured agents. Dynamically imported only when `claude agents` runs.
-- **`auth.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`autoMode.ts`**: Auto mode subcommand handlers — dump default/merged classifier rules and critique user-written rules. Dynamically imported when `claude auto-mode ...`...
-- **`mcp.tsx`**: MCP subcommand handlers — extracted from main.tsx for lazy loading. These are dynamically imported only when the corresponding `claude mcp ` command r...
-- **`plugins.ts`**: Plugin and marketplace subcommand handlers — extracted from main.tsx for lazy loading. These are dynamically imported only when `claude plugin ` or `c...
-- **`util.tsx`**: Miscellaneous subcommand handlers — extracted from main.tsx for lazy loading. setup-token, doctor, install
+- **`agents.ts`** (`restored-src/src/cli/handlers/agents.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `agentsHandler`.
+- **`auth.ts`** (`restored-src/src/cli/handlers/auth.ts`): Shared post-token-acquisition logic. Saves tokens, fetches profile/roles, and sets up the local auth state. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `installOAuthTokens`, `authLogin`, `authStatus`, `authLogout`.
+- **`autoMode.ts`** (`restored-src/src/cli/handlers/autoMode.ts`): Dump the effective auto mode config: user settings where provided, external defaults otherwise. Per-section REPLACE semantics — matches how buildYoloSystemPrompt resolves the external template (a non-empty user section replaces that section's defaults entir... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `autoModeDefaultsHandler`, `autoModeConfigHandler`, `autoModeCritiqueHandler`.
+- **`mcp.tsx`** (`restored-src/src/cli/handlers/mcp.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `mcpServeHandler`, `mcpRemoveHandler`, `mcpListHandler`, `mcpGetHandler`, dan lainnya.
+- **`plugins.ts`** (`restored-src/src/cli/handlers/plugins.ts`): Helper function to handle marketplace command errors consistently. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `VALID_INSTALLABLE_SCOPES`, `VALID_UPDATE_SCOPES`, `handleMarketplaceError`, `pluginValidateHandler`, dan lainnya.
+- **`util.tsx`** (`restored-src/src/cli/handlers/util.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `setupTokenHandler`, `doctorHandler`, `installHandler`.
 
 ## Direktori: `restored-src/src/cli/transports`
 
-- **`HybridTransport.ts`**: Hybrid transport: WebSocket for reads, HTTP POST for writes.  Write flow:  write(stream_event) ─┐ │ (100ms timer)
-- **`SSETransport.ts`**: Time budget for reconnection attempts before giving up (10 minutes).
-- **`SerialBatchEventUploader.ts`**: Serial ordered event uploader with batching, retry, and backpressure.  - enqueue() adds events to a pending buffer - At most 1 POST in-flight at a tim...
-- **`WebSocketTransport.ts`**: Time budget for reconnection attempts before giving up (10 minutes).
-- **`WorkerStateUploader.ts`**: Coalescing uploader for PUT /worker (session state + metadata).  - 1 in-flight PUT + 1 pending patch - New calls coalesce into pending (never grows be...
-- **`ccrClient.ts`**: Mengekspor: CCRInitFailReason, CCRInitError, StreamAccumulatorState.
-- **`transportUtils.ts`**: Helper function to get the appropriate transport for a URL.  Transport selection priority: 1. SSETransport (SSE reads + POST writes) when CLAUDE_CODE_...
+- **`HybridTransport.ts`** (`restored-src/src/cli/transports/HybridTransport.ts`): Hybrid transport: WebSocket for reads, HTTP POST for writes. Write flow: write(stream_event) ─┐ │ (100ms timer) │ ▼ write(other) ────► uploader.enqueue() (SerialBatchEventUploader) ▲ │ writeBatch() ────────┘ │ serial, batched, retries indefinitely, │ backpr... Mengimplementasikan class utama untuk area fitur ini. Export utama: `HybridTransport`.
+- **`SSETransport.ts`** (`restored-src/src/cli/transports/SSETransport.ts`): Transport that uses SSE for reading and HTTP POST for writing. Reads events via Server-Sent Events from the CCR v2 event stream endpoint. Writes events via HTTP POST with retry logic (same pattern as HybridTransport). Each 'event: client_event' frame carrie... Mengimplementasikan class utama untuk area fitur ini. Export utama: `parseSSEFrames`, `StreamClientEvent`, `SSETransport`.
+- **`SerialBatchEventUploader.ts`** (`restored-src/src/cli/transports/SerialBatchEventUploader.ts`): Serial ordered event uploader with batching, retry, and backpressure. - enqueue() adds events to a pending buffer - At most 1 POST in-flight at a time - Drains up to maxBatchSize items per POST - New events accumulate while in-flight - On failure: exponenti... Mengimplementasikan class utama untuk area fitur ini. Export utama: `RetryableError`, `SerialBatchEventUploader`.
+- **`WebSocketTransport.ts`** (`restored-src/src/cli/transports/WebSocketTransport.ts`): Time budget for reconnection attempts before giving up (10 minutes). Mengimplementasikan class utama untuk area fitur ini. Export utama: `WebSocketTransportOptions`, `WebSocketTransport`.
+- **`WorkerStateUploader.ts`** (`restored-src/src/cli/transports/WorkerStateUploader.ts`): Coalescing uploader for PUT /worker (session state + metadata). - 1 in-flight PUT + 1 pending patch - New calls coalesce into pending (never grows beyond 1 slot) - On success: send pending if exists - On failure: exponential backoff (clamped), retries indef... Mengimplementasikan class utama untuk area fitur ini. Export utama: `WorkerStateUploader`.
+- **`ccrClient.ts`** (`restored-src/src/cli/transports/ccrClient.ts`): Manages the worker lifecycle protocol with CCR v2: - Epoch management: reads worker_epoch from CLAUDE_CODE_WORKER_EPOCH env var - Runtime state reporting: PUT /sessions/{id}/worker - Heartbeat: POST /sessions/{id}/worker/heartbeat for liveness detection All... Mengimplementasikan class utama untuk area fitur ini. Export utama: `CCRInitFailReason`, `CCRInitError`, `StreamAccumulatorState`, `createStreamAccumulator`, dan lainnya.
+- **`transportUtils.ts`** (`restored-src/src/cli/transports/transportUtils.ts`): Helper function to get the appropriate transport for a URL. Transport selection priority: 1. SSETransport (SSE reads + POST writes) when CLAUDE_CODE_USE_CCR_V2 is set 2. HybridTransport (WS reads + POST writes) when CLAUDE_CODE_POST_FOR_SESSION_INGRESS_V2 i... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getTransportForUrl`.
 
 ## Direktori: `restored-src/src/commands/add-dir`
 
-- **`add-dir.tsx`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`index.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`validation.ts`**: Mengekspor: AddDirectoryResult, addDirHelpMessage.
+- **`add-dir.tsx`** (`restored-src/src/commands/add-dir/add-dir.tsx`): Implementasi command interaktif berbasis Ink/React. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `call`.
+- **`index.ts`** (`restored-src/src/commands/add-dir/index.ts`): Entry point command/barrel untuk subfitur command di folder ini. Berisi fungsi utilitas/operasional yang dipakai modul lain.
+- **`validation.ts`** (`restored-src/src/commands/add-dir/validation.ts`): Implementasi command atau utilitas pendukung command. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `AddDirectoryResult`, `validateDirectoryForWorkspace`, `addDirHelpMessage`.
 
 ## Direktori: `restored-src/src/commands`
 
-- **`advisor.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`bridge-kick.ts`**: Ant-only: inject bridge failure states to manually test recovery paths.  /bridge-kick close 1002            — fire ws_closed with code 1002 /bridge-ki...
-- **`brief.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`commit-push-pr.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`commit.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`createMovedToPluginCommand.ts`**: The prompt to use while the marketplace is private. External users will get this prompt. Once the marketplace is public, this parameter and the fallba...
-- **`init-verifiers.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`init.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`insights.ts`**: Mengekspor: deduplicateSessionBranches, detectMultiClauding, InsightsExport.
-- **`install.tsx`**: Mengekspor: install.
-- **`review.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`security-review.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`statusline.tsx`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`ultraplan.tsx`**: Mengekspor: CCR_TERMS_URL, buildUltraplanPrompt.
-- **`version.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
+- **`advisor.ts`** (`restored-src/src/commands/advisor.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain.
+- **`bridge-kick.ts`** (`restored-src/src/commands/bridge-kick.ts`): Ant-only: inject bridge failure states to manually test recovery paths. /bridge-kick close 1002 — fire ws_closed with code 1002 /bridge-kick close 1006 — fire ws_closed with code 1006 /bridge-kick poll 404 — next poll throws 404/not_found_error /bridge-kick... Berisi fungsi utilitas/operasional yang dipakai modul lain.
+- **`brief.ts`** (`restored-src/src/commands/brief.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain.
+- **`commit-push-pr.ts`** (`restored-src/src/commands/commit-push-pr.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain.
+- **`commit.ts`** (`restored-src/src/commands/commit.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain.
+- **`createMovedToPluginCommand.ts`** (`restored-src/src/commands/createMovedToPluginCommand.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `createMovedToPluginCommand`.
+- **`init-verifiers.ts`** (`restored-src/src/commands/init-verifiers.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain.
+- **`init.ts`** (`restored-src/src/commands/init.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain.
+- **`insights.ts`** (`restored-src/src/commands/insights.ts`): Deduplicate conversation branches within the same session. When a session file has multiple leaf messages (from retries or branching), loadAllLogsFromSessionFile produces one LogOption per leaf. Each branch shares the same root message, so its duration over... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `deduplicateSessionBranches`, `detectMultiClauding`, `InsightsExport`, `buildExportData`, dan lainnya.
+- **`install.tsx`** (`restored-src/src/commands/install.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `install`.
+- **`review.ts`** (`restored-src/src/commands/review.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `ultrareview`.
+- **`security-review.ts`** (`restored-src/src/commands/security-review.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain.
+- **`statusline.tsx`** (`restored-src/src/commands/statusline.tsx`): Modul React/Ink yang merender UI atau dialog interaktif.
+- **`ultraplan.tsx`** (`restored-src/src/commands/ultraplan.tsx`): Assemble the initial CCR user message. seedPlan and blurb stay outside the system-reminder so the browser renders them; scaffolding is hidden. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `CCR_TERMS_URL`, `buildUltraplanPrompt`, `stopUltraplan`, `launchUltraplan`.
+- **`version.ts`** (`restored-src/src/commands/version.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain.
 
 ## Direktori: `restored-src/src/commands/agents`
 
-- **`agents.tsx`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`index.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
+- **`agents.tsx`** (`restored-src/src/commands/agents/agents.tsx`): Implementasi command interaktif berbasis Ink/React. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `call`.
+- **`index.ts`** (`restored-src/src/commands/agents/index.ts`): Entry point command/barrel untuk subfitur command di folder ini. Berisi fungsi utilitas/operasional yang dipakai modul lain.
 
 ## Direktori: `restored-src/src/commands/ant-trace`
 
-- **`index.js`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
+- **`index.js`** (`restored-src/src/commands/ant-trace/index.js`): Entry point command/barrel untuk subfitur command di folder ini.
 
 ## Direktori: `restored-src/src/commands/autofix-pr`
 
-- **`index.js`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
+- **`index.js`** (`restored-src/src/commands/autofix-pr/index.js`): Entry point command/barrel untuk subfitur command di folder ini.
 
 ## Direktori: `restored-src/src/commands/backfill-sessions`
 
-- **`index.js`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
+- **`index.js`** (`restored-src/src/commands/backfill-sessions/index.js`): Entry point command/barrel untuk subfitur command di folder ini.
 
 ## Direktori: `restored-src/src/commands/branch`
 
-- **`branch.ts`**: Mengekspor: deriveFirstPrompt.
-- **`index.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
+- **`branch.ts`** (`restored-src/src/commands/branch/branch.ts`): Derive a single-line title base from the first user message. Collapses whitespace — multiline first messages (pasted stacks, code) otherwise flow into the saved title and break the resume hint. Implementasi command atau utilitas pendukung command. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `deriveFirstPrompt`, `call`.
+- **`index.ts`** (`restored-src/src/commands/branch/index.ts`): Entry point command/barrel untuk subfitur command di folder ini. Berisi fungsi utilitas/operasional yang dipakai modul lain.
 
 ## Direktori: `restored-src/src/commands/break-cache`
 
-- **`index.js`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
+- **`index.js`** (`restored-src/src/commands/break-cache/index.js`): Entry point command/barrel untuk subfitur command di folder ini.
 
 ## Direktori: `restored-src/src/commands/bridge`
 
-- **`bridge.tsx`**: /remote-control command — manages the bidirectional bridge connection.  When enabled, sets replBridgeEnabled in AppState, which triggers useReplBridge...
-- **`index.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
+- **`bridge.tsx`** (`restored-src/src/commands/bridge/bridge.tsx`): /remote-control command — manages the bidirectional bridge connection. When enabled, sets replBridgeEnabled in AppState, which triggers useReplBridge in REPL.tsx to initialize the bridge connection. The bridge registers an environment, creates a session wit... Implementasi command interaktif berbasis Ink/React. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `call`.
+- **`index.ts`** (`restored-src/src/commands/bridge/index.ts`): Entry point command/barrel untuk subfitur command di folder ini. Berisi fungsi utilitas/operasional yang dipakai modul lain.
 
 ## Direktori: `restored-src/src/commands/btw`
 
-- **`btw.tsx`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`index.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
+- **`btw.tsx`** (`restored-src/src/commands/btw/btw.tsx`): Build CacheSafeParams for the side question fork. The preferred source is getLastCacheSafeParams — the exact systemPrompt/userContext/systemContext bytes the main thread sent on its last request (captured in stopHooks). Reusing them guarantees a byte- ident... Implementasi command interaktif berbasis Ink/React. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `call`.
+- **`index.ts`** (`restored-src/src/commands/btw/index.ts`): Entry point command/barrel untuk subfitur command di folder ini. Berisi fungsi utilitas/operasional yang dipakai modul lain.
 
 ## Direktori: `restored-src/src/commands/bughunter`
 
-- **`index.js`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
+- **`index.js`** (`restored-src/src/commands/bughunter/index.js`): Entry point command/barrel untuk subfitur command di folder ini.
 
 ## Direktori: `restored-src/src/commands/chrome`
 
-- **`chrome.tsx`**: Mengekspor: call.
-- **`index.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
+- **`chrome.tsx`** (`restored-src/src/commands/chrome/chrome.tsx`): Implementasi command interaktif berbasis Ink/React. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `call`.
+- **`index.ts`** (`restored-src/src/commands/chrome/index.ts`): Entry point command/barrel untuk subfitur command di folder ini. Berisi fungsi utilitas/operasional yang dipakai modul lain.
 
 ## Direktori: `restored-src/src/commands/clear`
 
-- **`caches.ts`**: Session cache clearing utilities. This module is imported at startup by main.tsx, so keep imports minimal.
-- **`clear.ts`**: Mengekspor: call.
-- **`conversation.ts`**: Conversation clearing utility. This module has heavier dependencies and should be lazy-loaded when possible.
-- **`index.ts`**: Clear command - minimal metadata only. Implementation is lazy-loaded from clear.ts to reduce startup time. Utility functions: - clearSessionCaches: im...
+- **`caches.ts`** (`restored-src/src/commands/clear/caches.ts`): Clear all session-related caches. Call this when resuming a session to ensure fresh file/skill discovery. This is a subset of what clearConversation does - it only clears caches without affecting messages, session ID, or triggering hooks. @param preservedAg... Implementasi command atau utilitas pendukung command. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `clearSessionCaches`.
+- **`clear.ts`** (`restored-src/src/commands/clear/clear.ts`): Implementasi command atau utilitas pendukung command. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `call`.
+- **`conversation.ts`** (`restored-src/src/commands/clear/conversation.ts`): Implementasi command atau utilitas pendukung command. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `clearConversation`.
+- **`index.ts`** (`restored-src/src/commands/clear/index.ts`): Entry point command/barrel untuk subfitur command di folder ini. Berisi fungsi utilitas/operasional yang dipakai modul lain.
 
 ## Direktori: `restored-src/src/commands/color`
 
-- **`color.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`index.ts`**: Color command - minimal metadata only. Implementation is lazy-loaded from color.ts to reduce startup time.
+- **`color.ts`** (`restored-src/src/commands/color/color.ts`): Implementasi command atau utilitas pendukung command. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `call`.
+- **`index.ts`** (`restored-src/src/commands/color/index.ts`): Entry point command/barrel untuk subfitur command di folder ini. Berisi fungsi utilitas/operasional yang dipakai modul lain.
 
 ## Direktori: `restored-src/src/commands/compact`
 
-- **`compact.ts`**: Mengekspor: call.
-- **`index.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
+- **`compact.ts`** (`restored-src/src/commands/compact/compact.ts`): Implementasi command atau utilitas pendukung command. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `call`.
+- **`index.ts`** (`restored-src/src/commands/compact/index.ts`): Entry point command/barrel untuk subfitur command di folder ini. Berisi fungsi utilitas/operasional yang dipakai modul lain.
 
 ## Direktori: `restored-src/src/commands/config`
 
-- **`config.tsx`**: Mengekspor: call.
-- **`index.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
+- **`config.tsx`** (`restored-src/src/commands/config/config.tsx`): Implementasi command interaktif berbasis Ink/React. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `call`.
+- **`index.ts`** (`restored-src/src/commands/config/index.ts`): Entry point command/barrel untuk subfitur command di folder ini. Berisi fungsi utilitas/operasional yang dipakai modul lain.
 
 ## Direktori: `restored-src/src/commands/context`
 
-- **`context-noninteractive.ts`**: Shared data-collection path for `/context` (slash command) and the SDK `get_context_usage` control request. Mirrors query.ts's pre-API transforms (com...
-- **`context.tsx`**: Apply the same context transforms query.ts does before the API call, so /context shows what the model actually sees rather than the REPL's raw history...
-- **`index.ts`**: Mengekspor: context, contextNonInteractive.
+- **`context-noninteractive.ts`** (`restored-src/src/commands/context/context-noninteractive.ts`): Shared data-collection path for '/context' (slash command) and the SDK 'get_context_usage' control request. Mirrors query.ts's pre-API transforms (compact boundary, projectView, microcompact) so the token count reflects what the model actually sees. Implementasi command atau utilitas pendukung command. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `collectContextData`, `call`.
+- **`context.tsx`** (`restored-src/src/commands/context/context.tsx`): Apply the same context transforms query.ts does before the API call, so /context shows what the model actually sees rather than the REPL's raw history. Without projectView the token count overcounts by however much was collapsed — user sees "180k, 3 spans c... Implementasi command interaktif berbasis Ink/React. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `call`.
+- **`index.ts`** (`restored-src/src/commands/context/index.ts`): Entry point command/barrel untuk subfitur command di folder ini. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `context`, `contextNonInteractive`.
 
 ## Direktori: `restored-src/src/commands/copy`
 
-- **`copy.tsx`**: Mengekspor: collectRecentAssistantTexts, fileExtension, call.
-- **`index.ts`**: Copy command - minimal metadata only. Implementation is lazy-loaded from copy.tsx to reduce startup time.
+- **`copy.tsx`** (`restored-src/src/commands/copy/copy.tsx`): Walk messages newest-first, returning text from assistant messages that actually said something (skips tool-use-only turns and API errors). Index 0 = latest, 1 = second-to-latest, etc. Caps at MAX_LOOKBACK. Implementasi command interaktif berbasis Ink/React. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `collectRecentAssistantTexts`, `fileExtension`, `call`.
+- **`index.ts`** (`restored-src/src/commands/copy/index.ts`): Entry point command/barrel untuk subfitur command di folder ini. Berisi fungsi utilitas/operasional yang dipakai modul lain.
 
 ## Direktori: `restored-src/src/commands/cost`
 
-- **`cost.ts`**: Mengekspor: call.
-- **`index.ts`**: Cost command - minimal metadata only. Implementation is lazy-loaded from cost.ts to reduce startup time.
+- **`cost.ts`** (`restored-src/src/commands/cost/cost.ts`): Implementasi command atau utilitas pendukung command. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `call`.
+- **`index.ts`** (`restored-src/src/commands/cost/index.ts`): Entry point command/barrel untuk subfitur command di folder ini. Berisi fungsi utilitas/operasional yang dipakai modul lain.
 
 ## Direktori: `restored-src/src/commands/ctx_viz`
 
-- **`index.js`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
+- **`index.js`** (`restored-src/src/commands/ctx_viz/index.js`): Entry point command/barrel untuk subfitur command di folder ini.
 
 ## Direktori: `restored-src/src/commands/debug-tool-call`
 
-- **`index.js`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
+- **`index.js`** (`restored-src/src/commands/debug-tool-call/index.js`): Entry point command/barrel untuk subfitur command di folder ini.
 
 ## Direktori: `restored-src/src/commands/desktop`
 
-- **`desktop.tsx`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`index.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
+- **`desktop.tsx`** (`restored-src/src/commands/desktop/desktop.tsx`): Implementasi command interaktif berbasis Ink/React. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `call`.
+- **`index.ts`** (`restored-src/src/commands/desktop/index.ts`): Entry point command/barrel untuk subfitur command di folder ini. Berisi fungsi utilitas/operasional yang dipakai modul lain.
 
 ## Direktori: `restored-src/src/commands/diff`
 
-- **`diff.tsx`**: Mengekspor: call.
-- **`index.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
+- **`diff.tsx`** (`restored-src/src/commands/diff/diff.tsx`): Implementasi command interaktif berbasis Ink/React. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `call`.
+- **`index.ts`** (`restored-src/src/commands/diff/index.ts`): Entry point command/barrel untuk subfitur command di folder ini.
 
 ## Direktori: `restored-src/src/commands/doctor`
 
-- **`doctor.tsx`**: Mengekspor: call.
-- **`index.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
+- **`doctor.tsx`** (`restored-src/src/commands/doctor/doctor.tsx`): Implementasi command interaktif berbasis Ink/React. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `call`.
+- **`index.ts`** (`restored-src/src/commands/doctor/index.ts`): Entry point command/barrel untuk subfitur command di folder ini. Berisi fungsi utilitas/operasional yang dipakai modul lain.
 
 ## Direktori: `restored-src/src/commands/effort`
 
-- **`effort.tsx`**: Mengekspor: showCurrentEffort, executeEffort.
-- **`index.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
+- **`effort.tsx`** (`restored-src/src/commands/effort/effort.tsx`): Implementasi command interaktif berbasis Ink/React. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `showCurrentEffort`, `executeEffort`, `call`.
+- **`index.ts`** (`restored-src/src/commands/effort/index.ts`): Entry point command/barrel untuk subfitur command di folder ini.
 
 ## Direktori: `restored-src/src/commands/env`
 
-- **`index.js`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
+- **`index.js`** (`restored-src/src/commands/env/index.js`): Entry point command/barrel untuk subfitur command di folder ini.
 
 ## Direktori: `restored-src/src/commands/exit`
 
-- **`exit.tsx`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`index.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
+- **`exit.tsx`** (`restored-src/src/commands/exit/exit.tsx`): Implementasi command interaktif berbasis Ink/React. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `call`.
+- **`index.ts`** (`restored-src/src/commands/exit/index.ts`): Entry point command/barrel untuk subfitur command di folder ini. Berisi fungsi utilitas/operasional yang dipakai modul lain.
 
 ## Direktori: `restored-src/src/commands/export`
 
-- **`export.tsx`**: Mengekspor: extractFirstPrompt, sanitizeFilename.
-- **`index.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
+- **`export.tsx`** (`restored-src/src/commands/export/export.tsx`): Implementasi command interaktif berbasis Ink/React. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `extractFirstPrompt`, `sanitizeFilename`, `call`.
+- **`index.ts`** (`restored-src/src/commands/export/index.ts`): Entry point command/barrel untuk subfitur command di folder ini. Berisi fungsi utilitas/operasional yang dipakai modul lain.
 
 ## Direktori: `restored-src/src/commands/extra-usage`
 
-- **`extra-usage-core.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`extra-usage-noninteractive.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`extra-usage.tsx`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`index.ts`**: Mengekspor: extraUsage, extraUsageNonInteractive.
+- **`extra-usage-core.ts`** (`restored-src/src/commands/extra-usage/extra-usage-core.ts`): Implementasi command atau utilitas pendukung command. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `runExtraUsage`.
+- **`extra-usage-noninteractive.ts`** (`restored-src/src/commands/extra-usage/extra-usage-noninteractive.ts`): Implementasi command atau utilitas pendukung command. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `call`.
+- **`extra-usage.tsx`** (`restored-src/src/commands/extra-usage/extra-usage.tsx`): Implementasi command interaktif berbasis Ink/React. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `call`.
+- **`index.ts`** (`restored-src/src/commands/extra-usage/index.ts`): Entry point command/barrel untuk subfitur command di folder ini. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `extraUsage`, `extraUsageNonInteractive`.
 
 ## Direktori: `restored-src/src/commands/fast`
 
-- **`fast.tsx`**: Mengekspor: FastModePicker.
-- **`index.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
+- **`fast.tsx`** (`restored-src/src/commands/fast/fast.tsx`): Implementasi command interaktif berbasis Ink/React. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `FastModePicker`, `call`.
+- **`index.ts`** (`restored-src/src/commands/fast/index.ts`): Entry point command/barrel untuk subfitur command di folder ini. Berisi fungsi utilitas/operasional yang dipakai modul lain.
 
 ## Direktori: `restored-src/src/commands/feedback`
 
-- **`feedback.tsx`**: Mengekspor: renderFeedbackComponent.
-- **`index.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
+- **`feedback.tsx`** (`restored-src/src/commands/feedback/feedback.tsx`): Implementasi command interaktif berbasis Ink/React. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `renderFeedbackComponent`, `call`.
+- **`index.ts`** (`restored-src/src/commands/feedback/index.ts`): Entry point command/barrel untuk subfitur command di folder ini. Berisi fungsi utilitas/operasional yang dipakai modul lain.
 
 ## Direktori: `restored-src/src/commands/files`
 
-- **`files.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`index.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
+- **`files.ts`** (`restored-src/src/commands/files/files.ts`): Implementasi command atau utilitas pendukung command. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `call`.
+- **`index.ts`** (`restored-src/src/commands/files/index.ts`): Entry point command/barrel untuk subfitur command di folder ini. Berisi fungsi utilitas/operasional yang dipakai modul lain.
 
 ## Direktori: `restored-src/src/commands/good-claude`
 
-- **`index.js`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
+- **`index.js`** (`restored-src/src/commands/good-claude/index.js`): Entry point command/barrel untuk subfitur command di folder ini.
 
 ## Direktori: `restored-src/src/commands/heapdump`
 
-- **`heapdump.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`index.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
+- **`heapdump.ts`** (`restored-src/src/commands/heapdump/heapdump.ts`): Implementasi command atau utilitas pendukung command. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `call`.
+- **`index.ts`** (`restored-src/src/commands/heapdump/index.ts`): Entry point command/barrel untuk subfitur command di folder ini. Berisi fungsi utilitas/operasional yang dipakai modul lain.
 
 ## Direktori: `restored-src/src/commands/help`
 
-- **`help.tsx`**: Mengekspor: call.
-- **`index.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
+- **`help.tsx`** (`restored-src/src/commands/help/help.tsx`): Implementasi command interaktif berbasis Ink/React. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `call`.
+- **`index.ts`** (`restored-src/src/commands/help/index.ts`): Entry point command/barrel untuk subfitur command di folder ini. Berisi fungsi utilitas/operasional yang dipakai modul lain.
 
 ## Direktori: `restored-src/src/commands/hooks`
 
-- **`hooks.tsx`**: Mengekspor: call.
-- **`index.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
+- **`hooks.tsx`** (`restored-src/src/commands/hooks/hooks.tsx`): Implementasi command interaktif berbasis Ink/React. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `call`.
+- **`index.ts`** (`restored-src/src/commands/hooks/index.ts`): Entry point command/barrel untuk subfitur command di folder ini. Berisi fungsi utilitas/operasional yang dipakai modul lain.
 
 ## Direktori: `restored-src/src/commands/ide`
 
-- **`ide.tsx`**: Mengekspor: formatWorkspaceFolders.
-- **`index.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
+- **`ide.tsx`** (`restored-src/src/commands/ide/ide.tsx`): Formats workspace folders for display, stripping cwd and showing tail end of paths @param folders Array of folder paths @param maxLength Maximum total length of the formatted string @returns Formatted string with folder paths. Implementasi command interaktif berbasis Ink/React. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `call`, `formatWorkspaceFolders`.
+- **`index.ts`** (`restored-src/src/commands/ide/index.ts`): Entry point command/barrel untuk subfitur command di folder ini. Berisi fungsi utilitas/operasional yang dipakai modul lain.
 
 ## Direktori: `restored-src/src/commands/install-github-app`
 
-- **`ApiKeyStep.tsx`**: Mengekspor: ApiKeyStep.
-- **`CheckExistingSecretStep.tsx`**: Mengekspor: CheckExistingSecretStep.
-- **`CheckGitHubStep.tsx`**: Mengekspor: CheckGitHubStep.
-- **`ChooseRepoStep.tsx`**: Mengekspor: ChooseRepoStep.
-- **`CreatingStep.tsx`**: Mengekspor: CreatingStep.
-- **`ErrorStep.tsx`**: Mengekspor: ErrorStep.
-- **`ExistingWorkflowStep.tsx`**: Mengekspor: ExistingWorkflowStep.
-- **`InstallAppStep.tsx`**: Mengekspor: InstallAppStep.
-- **`OAuthFlowStep.tsx`**: Mengekspor: OAuthFlowStep.
-- **`SuccessStep.tsx`**: Mengekspor: SuccessStep.
-- **`WarningsStep.tsx`**: Mengekspor: WarningsStep.
-- **`index.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`install-github-app.tsx`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`setupGitHubActions.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
+- **`ApiKeyStep.tsx`** (`restored-src/src/commands/install-github-app/ApiKeyStep.tsx`): Implementasi command interaktif berbasis Ink/React. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `ApiKeyStep`.
+- **`CheckExistingSecretStep.tsx`** (`restored-src/src/commands/install-github-app/CheckExistingSecretStep.tsx`): Implementasi command interaktif berbasis Ink/React. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `CheckExistingSecretStep`.
+- **`CheckGitHubStep.tsx`** (`restored-src/src/commands/install-github-app/CheckGitHubStep.tsx`): Implementasi command interaktif berbasis Ink/React. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `CheckGitHubStep`.
+- **`ChooseRepoStep.tsx`** (`restored-src/src/commands/install-github-app/ChooseRepoStep.tsx`): Implementasi command interaktif berbasis Ink/React. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `ChooseRepoStep`.
+- **`CreatingStep.tsx`** (`restored-src/src/commands/install-github-app/CreatingStep.tsx`): Implementasi command interaktif berbasis Ink/React. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `CreatingStep`.
+- **`ErrorStep.tsx`** (`restored-src/src/commands/install-github-app/ErrorStep.tsx`): Implementasi command interaktif berbasis Ink/React. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `ErrorStep`.
+- **`ExistingWorkflowStep.tsx`** (`restored-src/src/commands/install-github-app/ExistingWorkflowStep.tsx`): Implementasi command interaktif berbasis Ink/React. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `ExistingWorkflowStep`.
+- **`InstallAppStep.tsx`** (`restored-src/src/commands/install-github-app/InstallAppStep.tsx`): Implementasi command interaktif berbasis Ink/React. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `InstallAppStep`.
+- **`OAuthFlowStep.tsx`** (`restored-src/src/commands/install-github-app/OAuthFlowStep.tsx`): Implementasi command interaktif berbasis Ink/React. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `OAuthFlowStep`.
+- **`SuccessStep.tsx`** (`restored-src/src/commands/install-github-app/SuccessStep.tsx`): Implementasi command interaktif berbasis Ink/React. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `SuccessStep`.
+- **`WarningsStep.tsx`** (`restored-src/src/commands/install-github-app/WarningsStep.tsx`): Implementasi command interaktif berbasis Ink/React. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `WarningsStep`.
+- **`index.ts`** (`restored-src/src/commands/install-github-app/index.ts`): Entry point command/barrel untuk subfitur command di folder ini. Berisi fungsi utilitas/operasional yang dipakai modul lain.
+- **`install-github-app.tsx`** (`restored-src/src/commands/install-github-app/install-github-app.tsx`): Implementasi command interaktif berbasis Ink/React. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `call`.
+- **`setupGitHubActions.ts`** (`restored-src/src/commands/install-github-app/setupGitHubActions.ts`): Implementasi command atau utilitas pendukung command. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `setupGitHubActions`.
 
 ## Direktori: `restored-src/src/commands/install-slack-app`
 
-- **`index.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`install-slack-app.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
+- **`index.ts`** (`restored-src/src/commands/install-slack-app/index.ts`): Entry point command/barrel untuk subfitur command di folder ini. Berisi fungsi utilitas/operasional yang dipakai modul lain.
+- **`install-slack-app.ts`** (`restored-src/src/commands/install-slack-app/install-slack-app.ts`): Implementasi command atau utilitas pendukung command. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `call`.
 
 ## Direktori: `restored-src/src/commands/issue`
 
-- **`index.js`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
+- **`index.js`** (`restored-src/src/commands/issue/index.js`): Entry point command/barrel untuk subfitur command di folder ini.
 
 ## Direktori: `restored-src/src/commands/keybindings`
 
-- **`index.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`keybindings.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
+- **`index.ts`** (`restored-src/src/commands/keybindings/index.ts`): Entry point command/barrel untuk subfitur command di folder ini. Berisi fungsi utilitas/operasional yang dipakai modul lain.
+- **`keybindings.ts`** (`restored-src/src/commands/keybindings/keybindings.ts`): Implementasi command atau utilitas pendukung command. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `call`.
 
 ## Direktori: `restored-src/src/commands/login`
 
-- **`index.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`login.tsx`**: Mengekspor: Login.
+- **`index.ts`** (`restored-src/src/commands/login/index.ts`): Entry point command/barrel untuk subfitur command di folder ini.
+- **`login.tsx`** (`restored-src/src/commands/login/login.tsx`): Implementasi command interaktif berbasis Ink/React. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `call`, `Login`.
 
 ## Direktori: `restored-src/src/commands/logout`
 
-- **`index.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`logout.tsx`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
+- **`index.ts`** (`restored-src/src/commands/logout/index.ts`): Entry point command/barrel untuk subfitur command di folder ini.
+- **`logout.tsx`** (`restored-src/src/commands/logout/logout.tsx`): Implementasi command interaktif berbasis Ink/React. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `performLogout`, `clearAuthRelatedCaches`, `call`.
 
 ## Direktori: `restored-src/src/commands/mcp`
 
-- **`addCommand.ts`**: MCP add CLI subcommand  Extracted from main.tsx to enable direct testing.
-- **`index.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`mcp.tsx`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`xaaIdpCommand.ts`**: `claude mcp xaa` — manage the XAA (SEP-990) IdP connection.  The IdP connection is user-level: configure once, all XAA-enabled MCP servers reuse it. L...
+- **`addCommand.ts`** (`restored-src/src/commands/mcp/addCommand.ts`): Registers the 'mcp add' subcommand on the given Commander command. Implementasi command atau utilitas pendukung command. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `registerMcpAddCommand`.
+- **`index.ts`** (`restored-src/src/commands/mcp/index.ts`): Entry point command/barrel untuk subfitur command di folder ini. Berisi fungsi utilitas/operasional yang dipakai modul lain.
+- **`mcp.tsx`** (`restored-src/src/commands/mcp/mcp.tsx`): Implementasi command interaktif berbasis Ink/React. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `call`.
+- **`xaaIdpCommand.ts`** (`restored-src/src/commands/mcp/xaaIdpCommand.ts`): Implementasi command atau utilitas pendukung command. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `registerMcpXaaIdpCommand`.
 
 ## Direktori: `restored-src/src/commands/memory`
 
-- **`index.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`memory.tsx`**: Mengekspor: call.
+- **`index.ts`** (`restored-src/src/commands/memory/index.ts`): Entry point command/barrel untuk subfitur command di folder ini. Berisi fungsi utilitas/operasional yang dipakai modul lain.
+- **`memory.tsx`** (`restored-src/src/commands/memory/memory.tsx`): Implementasi command interaktif berbasis Ink/React. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `call`.
 
 ## Direktori: `restored-src/src/commands/mobile`
 
-- **`index.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`mobile.tsx`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
+- **`index.ts`** (`restored-src/src/commands/mobile/index.ts`): Entry point command/barrel untuk subfitur command di folder ini. Berisi fungsi utilitas/operasional yang dipakai modul lain.
+- **`mobile.tsx`** (`restored-src/src/commands/mobile/mobile.tsx`): Implementasi command interaktif berbasis Ink/React. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `call`.
 
 ## Direktori: `restored-src/src/commands/mock-limits`
 
-- **`index.js`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
+- **`index.js`** (`restored-src/src/commands/mock-limits/index.js`): Entry point command/barrel untuk subfitur command di folder ini.
 
 ## Direktori: `restored-src/src/commands/model`
 
-- **`index.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`model.tsx`**: Mengekspor: call.
+- **`index.ts`** (`restored-src/src/commands/model/index.ts`): Entry point command/barrel untuk subfitur command di folder ini.
+- **`model.tsx`** (`restored-src/src/commands/model/model.tsx`): Implementasi command interaktif berbasis Ink/React. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `call`.
 
 ## Direktori: `restored-src/src/commands/oauth-refresh`
 
-- **`index.js`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
+- **`index.js`** (`restored-src/src/commands/oauth-refresh/index.js`): Entry point command/barrel untuk subfitur command di folder ini.
 
 ## Direktori: `restored-src/src/commands/onboarding`
 
-- **`index.js`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
+- **`index.js`** (`restored-src/src/commands/onboarding/index.js`): Entry point command/barrel untuk subfitur command di folder ini.
 
 ## Direktori: `restored-src/src/commands/output-style`
 
-- **`index.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`output-style.tsx`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
+- **`index.ts`** (`restored-src/src/commands/output-style/index.ts`): Entry point command/barrel untuk subfitur command di folder ini. Berisi fungsi utilitas/operasional yang dipakai modul lain.
+- **`output-style.tsx`** (`restored-src/src/commands/output-style/output-style.tsx`): Implementasi command interaktif berbasis Ink/React. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `call`.
 
 ## Direktori: `restored-src/src/commands/passes`
 
-- **`index.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`passes.tsx`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
+- **`index.ts`** (`restored-src/src/commands/passes/index.ts`): Entry point command/barrel untuk subfitur command di folder ini.
+- **`passes.tsx`** (`restored-src/src/commands/passes/passes.tsx`): Implementasi command interaktif berbasis Ink/React. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `call`.
 
 ## Direktori: `restored-src/src/commands/perf-issue`
 
-- **`index.js`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
+- **`index.js`** (`restored-src/src/commands/perf-issue/index.js`): Entry point command/barrel untuk subfitur command di folder ini.
 
 ## Direktori: `restored-src/src/commands/permissions`
 
-- **`index.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`permissions.tsx`**: Mengekspor: call.
+- **`index.ts`** (`restored-src/src/commands/permissions/index.ts`): Entry point command/barrel untuk subfitur command di folder ini. Berisi fungsi utilitas/operasional yang dipakai modul lain.
+- **`permissions.tsx`** (`restored-src/src/commands/permissions/permissions.tsx`): Implementasi command interaktif berbasis Ink/React. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `call`.
 
 ## Direktori: `restored-src/src/commands/plan`
 
-- **`index.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`plan.tsx`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
+- **`index.ts`** (`restored-src/src/commands/plan/index.ts`): Entry point command/barrel untuk subfitur command di folder ini. Berisi fungsi utilitas/operasional yang dipakai modul lain.
+- **`plan.tsx`** (`restored-src/src/commands/plan/plan.tsx`): Implementasi command interaktif berbasis Ink/React. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `call`.
 
 ## Direktori: `restored-src/src/commands/plugin`
 
-- **`AddMarketplace.tsx`**: Mengekspor: AddMarketplace.
-- **`BrowseMarketplace.tsx`**: Mengekspor: BrowseMarketplace.
-- **`DiscoverPlugins.tsx`**: Mengekspor: DiscoverPlugins.
-- **`ManageMarketplaces.tsx`**: Mengekspor: ManageMarketplaces.
-- **`ManagePlugins.tsx`**: Mengekspor: filterManagedDisabledPlugins, ManagePlugins.
-- **`PluginErrors.tsx`**: Mengekspor: formatErrorMessage, getErrorGuidance.
-- **`PluginOptionsDialog.tsx`**: Build the onSave payload from collected string inputs.  Sensitive fields are never prepopulated in the text buffer (security), so by the time the user...
-- **`PluginOptionsFlow.tsx`**: Post-install/post-enable config prompt.  Given a LoadedPlugin, checks both the top-level manifest.userConfig and the channel-specific userConfig. Walk...
-- **`PluginSettings.tsx`**: Mengekspor: PluginSettings.
-- **`PluginTrustWarning.tsx`**: Mengekspor: PluginTrustWarning.
-- **`UnifiedInstalledCell.tsx`**: Mengekspor: UnifiedInstalledCell.
-- **`ValidatePlugin.tsx`**: Mengekspor: ValidatePlugin.
-- **`index.tsx`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`parseArgs.ts`**: Mengekspor: ParsedCommand, parsePluginArgs.
-- **`plugin.tsx`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`pluginDetailsHelpers.tsx`**: Shared helper functions and types for plugin details views  Used by both DiscoverPlugins and BrowseMarketplace components.
-- **`usePagination.ts`**: Mengekspor: usePagination.
+- **`AddMarketplace.tsx`** (`restored-src/src/commands/plugin/AddMarketplace.tsx`): Implementasi command interaktif berbasis Ink/React. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `AddMarketplace`.
+- **`BrowseMarketplace.tsx`** (`restored-src/src/commands/plugin/BrowseMarketplace.tsx`): Implementasi command interaktif berbasis Ink/React. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `BrowseMarketplace`.
+- **`DiscoverPlugins.tsx`** (`restored-src/src/commands/plugin/DiscoverPlugins.tsx`): Context-aware empty state message for the Discover screen. Implementasi command interaktif berbasis Ink/React. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `DiscoverPlugins`.
+- **`ManageMarketplaces.tsx`** (`restored-src/src/commands/plugin/ManageMarketplaces.tsx`): Implementasi command interaktif berbasis Ink/React. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `ManageMarketplaces`.
+- **`ManagePlugins.tsx`** (`restored-src/src/commands/plugin/ManagePlugins.tsx`): Filter out plugins that are force-disabled by org policy (policySettings). These are blocked by the organization and cannot be re-enabled by the user. Checks policySettings directly rather than installation scope, since managed settings don't create install... Implementasi command interaktif berbasis Ink/React. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `filterManagedDisabledPlugins`, `ManagePlugins`.
+- **`PluginErrors.tsx`** (`restored-src/src/commands/plugin/PluginErrors.tsx`): Implementasi command interaktif berbasis Ink/React. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `formatErrorMessage`, `getErrorGuidance`.
+- **`PluginOptionsDialog.tsx`** (`restored-src/src/commands/plugin/PluginOptionsDialog.tsx`): Build the onSave payload from collected string inputs. Sensitive fields are never prepopulated in the text buffer (security), so by the time the user reaches the last field every sensitive field they stepped through contains '' in collected. To avoid silent... Implementasi command interaktif berbasis Ink/React. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `buildFinalValues`, `PluginOptionsDialog`.
+- **`PluginOptionsFlow.tsx`** (`restored-src/src/commands/plugin/PluginOptionsFlow.tsx`): Post-install lookup: return the LoadedPlugin for the just-installed pluginId so the caller can divert to PluginOptionsFlow. Returns undefined if the plugin somehow didn't make it into the fresh load — callers treat undefined as "carry on closing." Install s... Implementasi command interaktif berbasis Ink/React. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `findPluginOptionsTarget`, `PluginOptionsFlow`.
+- **`PluginSettings.tsx`** (`restored-src/src/commands/plugin/PluginSettings.tsx`): Determine which settings sources define an extraKnownMarketplace entry. Returns the editable sources (user/project/local) and whether policy also has it. Implementasi command interaktif berbasis Ink/React. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `PluginSettings`.
+- **`PluginTrustWarning.tsx`** (`restored-src/src/commands/plugin/PluginTrustWarning.tsx`): Implementasi command interaktif berbasis Ink/React. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `PluginTrustWarning`.
+- **`UnifiedInstalledCell.tsx`** (`restored-src/src/commands/plugin/UnifiedInstalledCell.tsx`): Implementasi command interaktif berbasis Ink/React. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `UnifiedInstalledCell`.
+- **`ValidatePlugin.tsx`** (`restored-src/src/commands/plugin/ValidatePlugin.tsx`): Implementasi command interaktif berbasis Ink/React. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `ValidatePlugin`.
+- **`index.tsx`** (`restored-src/src/commands/plugin/index.tsx`): Entry point command/barrel untuk subfitur command di folder ini. Modul React/Ink yang merender UI atau dialog interaktif.
+- **`parseArgs.ts`** (`restored-src/src/commands/plugin/parseArgs.ts`): Implementasi command atau utilitas pendukung command. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `ParsedCommand`, `parsePluginArgs`.
+- **`plugin.tsx`** (`restored-src/src/commands/plugin/plugin.tsx`): Implementasi command interaktif berbasis Ink/React. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `call`.
+- **`pluginDetailsHelpers.tsx`** (`restored-src/src/commands/plugin/pluginDetailsHelpers.tsx`): Represents a plugin available for installation from a marketplace. Implementasi command interaktif berbasis Ink/React. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `InstallablePlugin`, `PluginDetailsMenuOption`, `extractGitHubRepo`, `buildPluginDetailsMenuOptions`, dan lainnya.
+- **`usePagination.ts`** (`restored-src/src/commands/plugin/usePagination.ts`): Implementasi command atau utilitas pendukung command. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `usePagination`.
 
 ## Direktori: `restored-src/src/commands/pr_comments`
 
-- **`index.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
+- **`index.ts`** (`restored-src/src/commands/pr_comments/index.ts`): Entry point command/barrel untuk subfitur command di folder ini.
 
 ## Direktori: `restored-src/src/commands/privacy-settings`
 
-- **`index.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`privacy-settings.tsx`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
+- **`index.ts`** (`restored-src/src/commands/privacy-settings/index.ts`): Entry point command/barrel untuk subfitur command di folder ini. Berisi fungsi utilitas/operasional yang dipakai modul lain.
+- **`privacy-settings.tsx`** (`restored-src/src/commands/privacy-settings/privacy-settings.tsx`): Implementasi command interaktif berbasis Ink/React. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `call`.
 
 ## Direktori: `restored-src/src/commands/rate-limit-options`
 
-- **`index.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`rate-limit-options.tsx`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
+- **`index.ts`** (`restored-src/src/commands/rate-limit-options/index.ts`): Entry point command/barrel untuk subfitur command di folder ini. Berisi fungsi utilitas/operasional yang dipakai modul lain.
+- **`rate-limit-options.tsx`** (`restored-src/src/commands/rate-limit-options/rate-limit-options.tsx`): Implementasi command interaktif berbasis Ink/React. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `call`.
 
 ## Direktori: `restored-src/src/commands/release-notes`
 
-- **`index.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`release-notes.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
+- **`index.ts`** (`restored-src/src/commands/release-notes/index.ts`): Entry point command/barrel untuk subfitur command di folder ini. Berisi fungsi utilitas/operasional yang dipakai modul lain.
+- **`release-notes.ts`** (`restored-src/src/commands/release-notes/release-notes.ts`): Implementasi command atau utilitas pendukung command. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `call`.
 
 ## Direktori: `restored-src/src/commands/reload-plugins`
 
-- **`index.ts`**: /reload-plugins — Layer-3 refresh. Applies pending plugin changes to the running session. Implementation lazy-loaded.
-- **`reload-plugins.ts`**: Mengekspor: call.
+- **`index.ts`** (`restored-src/src/commands/reload-plugins/index.ts`): Entry point command/barrel untuk subfitur command di folder ini. Berisi fungsi utilitas/operasional yang dipakai modul lain.
+- **`reload-plugins.ts`** (`restored-src/src/commands/reload-plugins/reload-plugins.ts`): Implementasi command atau utilitas pendukung command. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `call`.
 
 ## Direktori: `restored-src/src/commands/remote-env`
 
-- **`index.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`remote-env.tsx`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
+- **`index.ts`** (`restored-src/src/commands/remote-env/index.ts`): Entry point command/barrel untuk subfitur command di folder ini.
+- **`remote-env.tsx`** (`restored-src/src/commands/remote-env/remote-env.tsx`): Implementasi command interaktif berbasis Ink/React. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `call`.
 
 ## Direktori: `restored-src/src/commands/remote-setup`
 
-- **`api.ts`**: Wraps a raw GitHub token so that its string representation is redacted. `String(token)`, template literals, `JSON.stringify(token)`, and any attached ...
-- **`index.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`remote-setup.tsx`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
+- **`api.ts`** (`restored-src/src/commands/remote-setup/api.ts`): Wraps a raw GitHub token so that its string representation is redacted. 'String(token)', template literals, 'JSON.stringify(token)', and any attached error messages will show '[REDACTED:gh-token]' instead of the token value. Call '.reveal()' only at the sin... Implementasi command atau utilitas pendukung command. Mengimplementasikan class utama untuk area fitur ini. Export utama: `RedactedGithubToken`, `ImportTokenResult`, `ImportTokenError`, `importGithubToken`, dan lainnya.
+- **`index.ts`** (`restored-src/src/commands/remote-setup/index.ts`): Entry point command/barrel untuk subfitur command di folder ini. Berisi fungsi utilitas/operasional yang dipakai modul lain.
+- **`remote-setup.tsx`** (`restored-src/src/commands/remote-setup/remote-setup.tsx`): Implementasi command interaktif berbasis Ink/React. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `call`.
 
 ## Direktori: `restored-src/src/commands/rename`
 
-- **`generateSessionName.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`index.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`rename.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
+- **`generateSessionName.ts`** (`restored-src/src/commands/rename/generateSessionName.ts`): Implementasi command atau utilitas pendukung command. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `generateSessionName`.
+- **`index.ts`** (`restored-src/src/commands/rename/index.ts`): Entry point command/barrel untuk subfitur command di folder ini. Berisi fungsi utilitas/operasional yang dipakai modul lain.
+- **`rename.ts`** (`restored-src/src/commands/rename/rename.ts`): Implementasi command atau utilitas pendukung command. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `call`.
 
 ## Direktori: `restored-src/src/commands/reset-limits`
 
-- **`index.js`**: Mengekspor: resetLimits, resetLimitsNonInteractive.
+- **`index.js`** (`restored-src/src/commands/reset-limits/index.js`): Entry point command/barrel untuk subfitur command di folder ini. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `resetLimits`, `resetLimitsNonInteractive`.
 
 ## Direktori: `restored-src/src/commands/resume`
 
-- **`index.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`resume.tsx`**: Mengekspor: filterResumableSessions, call.
+- **`index.ts`** (`restored-src/src/commands/resume/index.ts`): Entry point command/barrel untuk subfitur command di folder ini. Berisi fungsi utilitas/operasional yang dipakai modul lain.
+- **`resume.tsx`** (`restored-src/src/commands/resume/resume.tsx`): Implementasi command interaktif berbasis Ink/React. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `filterResumableSessions`, `call`.
 
 ## Direktori: `restored-src/src/commands/review`
 
-- **`UltrareviewOverageDialog.tsx`**: Mengekspor: UltrareviewOverageDialog.
-- **`reviewRemote.ts`**: Teleported /ultrareview execution. Creates a CCR session with the current repo, sends the review prompt as the initial message, and registers a Remote...
-- **`ultrareviewCommand.tsx`**: Mengekspor: call.
-- **`ultrareviewEnabled.ts`**: Runtime gate for /ultrareview. GB config's `enabled` field controls visibility — isEnabled() on the command filters it from getCommands() when false, ...
+- **`UltrareviewOverageDialog.tsx`** (`restored-src/src/commands/review/UltrareviewOverageDialog.tsx`): Implementasi command interaktif berbasis Ink/React. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `UltrareviewOverageDialog`.
+- **`reviewRemote.ts`** (`restored-src/src/commands/review/reviewRemote.ts`): Determine whether the user can launch an ultrareview and under what billing terms. Fetches quota and utilization in parallel. Implementasi command atau utilitas pendukung command. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `confirmOverage`, `OverageGate`, `checkOverageGate`, `launchRemoteReview`.
+- **`ultrareviewCommand.tsx`** (`restored-src/src/commands/review/ultrareviewCommand.tsx`): Implementasi command interaktif berbasis Ink/React. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `call`.
+- **`ultrareviewEnabled.ts`** (`restored-src/src/commands/review/ultrareviewEnabled.ts`): Runtime gate for /ultrareview. GB config's 'enabled' field controls visibility — isEnabled() on the command filters it from getCommands() when false, so ungated users don't see the command at all. Implementasi command atau utilitas pendukung command. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `isUltrareviewEnabled`.
 
 ## Direktori: `restored-src/src/commands/rewind`
 
-- **`index.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`rewind.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
+- **`index.ts`** (`restored-src/src/commands/rewind/index.ts`): Entry point command/barrel untuk subfitur command di folder ini. Berisi fungsi utilitas/operasional yang dipakai modul lain.
+- **`rewind.ts`** (`restored-src/src/commands/rewind/rewind.ts`): Implementasi command atau utilitas pendukung command. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `call`.
 
 ## Direktori: `restored-src/src/commands/sandbox-toggle`
 
-- **`index.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`sandbox-toggle.tsx`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
+- **`index.ts`** (`restored-src/src/commands/sandbox-toggle/index.ts`): Entry point command/barrel untuk subfitur command di folder ini. Berisi fungsi utilitas/operasional yang dipakai modul lain.
+- **`sandbox-toggle.tsx`** (`restored-src/src/commands/sandbox-toggle/sandbox-toggle.tsx`): Implementasi command interaktif berbasis Ink/React. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `call`.
 
 ## Direktori: `restored-src/src/commands/session`
 
-- **`index.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`session.tsx`**: Mengekspor: call.
+- **`index.ts`** (`restored-src/src/commands/session/index.ts`): Entry point command/barrel untuk subfitur command di folder ini. Berisi fungsi utilitas/operasional yang dipakai modul lain.
+- **`session.tsx`** (`restored-src/src/commands/session/session.tsx`): Implementasi command interaktif berbasis Ink/React. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `call`.
 
 ## Direktori: `restored-src/src/commands/share`
 
-- **`index.js`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
+- **`index.js`** (`restored-src/src/commands/share/index.js`): Entry point command/barrel untuk subfitur command di folder ini.
 
 ## Direktori: `restored-src/src/commands/skills`
 
-- **`index.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`skills.tsx`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
+- **`index.ts`** (`restored-src/src/commands/skills/index.ts`): Entry point command/barrel untuk subfitur command di folder ini. Berisi fungsi utilitas/operasional yang dipakai modul lain.
+- **`skills.tsx`** (`restored-src/src/commands/skills/skills.tsx`): Implementasi command interaktif berbasis Ink/React. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `call`.
 
 ## Direktori: `restored-src/src/commands/stats`
 
-- **`index.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`stats.tsx`**: Mengekspor: call.
+- **`index.ts`** (`restored-src/src/commands/stats/index.ts`): Entry point command/barrel untuk subfitur command di folder ini. Berisi fungsi utilitas/operasional yang dipakai modul lain.
+- **`stats.tsx`** (`restored-src/src/commands/stats/stats.tsx`): Implementasi command interaktif berbasis Ink/React. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `call`.
 
 ## Direktori: `restored-src/src/commands/status`
 
-- **`index.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`status.tsx`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
+- **`index.ts`** (`restored-src/src/commands/status/index.ts`): Entry point command/barrel untuk subfitur command di folder ini. Berisi fungsi utilitas/operasional yang dipakai modul lain.
+- **`status.tsx`** (`restored-src/src/commands/status/status.tsx`): Implementasi command interaktif berbasis Ink/React. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `call`.
 
 ## Direktori: `restored-src/src/commands/stickers`
 
-- **`index.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`stickers.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
+- **`index.ts`** (`restored-src/src/commands/stickers/index.ts`): Entry point command/barrel untuk subfitur command di folder ini. Berisi fungsi utilitas/operasional yang dipakai modul lain.
+- **`stickers.ts`** (`restored-src/src/commands/stickers/stickers.ts`): Implementasi command atau utilitas pendukung command. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `call`.
 
 ## Direktori: `restored-src/src/commands/summary`
 
-- **`index.js`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
+- **`index.js`** (`restored-src/src/commands/summary/index.js`): Entry point command/barrel untuk subfitur command di folder ini.
 
 ## Direktori: `restored-src/src/commands/tag`
 
-- **`index.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`tag.tsx`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
+- **`index.ts`** (`restored-src/src/commands/tag/index.ts`): Entry point command/barrel untuk subfitur command di folder ini. Berisi fungsi utilitas/operasional yang dipakai modul lain.
+- **`tag.tsx`** (`restored-src/src/commands/tag/tag.tsx`): Implementasi command interaktif berbasis Ink/React. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `call`.
 
 ## Direktori: `restored-src/src/commands/tasks`
 
-- **`index.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`tasks.tsx`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
+- **`index.ts`** (`restored-src/src/commands/tasks/index.ts`): Entry point command/barrel untuk subfitur command di folder ini. Berisi fungsi utilitas/operasional yang dipakai modul lain.
+- **`tasks.tsx`** (`restored-src/src/commands/tasks/tasks.tsx`): Implementasi command interaktif berbasis Ink/React. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `call`.
 
 ## Direktori: `restored-src/src/commands/teleport`
 
-- **`index.js`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
+- **`index.js`** (`restored-src/src/commands/teleport/index.js`): Entry point command/barrel untuk subfitur command di folder ini.
 
 ## Direktori: `restored-src/src/commands/terminalSetup`
 
-- **`index.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`terminalSetup.tsx`**: Mengekspor: getNativeCSIuTerminalDisplayName, shouldOfferTerminalSetup, isShiftEnterKeyBindingInstalled.
+- **`index.ts`** (`restored-src/src/commands/terminalSetup/index.ts`): Entry point command/barrel untuk subfitur command di folder ini. Berisi fungsi utilitas/operasional yang dipakai modul lain.
+- **`terminalSetup.tsx`** (`restored-src/src/commands/terminalSetup/terminalSetup.tsx`): Detect if we're running in a VSCode Remote SSH session. In this case, keybindings need to be installed on the LOCAL machine, not the remote server where Claude is running. Implementasi command interaktif berbasis Ink/React. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `getNativeCSIuTerminalDisplayName`, `shouldOfferTerminalSetup`, `setupTerminal`, `isShiftEnterKeyBindingInstalled`, dan lainnya.
 
 ## Direktori: `restored-src/src/commands/theme`
 
-- **`index.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`theme.tsx`**: Mengekspor: call.
+- **`index.ts`** (`restored-src/src/commands/theme/index.ts`): Entry point command/barrel untuk subfitur command di folder ini. Berisi fungsi utilitas/operasional yang dipakai modul lain.
+- **`theme.tsx`** (`restored-src/src/commands/theme/theme.tsx`): Implementasi command interaktif berbasis Ink/React. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `call`.
 
 ## Direktori: `restored-src/src/commands/thinkback-play`
 
-- **`index.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`thinkback-play.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
+- **`index.ts`** (`restored-src/src/commands/thinkback-play/index.ts`): Entry point command/barrel untuk subfitur command di folder ini. Berisi fungsi utilitas/operasional yang dipakai modul lain.
+- **`thinkback-play.ts`** (`restored-src/src/commands/thinkback-play/thinkback-play.ts`): Implementasi command atau utilitas pendukung command. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `call`.
 
 ## Direktori: `restored-src/src/commands/thinkback`
 
-- **`index.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`thinkback.tsx`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
+- **`index.ts`** (`restored-src/src/commands/thinkback/index.ts`): Entry point command/barrel untuk subfitur command di folder ini. Berisi fungsi utilitas/operasional yang dipakai modul lain.
+- **`thinkback.tsx`** (`restored-src/src/commands/thinkback/thinkback.tsx`): Get the thinkback skill directory from the installed plugin's cache path. Implementasi command interaktif berbasis Ink/React. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `playAnimation`, `call`.
 
 ## Direktori: `restored-src/src/commands/upgrade`
 
-- **`index.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`upgrade.tsx`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
+- **`index.ts`** (`restored-src/src/commands/upgrade/index.ts`): Entry point command/barrel untuk subfitur command di folder ini. Berisi fungsi utilitas/operasional yang dipakai modul lain.
+- **`upgrade.tsx`** (`restored-src/src/commands/upgrade/upgrade.tsx`): Implementasi command interaktif berbasis Ink/React. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `call`.
 
 ## Direktori: `restored-src/src/commands/usage`
 
-- **`index.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`usage.tsx`**: Mengekspor: call.
+- **`index.ts`** (`restored-src/src/commands/usage/index.ts`): Entry point command/barrel untuk subfitur command di folder ini.
+- **`usage.tsx`** (`restored-src/src/commands/usage/usage.tsx`): Implementasi command interaktif berbasis Ink/React. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `call`.
 
 ## Direktori: `restored-src/src/commands/vim`
 
-- **`index.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`vim.ts`**: Mengekspor: call.
+- **`index.ts`** (`restored-src/src/commands/vim/index.ts`): Entry point command/barrel untuk subfitur command di folder ini. Berisi fungsi utilitas/operasional yang dipakai modul lain.
+- **`vim.ts`** (`restored-src/src/commands/vim/vim.ts`): Implementasi command atau utilitas pendukung command. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `call`.
 
 ## Direktori: `restored-src/src/commands/voice`
 
-- **`index.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`voice.ts`**: Mengekspor: call.
+- **`index.ts`** (`restored-src/src/commands/voice/index.ts`): Entry point command/barrel untuk subfitur command di folder ini. Berisi fungsi utilitas/operasional yang dipakai modul lain.
+- **`voice.ts`** (`restored-src/src/commands/voice/voice.ts`): Implementasi command atau utilitas pendukung command. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `call`.
 
 ## Direktori: `restored-src/src/components`
 
-- **`AgentProgressLine.tsx`**: Mengekspor: AgentProgressLine.
-- **`App.tsx`**: Top-level wrapper for interactive sessions. Provides FPS metrics, stats context, and app state to the component tree.
-- **`ApproveApiKey.tsx`**: Mengekspor: ApproveApiKey.
-- **`AutoModeOptInDialog.tsx`**: Mengekspor: AUTO_MODE_DESCRIPTION, AutoModeOptInDialog.
-- **`AutoUpdater.tsx`**: Mengekspor: AutoUpdater.
-- **`AutoUpdaterWrapper.tsx`**: Mengekspor: AutoUpdaterWrapper.
-- **`AwsAuthStatusBox.tsx`**: Mengekspor: AwsAuthStatusBox.
-- **`BaseTextInput.tsx`**: A base component for text inputs that handles rendering and basic input
-- **`BashModeProgress.tsx`**: Mengekspor: BashModeProgress.
-- **`BridgeDialog.tsx`**: Mengekspor: BridgeDialog.
-- **`BypassPermissionsModeDialog.tsx`**: Mengekspor: BypassPermissionsModeDialog.
-- **`ChannelDowngradeDialog.tsx`**: Dialog shown when switching from latest to stable channel. Allows user to choose whether to downgrade or stay on current version.
-- **`ClaudeInChromeOnboarding.tsx`**: Mengekspor: ClaudeInChromeOnboarding.
-- **`ClaudeMdExternalIncludesDialog.tsx`**: Mengekspor: ClaudeMdExternalIncludesDialog.
-- **`ClickableImageRef.tsx`**: Renders an image reference like [Image #1] as a clickable link. When clicked, opens the stored image file in the default viewer.  Falls back to styled...
-- **`CompactSummary.tsx`**: Mengekspor: CompactSummary.
-- **`ConfigurableShortcutHint.tsx`**: The keybinding action (e.g., 'app:toggleTranscript')
-- **`ConsoleOAuthFlow.tsx`**: Mengekspor: ConsoleOAuthFlow.
-- **`ContextSuggestions.tsx`**: Mengekspor: ContextSuggestions.
-- **`ContextVisualization.tsx`**: One-liner for the legend header showing what context-collapse has done. Returns null when nothing's summarized/staged so we don't add visual noise in ...
-- **`CoordinatorAgentStatus.tsx`**: CoordinatorTaskPanel — Steerable list of background agents.  Renders below the prompt input footer whenever local_agent tasks exist. Visibility is dri...
-- **`CostThresholdDialog.tsx`**: Mengekspor: CostThresholdDialog.
-- **`CtrlOToExpand.tsx`**: Mengekspor: SubAgentProvider, CtrlOToExpand, ctrlOToExpand.
-- **`DesktopHandoff.tsx`**: Mengekspor: getDownloadUrl, DesktopHandoff.
-- **`DevBar.tsx`**: Mengekspor: DevBar.
-- **`DevChannelsDialog.tsx`**: Mengekspor: DevChannelsDialog.
-- **`DiagnosticsDisplay.tsx`**: Mengekspor: DiagnosticsDisplay.
-- **`EffortCallout.tsx`**: Mengekspor: EffortCallout, shouldShowEffortCallout.
-- **`EffortIndicator.ts`**: Build the text for the effort-changed notification, e.g. "◐ medium · /effort". Returns undefined if the model doesn't support effort.
-- **`ExitFlow.tsx`**: Mengekspor: ExitFlow.
-- **`ExportDialog.tsx`**: Mengekspor: ExportDialog.
-- **`FallbackToolUseErrorMessage.tsx`**: Mengekspor: FallbackToolUseErrorMessage.
-- **`FallbackToolUseRejectedMessage.tsx`**: Mengekspor: FallbackToolUseRejectedMessage.
-- **`FastIcon.tsx`**: Mengekspor: FastIcon, getFastIconString.
-- **`Feedback.tsx`**: Mengekspor: redactSensitiveInfo, Feedback, createGitHubIssueUrl.
-- **`FileEditToolDiff.tsx`**: Mengekspor: FileEditToolDiff.
-- **`FileEditToolUpdatedMessage.tsx`**: Mengekspor: FileEditToolUpdatedMessage.
-- **`FileEditToolUseRejectedMessage.tsx`**: Mengekspor: FileEditToolUseRejectedMessage.
-- **`FilePathLink.tsx`**: The absolute file path
-- **`FullscreenLayout.tsx`**: Rows of transcript context kept visible above the modal pane's ▔ divider.
-- **`GlobalSearchDialog.tsx`**: Mengekspor: GlobalSearchDialog, parseRipgrepLine.
-- **`HighlightedCode.tsx`**: Mengekspor: HighlightedCode.
-- **`HistorySearchDialog.tsx`**: Mengekspor: HistorySearchDialog.
-- **`IdeAutoConnectDialog.tsx`**: Mengekspor: IdeAutoConnectDialog, shouldShowAutoConnectDialog, IdeDisableAutoConnectDialog.
-- **`IdeOnboardingDialog.tsx`**: Mengekspor: IdeOnboardingDialog, hasIdeOnboardingDialogBeenShown.
-- **`IdeStatusIndicator.tsx`**: Mengekspor: IdeStatusIndicator.
-- **`IdleReturnDialog.tsx`**: Mengekspor: IdleReturnDialog.
-- **`InterruptedByUser.tsx`**: Mengekspor: InterruptedByUser.
-- **`InvalidConfigDialog.tsx`**: Dialog shown when the Claude config file contains invalid JSON
-- **`InvalidSettingsDialog.tsx`**: Dialog shown when settings files have validation errors. User must choose to continue (skipping invalid files) or exit to fix them.
-- **`KeybindingWarnings.tsx`**: Displays keybinding validation warnings in the UI. Similar to McpParsingWarnings, this provides persistent visibility of configuration issues.  Only s...
-- **`LanguagePicker.tsx`**: Mengekspor: LanguagePicker.
-- **`LogSelector.tsx`**: Mengekspor: LogSelectorProps, LogSelector.
-- **`MCPServerApprovalDialog.tsx`**: Mengekspor: MCPServerApprovalDialog.
-- **`MCPServerDesktopImportDialog.tsx`**: Mengekspor: MCPServerDesktopImportDialog.
-- **`MCPServerDialogCopy.tsx`**: Mengekspor: MCPServerDialogCopy.
-- **`MCPServerMultiselectDialog.tsx`**: Mengekspor: MCPServerMultiselectDialog.
-- **`Markdown.tsx`**: When true, render all text content as dim
-- **`MarkdownTable.tsx`**: Accounts for parent indentation (e.g. message dot prefix) and terminal resize races. Without enough margin the table overflows its layout box and Ink'...
-- **`MemoryUsageIndicator.tsx`**: Mengekspor: MemoryUsageIndicator.
-- **`Message.tsx`**: Mengekspor: Props, hasThinkingContent, areMessagePropsEqual.
-- **`MessageModel.tsx`**: Mengekspor: MessageModel.
-- **`MessageResponse.tsx`**: Mengekspor: MessageResponse.
-- **`MessageRow.tsx`**: Whether the previous message in renderableMessages is also a user message.
-- **`MessageSelector.tsx`**: Mengekspor: MessageSelector, selectableUserMessagesFilter, messagesAfterAreOnlySynthetic.
-- **`MessageTimestamp.tsx`**: Mengekspor: MessageTimestamp.
-- **`Messages.tsx`**: Mengekspor: filterForBriefTool, dropTextInBriefTurns, SliceAnchor.
-- **`ModelPicker.tsx`**: Overrides the dim header line below "Select model".
-- **`NativeAutoUpdater.tsx`**: Categorize error messages for analytics
-- **`NotebookEditToolUseRejectedMessage.tsx`**: Mengekspor: NotebookEditToolUseRejectedMessage.
-- **`OffscreenFreeze.tsx`**: Freezes children when they scroll above the terminal viewport (into scrollback).  Any content change above the viewport forces log-update.ts into a fu...
-- **`Onboarding.tsx`**: Mengekspor: Onboarding, SkippableStep.
-- **`OutputStylePicker.tsx`**: Mengekspor: OutputStylePickerProps, OutputStylePicker.
-- **`PackageManagerAutoUpdater.tsx`**: Mengekspor: PackageManagerAutoUpdater.
-- **`PrBadge.tsx`**: Mengekspor: PrBadge.
-- **`PressEnterToContinue.tsx`**: Mengekspor: PressEnterToContinue.
-- **`QuickOpenDialog.tsx`**: Quick Open dialog (ctrl+shift+p / cmd+shift+p). Fuzzy file finder with a syntax-highlighted preview of the focused file.
-- **`RemoteCallout.tsx`**: Mengekspor: RemoteCallout, shouldShowRemoteCallout.
-- **`RemoteEnvironmentDialog.tsx`**: Mengekspor: RemoteEnvironmentDialog.
-- **`ResumeTask.tsx`**: Mengekspor: ResumeTask.
-- **`SandboxViolationExpandedView.tsx`**: Format a timestamp as "h:mm:ssa" (e.g., "1:30:45pm"). Replaces date-fns format() to avoid pulling in a 39MB dependency for one call.
-- **`ScrollKeybindingHandler.tsx`**: Called after every scroll action with the resulting sticky state and the handle (for reading scrollTop/scrollHeight post-scroll).
-- **`SearchBox.tsx`**: Mengekspor: SearchBox.
-- **`SentryErrorBoundary.ts`**: Mengekspor: SentryErrorBoundary.
-- **`SessionBackgroundHint.tsx`**: Shows a hint when user presses Ctrl+B to background the current session. Uses double-press pattern: first press shows hint, second press within 800ms ...
-- **`SessionPreview.tsx`**: Mengekspor: SessionPreview.
-- **`ShowInIDEPrompt.tsx`**: Mengekspor: ShowInIDEPrompt.
-- **`SkillImprovementSurvey.tsx`**: Mengekspor: SkillImprovementSurvey.
-- **`Spinner.tsx`**: Mengekspor: SpinnerWithVerb, BriefIdleStatus, Spinner.
-- **`Stats.tsx`**: Mengekspor: Stats.
-- **`StatusLine.tsx`**: Mengekspor: statusLineShouldDisplay, getLastAssistantMessageId, StatusLine.
-- **`StatusNotices.tsx`**: StatusNotices contains the information displayed to users at startup. We have moved neutral or positive status to src/components/Status.tsx instead, w...
-- **`StructuredDiff.tsx`**: Mengekspor: StructuredDiff.
-- **`StructuredDiffList.tsx`**: Renders a list of diff hunks with ellipsis separators between them.
-- **`TagTabs.tsx`**: Calculate the display width of a tab
-- **`TaskListV2.tsx`**: Mengekspor: TaskListV2.
-- **`TeammateViewHeader.tsx`**: Header shown when viewing a teammate's transcript. Displays teammate name (colored), task description, and exit hint.
-- **`TeleportError.tsx`**: Mengekspor: TeleportLocalErrorType, TeleportError.
-- **`TeleportProgress.tsx`**: Mengekspor: TeleportProgress.
-- **`TeleportRepoMismatchDialog.tsx`**: Mengekspor: TeleportRepoMismatchDialog.
-- **`TeleportResumeWrapper.tsx`**: Wrapper component that manages the full teleport resume flow, including session selection, loading state, and error handling
-- **`TeleportStash.tsx`**: Mengekspor: TeleportStash.
-- **`TextInput.tsx`**: Mengekspor: Props.
-- **`ThemePicker.tsx`**: Skip exit handling when running in a context that already has it (e.g., onboarding)
-- **`ThinkingToggle.tsx`**: Mengekspor: Props, ThinkingToggle.
-- **`TokenWarning.tsx`**: Live collapse progress: "x / y summarized". Sub-component so useSyncExternalStore can subscribe to store mutations unconditionally (hooks-in-condition...
-- **`ToolUseLoader.tsx`**: Mengekspor: ToolUseLoader.
-- **`ValidationErrorsList.tsx`**: Builds a nested tree structure from dot-notation paths Uses lodash setWith to avoid automatic array creation
-- **`VimTextInput.tsx`**: Mengekspor: Props.
-- **`VirtualMessageList.tsx`**: Mengekspor: StickyPrompt, JumpHandle, VirtualMessageList.
-- **`WorkflowMultiselectDialog.tsx`**: Mengekspor: WorkflowMultiselectDialog.
-- **`WorktreeExitDialog.tsx`**: Mengekspor: WorktreeExitDialog.
-- **`messageActions.tsx`**: Mengekspor: NavigableType, NavigableOf, NavigableMessage.
+- **`AgentProgressLine.tsx`** (`restored-src/src/components/AgentProgressLine.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `AgentProgressLine`.
+- **`App.tsx`** (`restored-src/src/components/App.tsx`): Top-level wrapper for interactive sessions. Provides FPS metrics, stats context, and app state to the component tree. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `App`.
+- **`ApproveApiKey.tsx`** (`restored-src/src/components/ApproveApiKey.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `ApproveApiKey`.
+- **`AutoModeOptInDialog.tsx`** (`restored-src/src/components/AutoModeOptInDialog.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `AUTO_MODE_DESCRIPTION`, `AutoModeOptInDialog`.
+- **`AutoUpdater.tsx`** (`restored-src/src/components/AutoUpdater.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `AutoUpdater`.
+- **`AutoUpdaterWrapper.tsx`** (`restored-src/src/components/AutoUpdaterWrapper.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `AutoUpdaterWrapper`.
+- **`AwsAuthStatusBox.tsx`** (`restored-src/src/components/AwsAuthStatusBox.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `AwsAuthStatusBox`.
+- **`BaseTextInput.tsx`** (`restored-src/src/components/BaseTextInput.tsx`): A base component for text inputs that handles rendering and basic input. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `BaseTextInput`.
+- **`BashModeProgress.tsx`** (`restored-src/src/components/BashModeProgress.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `BashModeProgress`.
+- **`BridgeDialog.tsx`** (`restored-src/src/components/BridgeDialog.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `BridgeDialog`.
+- **`BypassPermissionsModeDialog.tsx`** (`restored-src/src/components/BypassPermissionsModeDialog.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `BypassPermissionsModeDialog`.
+- **`ChannelDowngradeDialog.tsx`** (`restored-src/src/components/ChannelDowngradeDialog.tsx`): Dialog shown when switching from latest to stable channel. Allows user to choose whether to downgrade or stay on current version. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `ChannelDowngradeChoice`, `ChannelDowngradeDialog`.
+- **`ClaudeInChromeOnboarding.tsx`** (`restored-src/src/components/ClaudeInChromeOnboarding.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `ClaudeInChromeOnboarding`.
+- **`ClaudeMdExternalIncludesDialog.tsx`** (`restored-src/src/components/ClaudeMdExternalIncludesDialog.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `ClaudeMdExternalIncludesDialog`.
+- **`ClickableImageRef.tsx`** (`restored-src/src/components/ClickableImageRef.tsx`): Renders an image reference like [Image #1] as a clickable link. When clicked, opens the stored image file in the default viewer. Falls back to styled text if: - Terminal doesn't support hyperlinks - Image file is not found in the store. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `ClickableImageRef`.
+- **`CompactSummary.tsx`** (`restored-src/src/components/CompactSummary.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `CompactSummary`.
+- **`ConfigurableShortcutHint.tsx`** (`restored-src/src/components/ConfigurableShortcutHint.tsx`): KeyboardShortcutHint that displays the user-configured shortcut. Falls back to default if keybinding context is not available. @example <ConfigurableShortcutHint action="app:toggleTranscript" context="Global" fallback="ctrl+o" description="expand" />. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `ConfigurableShortcutHint`.
+- **`ConsoleOAuthFlow.tsx`** (`restored-src/src/components/ConsoleOAuthFlow.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `ConsoleOAuthFlow`.
+- **`ContextSuggestions.tsx`** (`restored-src/src/components/ContextSuggestions.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `ContextSuggestions`.
+- **`ContextVisualization.tsx`** (`restored-src/src/components/ContextVisualization.tsx`): One-liner for the legend header showing what context-collapse has done. Returns null when nothing's summarized/staged so we don't add visual noise in the common case. This is the one place a user can see that their context was rewritten — the <collapsed> pl... Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `ContextVisualization`.
+- **`CoordinatorAgentStatus.tsx`** (`restored-src/src/components/CoordinatorAgentStatus.tsx`): Which panel-managed tasks currently have a visible row. Presence in AppState.tasks IS visibility — the 1s tick in CoordinatorTaskPanel evicts tasks past their evictAfter deadline. The evictAfter !== 0 check handles immediate dismiss (x key) without making t... Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `getVisibleAgentTasks`, `CoordinatorTaskPanel`, `useCoordinatorTaskCount`.
+- **`CostThresholdDialog.tsx`** (`restored-src/src/components/CostThresholdDialog.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `CostThresholdDialog`.
+- **`CtrlOToExpand.tsx`** (`restored-src/src/components/CtrlOToExpand.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `SubAgentProvider`, `CtrlOToExpand`, `ctrlOToExpand`.
+- **`DesktopHandoff.tsx`** (`restored-src/src/components/DesktopHandoff.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `getDownloadUrl`, `DesktopHandoff`.
+- **`DevBar.tsx`** (`restored-src/src/components/DevBar.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `DevBar`.
+- **`DevChannelsDialog.tsx`** (`restored-src/src/components/DevChannelsDialog.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `DevChannelsDialog`.
+- **`DiagnosticsDisplay.tsx`** (`restored-src/src/components/DiagnosticsDisplay.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `DiagnosticsDisplay`.
+- **`EffortCallout.tsx`** (`restored-src/src/components/EffortCallout.tsx`): Check whether to show the effort callout. Audience: - Pro: already had medium default; show unless they saw v1 (effortCalloutDismissed) - Max/Team: getting medium via tengu_grey_step2 config; show when enabled - Everyone else: mark as dismissed so it never... Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `EffortCallout`, `shouldShowEffortCallout`.
+- **`EffortIndicator.ts`** (`restored-src/src/components/EffortIndicator.ts`): Build the text for the effort-changed notification, e.g. "◐ medium · /effort". Returns undefined if the model doesn't support effort. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getEffortNotificationText`, `effortLevelToSymbol`.
+- **`ExitFlow.tsx`** (`restored-src/src/components/ExitFlow.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `ExitFlow`.
+- **`ExportDialog.tsx`** (`restored-src/src/components/ExportDialog.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `ExportDialog`.
+- **`FallbackToolUseErrorMessage.tsx`** (`restored-src/src/components/FallbackToolUseErrorMessage.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `FallbackToolUseErrorMessage`.
+- **`FallbackToolUseRejectedMessage.tsx`** (`restored-src/src/components/FallbackToolUseRejectedMessage.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `FallbackToolUseRejectedMessage`.
+- **`FastIcon.tsx`** (`restored-src/src/components/FastIcon.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `FastIcon`, `getFastIconString`.
+- **`Feedback.tsx`** (`restored-src/src/components/Feedback.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `redactSensitiveInfo`, `Feedback`, `createGitHubIssueUrl`.
+- **`FileEditToolDiff.tsx`** (`restored-src/src/components/FileEditToolDiff.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `FileEditToolDiff`.
+- **`FileEditToolUpdatedMessage.tsx`** (`restored-src/src/components/FileEditToolUpdatedMessage.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `FileEditToolUpdatedMessage`.
+- **`FileEditToolUseRejectedMessage.tsx`** (`restored-src/src/components/FileEditToolUseRejectedMessage.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `FileEditToolUseRejectedMessage`.
+- **`FilePathLink.tsx`** (`restored-src/src/components/FilePathLink.tsx`): Renders a file path as an OSC 8 hyperlink. This helps terminals like iTerm correctly identify file paths even when they appear inside parentheses or other text. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `FilePathLink`.
+- **`FullscreenLayout.tsx`** (`restored-src/src/components/FullscreenLayout.tsx`): Layout wrapper for the REPL. In fullscreen mode, puts scrollable content in a sticky-scroll box and pins bottom content via flexbox. Outside fullscreen mode, renders content sequentially so the existing main-screen scrollback rendering works unchanged. Full... Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `ScrollChromeContext`, `useUnseenDivider`, `countUnseenAssistantTurns`, `UnseenDivider`, dan lainnya.
+- **`GlobalSearchDialog.tsx`** (`restored-src/src/components/GlobalSearchDialog.tsx`): Global Search dialog (ctrl+shift+f / cmd+shift+f). Debounced ripgrep search across the workspace. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `GlobalSearchDialog`, `parseRipgrepLine`.
+- **`HighlightedCode.tsx`** (`restored-src/src/components/HighlightedCode.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `HighlightedCode`.
+- **`HistorySearchDialog.tsx`** (`restored-src/src/components/HistorySearchDialog.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `HistorySearchDialog`.
+- **`IdeAutoConnectDialog.tsx`** (`restored-src/src/components/IdeAutoConnectDialog.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `IdeAutoConnectDialog`, `shouldShowAutoConnectDialog`, `IdeDisableAutoConnectDialog`, `shouldShowDisableAutoConnectDialog`.
+- **`IdeOnboardingDialog.tsx`** (`restored-src/src/components/IdeOnboardingDialog.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `IdeOnboardingDialog`, `hasIdeOnboardingDialogBeenShown`.
+- **`IdeStatusIndicator.tsx`** (`restored-src/src/components/IdeStatusIndicator.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `IdeStatusIndicator`.
+- **`IdleReturnDialog.tsx`** (`restored-src/src/components/IdleReturnDialog.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `IdleReturnDialog`.
+- **`InterruptedByUser.tsx`** (`restored-src/src/components/InterruptedByUser.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `InterruptedByUser`.
+- **`InvalidConfigDialog.tsx`** (`restored-src/src/components/InvalidConfigDialog.tsx`): Dialog shown when the Claude config file contains invalid JSON. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `showInvalidConfigDialog`.
+- **`InvalidSettingsDialog.tsx`** (`restored-src/src/components/InvalidSettingsDialog.tsx`): Dialog shown when settings files have validation errors. User must choose to continue (skipping invalid files) or exit to fix them. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `InvalidSettingsDialog`.
+- **`KeybindingWarnings.tsx`** (`restored-src/src/components/KeybindingWarnings.tsx`): Displays keybinding validation warnings in the UI. Similar to McpParsingWarnings, this provides persistent visibility of configuration issues. Only shown when keybinding customization is enabled (ant users + feature gate). Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `KeybindingWarnings`.
+- **`LanguagePicker.tsx`** (`restored-src/src/components/LanguagePicker.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `LanguagePicker`.
+- **`LogSelector.tsx`** (`restored-src/src/components/LogSelector.tsx`): Extracts searchable text content from a message. Handles both string content and structured content blocks. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `LogSelectorProps`, `LogSelector`.
+- **`MCPServerApprovalDialog.tsx`** (`restored-src/src/components/MCPServerApprovalDialog.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `MCPServerApprovalDialog`.
+- **`MCPServerDesktopImportDialog.tsx`** (`restored-src/src/components/MCPServerDesktopImportDialog.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `MCPServerDesktopImportDialog`.
+- **`MCPServerDialogCopy.tsx`** (`restored-src/src/components/MCPServerDialogCopy.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `MCPServerDialogCopy`.
+- **`MCPServerMultiselectDialog.tsx`** (`restored-src/src/components/MCPServerMultiselectDialog.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `MCPServerMultiselectDialog`.
+- **`Markdown.tsx`** (`restored-src/src/components/Markdown.tsx`): Renders markdown content using a hybrid approach: - Tables are rendered as React components with proper flexbox layout - Other content is rendered as ANSI strings via formatToken. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `Markdown`, `StreamingMarkdown`.
+- **`MarkdownTable.tsx`** (`restored-src/src/components/MarkdownTable.tsx`): Renders a markdown table using Ink's Box layout. Handles terminal width by: 1. Calculating minimum column widths based on longest word 2. Distributing available space proportionally 3. Wrapping text within cells (no truncation) 4. Properly aligning multi-li... Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `MarkdownTable`.
+- **`MemoryUsageIndicator.tsx`** (`restored-src/src/components/MemoryUsageIndicator.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `MemoryUsageIndicator`.
+- **`Message.tsx`** (`restored-src/src/components/Message.tsx`): Exported for testing. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `Props`, `hasThinkingContent`, `areMessagePropsEqual`, `Message`.
+- **`MessageModel.tsx`** (`restored-src/src/components/MessageModel.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `MessageModel`.
+- **`MessageResponse.tsx`** (`restored-src/src/components/MessageResponse.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `MessageResponse`.
+- **`MessageRow.tsx`** (`restored-src/src/components/MessageRow.tsx`): Scans forward from 'index+1' to check if any "real" content follows. Used to decide whether a collapsed read/search group should stay in its active (grey dot, present-tense "Reading…") state while the query is still loading. Exported so Messages.tsx can com... Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `Props`, `hasContentAfterIndex`, `isMessageStreaming`, `allToolsResolved`, dan lainnya.
+- **`MessageSelector.tsx`** (`restored-src/src/components/MessageSelector.tsx`): Checks if all messages after the given index are synthetic (interruptions, cancels, etc.) or non-meaningful content. Returns true if there's nothing meaningful to confirm - for example, if the user hit enter then immediately cancelled. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `MessageSelector`, `selectableUserMessagesFilter`, `messagesAfterAreOnlySynthetic`.
+- **`MessageTimestamp.tsx`** (`restored-src/src/components/MessageTimestamp.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `MessageTimestamp`.
+- **`Messages.tsx`** (`restored-src/src/components/Messages.tsx`): In brief-only mode, filter messages to show ONLY Brief tool_use blocks, their tool_results, and real user input. All assistant text is dropped — if the model forgets to call Brief, the user sees nothing for that turn. That's on the model to get right; the f... Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `filterForBriefTool`, `dropTextInBriefTurns`, `SliceAnchor`, `computeSliceStart`, dan lainnya.
+- **`ModelPicker.tsx`** (`restored-src/src/components/ModelPicker.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `Props`, `ModelPicker`.
+- **`NativeAutoUpdater.tsx`** (`restored-src/src/components/NativeAutoUpdater.tsx`): Categorize error messages for analytics. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `NativeAutoUpdater`.
+- **`NotebookEditToolUseRejectedMessage.tsx`** (`restored-src/src/components/NotebookEditToolUseRejectedMessage.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `NotebookEditToolUseRejectedMessage`.
+- **`OffscreenFreeze.tsx`** (`restored-src/src/components/OffscreenFreeze.tsx`): Freezes children when they scroll above the terminal viewport (into scrollback). Any content change above the viewport forces log-update.ts into a full terminal reset (it cannot partially update rows that have scrolled out). For content that updates on a ti... Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `OffscreenFreeze`.
+- **`Onboarding.tsx`** (`restored-src/src/components/Onboarding.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `Onboarding`, `SkippableStep`.
+- **`OutputStylePicker.tsx`** (`restored-src/src/components/OutputStylePicker.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `OutputStylePickerProps`, `OutputStylePicker`.
+- **`PackageManagerAutoUpdater.tsx`** (`restored-src/src/components/PackageManagerAutoUpdater.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `PackageManagerAutoUpdater`.
+- **`PrBadge.tsx`** (`restored-src/src/components/PrBadge.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `PrBadge`.
+- **`PressEnterToContinue.tsx`** (`restored-src/src/components/PressEnterToContinue.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `PressEnterToContinue`.
+- **`QuickOpenDialog.tsx`** (`restored-src/src/components/QuickOpenDialog.tsx`): Quick Open dialog (ctrl+shift+p / cmd+shift+p). Fuzzy file finder with a syntax-highlighted preview of the focused file. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `QuickOpenDialog`.
+- **`RemoteCallout.tsx`** (`restored-src/src/components/RemoteCallout.tsx`): Check whether to show the remote callout (first-time dialog). Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `RemoteCallout`, `shouldShowRemoteCallout`.
+- **`RemoteEnvironmentDialog.tsx`** (`restored-src/src/components/RemoteEnvironmentDialog.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `RemoteEnvironmentDialog`.
+- **`ResumeTask.tsx`** (`restored-src/src/components/ResumeTask.tsx`): Determines the type of error based on the error message. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `ResumeTask`.
+- **`SandboxViolationExpandedView.tsx`** (`restored-src/src/components/SandboxViolationExpandedView.tsx`): Format a timestamp as "h:mm:ssa" (e.g., "1:30:45pm"). Replaces date-fns format() to avoid pulling in a 39MB dependency for one call. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `SandboxViolationExpandedView`.
+- **`ScrollKeybindingHandler.tsx`** (`restored-src/src/components/ScrollKeybindingHandler.tsx`): Keyboard scroll navigation for the fullscreen layout's message scroll box. PgUp/PgDn scroll by half-viewport. Mouse wheel scrolls by a few lines. Scrolling breaks sticky mode; Ctrl+End re-enables it. Wheeling down at the bottom also re-enables sticky so new... Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `shouldClearSelectionOnKey`, `selectionFocusMoveForKey`, `WheelAccelState`, `computeWheelStep`, dan lainnya.
+- **`SearchBox.tsx`** (`restored-src/src/components/SearchBox.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `SearchBox`.
+- **`SentryErrorBoundary.ts`** (`restored-src/src/components/SentryErrorBoundary.ts`): Mengimplementasikan class utama untuk area fitur ini. Export utama: `SentryErrorBoundary`.
+- **`SessionBackgroundHint.tsx`** (`restored-src/src/components/SessionBackgroundHint.tsx`): Shows a hint when user presses Ctrl+B to background the current session. Uses double-press pattern: first press shows hint, second press within 800ms backgrounds. Only activates when: 1. isLoading is true (a query is in progress) 2. No foreground tasks (bas... Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `SessionBackgroundHint`.
+- **`SessionPreview.tsx`** (`restored-src/src/components/SessionPreview.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `SessionPreview`.
+- **`ShowInIDEPrompt.tsx`** (`restored-src/src/components/ShowInIDEPrompt.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `ShowInIDEPrompt`.
+- **`SkillImprovementSurvey.tsx`** (`restored-src/src/components/SkillImprovementSurvey.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `SkillImprovementSurvey`.
+- **`Spinner.tsx`** (`restored-src/src/components/Spinner.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `SpinnerMode`, `SpinnerWithVerb`, `BriefIdleStatus`, `Spinner`.
+- **`Stats.tsx`** (`restored-src/src/components/Stats.tsx`): Creates a stats loading promise that never rejects. Always loads all-time stats for the heatmap. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `Stats`.
+- **`StatusLine.tsx`** (`restored-src/src/components/StatusLine.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `statusLineShouldDisplay`, `getLastAssistantMessageId`, `StatusLine`.
+- **`StatusNotices.tsx`** (`restored-src/src/components/StatusNotices.tsx`): StatusNotices contains the information displayed to users at startup. We have moved neutral or positive status to src/components/Status.tsx instead, which users can access through /status. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `StatusNotices`.
+- **`StructuredDiff.tsx`** (`restored-src/src/components/StructuredDiff.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `StructuredDiff`.
+- **`StructuredDiffList.tsx`** (`restored-src/src/components/StructuredDiffList.tsx`): Renders a list of diff hunks with ellipsis separators between them. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `StructuredDiffList`.
+- **`TagTabs.tsx`** (`restored-src/src/components/TagTabs.tsx`): Calculate the display width of a tab. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `TagTabs`.
+- **`TaskListV2.tsx`** (`restored-src/src/components/TaskListV2.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `TaskListV2`.
+- **`TeammateViewHeader.tsx`** (`restored-src/src/components/TeammateViewHeader.tsx`): Header shown when viewing a teammate's transcript. Displays teammate name (colored), task description, and exit hint. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `TeammateViewHeader`.
+- **`TeleportError.tsx`** (`restored-src/src/components/TeleportError.tsx`): Gets current teleport errors that need to be resolved @returns Set of teleport error types that need to be handled. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `TeleportLocalErrorType`, `TeleportError`, `getTeleportErrors`.
+- **`TeleportProgress.tsx`** (`restored-src/src/components/TeleportProgress.tsx`): Teleports to a remote session with progress UI rendered into the existing root. Fetches the session, checks out the branch, and returns the result. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `TeleportProgress`, `teleportWithProgress`.
+- **`TeleportRepoMismatchDialog.tsx`** (`restored-src/src/components/TeleportRepoMismatchDialog.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `TeleportRepoMismatchDialog`.
+- **`TeleportResumeWrapper.tsx`** (`restored-src/src/components/TeleportResumeWrapper.tsx`): Wrapper component that manages the full teleport resume flow, including session selection, loading state, and error handling. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `TeleportResumeWrapper`.
+- **`TeleportStash.tsx`** (`restored-src/src/components/TeleportStash.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `TeleportStash`.
+- **`TextInput.tsx`** (`restored-src/src/components/TextInput.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `Props`, `TextInput`.
+- **`ThemePicker.tsx`** (`restored-src/src/components/ThemePicker.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `ThemePickerProps`, `ThemePicker`.
+- **`ThinkingToggle.tsx`** (`restored-src/src/components/ThinkingToggle.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `Props`, `ThinkingToggle`.
+- **`TokenWarning.tsx`** (`restored-src/src/components/TokenWarning.tsx`): Live collapse progress: "x / y summarized". Sub-component so useSyncExternalStore can subscribe to store mutations unconditionally (hooks-in-conditionals would violate React rules). The parent only renders this when feature('CONTEXT_COLLAPSE') + isContextCo... Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `TokenWarning`.
+- **`ToolUseLoader.tsx`** (`restored-src/src/components/ToolUseLoader.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `ToolUseLoader`.
+- **`ValidationErrorsList.tsx`** (`restored-src/src/components/ValidationErrorsList.tsx`): Groups and displays validation errors using treeify with deduplication. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `ValidationErrorsList`.
+- **`VimTextInput.tsx`** (`restored-src/src/components/VimTextInput.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `Props`, `VimTextInput`.
+- **`VirtualMessageList.tsx`** (`restored-src/src/components/VirtualMessageList.tsx`): Imperative handle for transcript navigation. Methods compute matches HERE (renderableMessages indices are only valid inside this component — Messages.tsx filters and reorders, REPL can't compute externally). Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `StickyPrompt`, `JumpHandle`, `VirtualMessageList`.
+- **`WorkflowMultiselectDialog.tsx`** (`restored-src/src/components/WorkflowMultiselectDialog.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `WorkflowMultiselectDialog`.
+- **`WorktreeExitDialog.tsx`** (`restored-src/src/components/WorktreeExitDialog.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `WorktreeExitDialog`.
+- **`messageActions.tsx`** (`restored-src/src/components/messageActions.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `NavigableType`, `NavigableOf`, `NavigableMessage`, `isNavigableMessage`, dan lainnya.
 
 ## Direktori: `restored-src/src/components/ClaudeCodeHint`
 
-- **`PluginHintMenu.tsx`**: Mengekspor: PluginHintMenu.
+- **`PluginHintMenu.tsx`** (`restored-src/src/components/ClaudeCodeHint/PluginHintMenu.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `PluginHintMenu`.
 
 ## Direktori: `restored-src/src/components/CustomSelect`
 
-- **`SelectMulti.tsx`**: Text for the submit button. When provided, a submit button is shown and Enter toggles selection (submit only fires when the button is focused). When o...
-- **`index.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`option-map.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`select-input-option.tsx`**: Mengekspor: SelectInputOption.
-- **`select-option.tsx`**: Determines if option is focused.
-- **`select.tsx`**: Mengekspor: OptionWithDescription, SelectProps, Select.
-- **`use-multi-select-state.ts`**: When disabled, user input is ignored.  @default false
-- **`use-select-input.ts`**: When disabled, user input is ignored.  @default false
-- **`use-select-navigation.ts`**: Map where key is option's value and value is option's index.
-- **`use-select-state.ts`**: Number of items to display.  @default 5
+- **`SelectMulti.tsx`** (`restored-src/src/components/CustomSelect/SelectMulti.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `SelectMultiProps`, `SelectMulti`.
+- **`index.ts`** (`restored-src/src/components/CustomSelect/index.ts`): Barrel/entry point yang merapikan export modul di folder ini. Export utama: `OptionWithDescription`.
+- **`option-map.ts`** (`restored-src/src/components/CustomSelect/option-map.ts`): Komponen UI yang dipakai TUI/React layer. Mengimplementasikan class utama untuk area fitur ini. Export utama: `OptionMap`.
+- **`select-input-option.tsx`** (`restored-src/src/components/CustomSelect/select-input-option.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `SelectInputOption`.
+- **`select-option.tsx`** (`restored-src/src/components/CustomSelect/select-option.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `SelectOptionProps`, `SelectOption`.
+- **`select.tsx`** (`restored-src/src/components/CustomSelect/select.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `OptionWithDescription`, `SelectProps`, `Select`.
+- **`use-multi-select-state.ts`** (`restored-src/src/components/CustomSelect/use-multi-select-state.ts`): Komponen UI yang dipakai TUI/React layer. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `UseMultiSelectStateProps`, `MultiSelectState`, `useMultiSelectState`.
+- **`use-select-input.ts`** (`restored-src/src/components/CustomSelect/use-select-input.ts`): Komponen UI yang dipakai TUI/React layer. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `UseSelectProps`, `useSelectInput`.
+- **`use-select-navigation.ts`** (`restored-src/src/components/CustomSelect/use-select-navigation.ts`): Komponen UI yang dipakai TUI/React layer. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `UseSelectNavigationProps`, `SelectNavigation`, `useSelectNavigation`.
+- **`use-select-state.ts`** (`restored-src/src/components/CustomSelect/use-select-state.ts`): Komponen UI yang dipakai TUI/React layer. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `UseSelectStateProps`, `SelectState`, `useSelectState`.
 
 ## Direktori: `restored-src/src/components/DesktopUpsell`
 
-- **`DesktopUpsellStartup.tsx`**: Mengekspor: getDesktopUpsellConfig, shouldShowDesktopUpsellStartup, DesktopUpsellStartup.
+- **`DesktopUpsellStartup.tsx`** (`restored-src/src/components/DesktopUpsell/DesktopUpsellStartup.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `getDesktopUpsellConfig`, `shouldShowDesktopUpsellStartup`, `DesktopUpsellStartup`.
 
 ## Direktori: `restored-src/src/components/FeedbackSurvey`
 
-- **`FeedbackSurvey.tsx`**: Mengekspor: FeedbackSurvey.
-- **`FeedbackSurveyView.tsx`**: Mengekspor: isValidResponseInput, FeedbackSurveyView.
-- **`TranscriptSharePrompt.tsx`**: Mengekspor: TranscriptShareResponse, TranscriptSharePrompt.
-- **`submitTranscriptShare.ts`**: Mengekspor: TranscriptShareTrigger.
-- **`useDebouncedDigitInput.ts`**: Detects when the user types a single valid digit into the prompt input, debounces to avoid accidental submissions (e.g., "1. First item"), trims the d...
-- **`useFeedbackSurvey.tsx`**: Mengekspor: useFeedbackSurvey.
-- **`useMemorySurvey.tsx`**: Mengekspor: useMemorySurvey.
-- **`usePostCompactSurvey.tsx`**: Mengekspor: usePostCompactSurvey.
-- **`useSurveyState.tsx`**: Mengekspor: useSurveyState.
+- **`FeedbackSurvey.tsx`** (`restored-src/src/components/FeedbackSurvey/FeedbackSurvey.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `FeedbackSurvey`.
+- **`FeedbackSurveyView.tsx`** (`restored-src/src/components/FeedbackSurvey/FeedbackSurveyView.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `isValidResponseInput`, `FeedbackSurveyView`.
+- **`TranscriptSharePrompt.tsx`** (`restored-src/src/components/FeedbackSurvey/TranscriptSharePrompt.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `TranscriptShareResponse`, `TranscriptSharePrompt`.
+- **`submitTranscriptShare.ts`** (`restored-src/src/components/FeedbackSurvey/submitTranscriptShare.ts`): Komponen UI yang dipakai TUI/React layer. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `TranscriptShareTrigger`, `submitTranscriptShare`.
+- **`useDebouncedDigitInput.ts`** (`restored-src/src/components/FeedbackSurvey/useDebouncedDigitInput.ts`): Detects when the user types a single valid digit into the prompt input, debounces to avoid accidental submissions (e.g., "1. First item"), trims the digit from the input, and fires a callback. Used by survey components that accept numeric responses typed di... Komponen UI yang dipakai TUI/React layer. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `useDebouncedDigitInput`.
+- **`useFeedbackSurvey.tsx`** (`restored-src/src/components/FeedbackSurvey/useFeedbackSurvey.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `useFeedbackSurvey`.
+- **`useMemorySurvey.tsx`** (`restored-src/src/components/FeedbackSurvey/useMemorySurvey.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `useMemorySurvey`.
+- **`usePostCompactSurvey.tsx`** (`restored-src/src/components/FeedbackSurvey/usePostCompactSurvey.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `usePostCompactSurvey`.
+- **`useSurveyState.tsx`** (`restored-src/src/components/FeedbackSurvey/useSurveyState.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `useSurveyState`.
 
 ## Direktori: `restored-src/src/components/HelpV2`
 
-- **`Commands.tsx`**: Mengekspor: Commands.
-- **`General.tsx`**: Mengekspor: General.
-- **`HelpV2.tsx`**: Mengekspor: HelpV2.
+- **`Commands.tsx`** (`restored-src/src/components/HelpV2/Commands.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `Commands`.
+- **`General.tsx`** (`restored-src/src/components/HelpV2/General.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `General`.
+- **`HelpV2.tsx`** (`restored-src/src/components/HelpV2/HelpV2.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `HelpV2`.
 
 ## Direktori: `restored-src/src/components/HighlightedCode`
 
-- **`Fallback.tsx`**: Mengekspor: HighlightedCodeFallback.
+- **`Fallback.tsx`** (`restored-src/src/components/HighlightedCode/Fallback.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `HighlightedCodeFallback`.
 
 ## Direktori: `restored-src/src/components/LogoV2`
 
-- **`AnimatedAsterisk.tsx`**: Mengekspor: AnimatedAsterisk.
-- **`AnimatedClawd.tsx`**: Hold a pose for n frames (60ms each).
-- **`ChannelsNotice.tsx`**: Mengekspor: ChannelsNotice.
-- **`Clawd.tsx`**: row 1 left (no bg): optional raised arm + side
-- **`CondensedLogo.tsx`**: Mengekspor: CondensedLogo.
-- **`EmergencyTip.tsx`**: Mengekspor: EmergencyTip.
-- **`Feed.tsx`**: Mengekspor: FeedLine, FeedConfig, calculateFeedWidth.
-- **`FeedColumn.tsx`**: Mengekspor: FeedColumn.
-- **`GuestPassesUpsell.tsx`**: Mengekspor: useShowGuestPassesUpsell, incrementGuestPassesSeenCount, GuestPassesUpsell.
-- **`LogoV2.tsx`**: Mengekspor: LogoV2.
-- **`Opus1mMergeNotice.tsx`**: Mengekspor: shouldShowOpus1mMergeNotice, Opus1mMergeNotice.
-- **`OverageCreditUpsell.tsx`**: Whether to show the overage credit upsell on any surface.  Eligibility comes entirely from the backend GET /overage_credit_grant response — the CLI do...
-- **`VoiceModeNotice.tsx`**: Mengekspor: VoiceModeNotice.
-- **`WelcomeV2.tsx`**: Mengekspor: WelcomeV2.
-- **`feedConfigs.tsx`**: Mengekspor: createRecentActivityFeed, createWhatsNewFeed, createProjectOnboardingFeed.
+- **`AnimatedAsterisk.tsx`** (`restored-src/src/components/LogoV2/AnimatedAsterisk.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `AnimatedAsterisk`.
+- **`AnimatedClawd.tsx`** (`restored-src/src/components/LogoV2/AnimatedClawd.tsx`): Clawd with click-triggered animations (crouch-jump with arms up, or look-around). Container height is fixed at CLAWD_HEIGHT — same footprint as a bare '<Clawd />' — so the surrounding layout never shifts. During a crouch only the feet row clips (see comment... Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `AnimatedClawd`.
+- **`ChannelsNotice.tsx`** (`restored-src/src/components/LogoV2/ChannelsNotice.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `ChannelsNotice`.
+- **`Clawd.tsx`** (`restored-src/src/components/LogoV2/Clawd.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `ClawdPose`, `Clawd`.
+- **`CondensedLogo.tsx`** (`restored-src/src/components/LogoV2/CondensedLogo.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `CondensedLogo`.
+- **`EmergencyTip.tsx`** (`restored-src/src/components/LogoV2/EmergencyTip.tsx`): Get the tip of the feed from dynamic config with caching Returns cached value immediately, updates in background. Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `EmergencyTip`.
+- **`Feed.tsx`** (`restored-src/src/components/LogoV2/Feed.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `FeedLine`, `FeedConfig`, `calculateFeedWidth`, `Feed`.
+- **`FeedColumn.tsx`** (`restored-src/src/components/LogoV2/FeedColumn.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `FeedColumn`.
+- **`GuestPassesUpsell.tsx`** (`restored-src/src/components/LogoV2/GuestPassesUpsell.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `useShowGuestPassesUpsell`, `incrementGuestPassesSeenCount`, `GuestPassesUpsell`.
+- **`LogoV2.tsx`** (`restored-src/src/components/LogoV2/LogoV2.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `LogoV2`.
+- **`Opus1mMergeNotice.tsx`** (`restored-src/src/components/LogoV2/Opus1mMergeNotice.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `shouldShowOpus1mMergeNotice`, `Opus1mMergeNotice`.
+- **`OverageCreditUpsell.tsx`** (`restored-src/src/components/LogoV2/OverageCreditUpsell.tsx`): Whether to show the overage credit upsell on any surface. Eligibility comes entirely from the backend GET /overage_credit_grant response — the CLI doesn't replicate tier/threshold/role checks. The backend returns available: false for Team members who aren't... Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `isEligibleForOverageCreditGrant`, `shouldShowOverageCreditUpsell`, `maybeRefreshOverageCreditCache`, `useShowOverageCreditUpsell`, dan lainnya.
+- **`VoiceModeNotice.tsx`** (`restored-src/src/components/LogoV2/VoiceModeNotice.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `VoiceModeNotice`.
+- **`WelcomeV2.tsx`** (`restored-src/src/components/LogoV2/WelcomeV2.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `WelcomeV2`.
+- **`feedConfigs.tsx`** (`restored-src/src/components/LogoV2/feedConfigs.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `createRecentActivityFeed`, `createWhatsNewFeed`, `createProjectOnboardingFeed`, `createGuestPassesFeed`.
 
 ## Direktori: `restored-src/src/components/LspRecommendation`
 
-- **`LspRecommendationMenu.tsx`**: Mengekspor: LspRecommendationMenu.
+- **`LspRecommendationMenu.tsx`** (`restored-src/src/components/LspRecommendation/LspRecommendationMenu.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `LspRecommendationMenu`.
 
 ## Direktori: `restored-src/src/components/ManagedSettingsSecurityDialog`
 
-- **`ManagedSettingsSecurityDialog.tsx`**: Mengekspor: ManagedSettingsSecurityDialog.
-- **`utils.ts`**: Extract dangerous settings from a settings object.  Dangerous env vars are determined by checking against SAFE_ENV_VARS - any env var NOT in SAFE_ENV_...
+- **`ManagedSettingsSecurityDialog.tsx`** (`restored-src/src/components/ManagedSettingsSecurityDialog/ManagedSettingsSecurityDialog.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `ManagedSettingsSecurityDialog`.
+- **`utils.ts`** (`restored-src/src/components/ManagedSettingsSecurityDialog/utils.ts`): Extract dangerous settings from a settings object. Dangerous env vars are determined by checking against SAFE_ENV_VARS - any env var NOT in SAFE_ENV_VARS is considered dangerous. See managedEnv.ts for the authoritative list and threat categories. Komponen UI yang dipakai TUI/React layer. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `DangerousSettings`, `extractDangerousSettings`, `hasDangerousSettings`, `hasDangerousSettingsChanged`, dan lainnya.
 
 ## Direktori: `restored-src/src/components/Passes`
 
-- **`Passes.tsx`**: Mengekspor: Passes.
+- **`Passes.tsx`** (`restored-src/src/components/Passes/Passes.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `Passes`.
 
 ## Direktori: `restored-src/src/components/PromptInput`
 
-- **`HistorySearchInput.tsx`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`IssueFlagBanner.tsx`**: ANT-ONLY: Banner shown in the transcript that prompts users to report issues via /issue. Appears when friction is detected in the conversation.
-- **`Notifications.tsx`**: Mengekspor: FOOTER_TEMPORARY_STATUS_TIMEOUT, Notifications.
-- **`PromptInput.tsx`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`PromptInputFooter.tsx`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`PromptInputFooterLeftSide.tsx`**: Mengekspor: PromptInputFooterLeftSide.
-- **`PromptInputFooterSuggestions.tsx`**: Get the icon for a suggestion based on its type Icons: + for files, ◇ for MCP resources,  for agents
-- **`PromptInputHelpMenu.tsx`**: Format a shortcut for display in the help menu (e.g., "ctrl+o" → "ctrl + o")
-- **`PromptInputModeIndicator.tsx`**: Gets the theme color key for the teammate's assigned color. Returns undefined if not a teammate or if the color is invalid.
-- **`PromptInputQueuedCommands.tsx`**: Check if a command value is an idle notification that should be hidden. Idle notifications are processed silently without showing to the user.
-- **`PromptInputStashNotice.tsx`**: Mengekspor: PromptInputStashNotice.
-- **`SandboxPromptFooterHint.tsx`**: Mengekspor: SandboxPromptFooterHint.
-- **`ShimmeredInput.tsx`**: Mengekspor: HighlightedInput.
-- **`VoiceIndicator.tsx`**: Mengekspor: VoiceIndicator, VoiceWarmupHint.
-- **`inputModes.ts`**: Mengekspor: prependModeCharacterToInput, getModeFromInput, getValueFromInput.
-- **`inputPaste.ts`**: Determines whether the input text should be truncated. If so, it adds a truncated text placeholder and neturns  @param text The input text @param next...
-- **`useMaybeTruncateInput.ts`**: Mengekspor: useMaybeTruncateInput.
-- **`usePromptInputPlaceholder.ts`**: Mengekspor: usePromptInputPlaceholder.
-- **`useShowFastIconHint.ts`**: Hook to manage the /fast hint display next to the fast icon. Shows the hint for 5 seconds once per session.
-- **`useSwarmBanner.ts`**: Mengekspor: useSwarmBanner.
-- **`utils.ts`**: Helper function to check if vim mode is currently enabled @returns boolean indicating if vim mode is active
+- **`HistorySearchInput.tsx`** (`restored-src/src/components/PromptInput/HistorySearchInput.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif.
+- **`IssueFlagBanner.tsx`** (`restored-src/src/components/PromptInput/IssueFlagBanner.tsx`): ANT-ONLY: Banner shown in the transcript that prompts users to report issues via /issue. Appears when friction is detected in the conversation. Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `IssueFlagBanner`.
+- **`Notifications.tsx`** (`restored-src/src/components/PromptInput/Notifications.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `FOOTER_TEMPORARY_STATUS_TIMEOUT`, `Notifications`.
+- **`PromptInput.tsx`** (`restored-src/src/components/PromptInput/PromptInput.tsx`): Compute the initial paste ID by finding the max ID used in existing messages. This handles --continue/--resume scenarios where we need to avoid ID collisions. Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif.
+- **`PromptInputFooter.tsx`** (`restored-src/src/components/PromptInput/PromptInputFooter.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif.
+- **`PromptInputFooterLeftSide.tsx`** (`restored-src/src/components/PromptInput/PromptInputFooterLeftSide.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `PromptInputFooterLeftSide`.
+- **`PromptInputFooterSuggestions.tsx`** (`restored-src/src/components/PromptInput/PromptInputFooterSuggestions.tsx`): Get the icon for a suggestion based on its type Icons: + for files, ◇ for MCP resources, * for agents. Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `SuggestionItem`, `SuggestionType`, `OVERLAY_MAX_ITEMS`, `PromptInputFooterSuggestions`.
+- **`PromptInputHelpMenu.tsx`** (`restored-src/src/components/PromptInput/PromptInputHelpMenu.tsx`): Format a shortcut for display in the help menu (e.g., "ctrl+o" → "ctrl + o"). Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `PromptInputHelpMenu`.
+- **`PromptInputModeIndicator.tsx`** (`restored-src/src/components/PromptInput/PromptInputModeIndicator.tsx`): Gets the theme color key for the teammate's assigned color. Returns undefined if not a teammate or if the color is invalid. Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `PromptInputModeIndicator`.
+- **`PromptInputQueuedCommands.tsx`** (`restored-src/src/components/PromptInput/PromptInputQueuedCommands.tsx`): Check if a command value is an idle notification that should be hidden. Idle notifications are processed silently without showing to the user. Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `PromptInputQueuedCommands`.
+- **`PromptInputStashNotice.tsx`** (`restored-src/src/components/PromptInput/PromptInputStashNotice.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `PromptInputStashNotice`.
+- **`SandboxPromptFooterHint.tsx`** (`restored-src/src/components/PromptInput/SandboxPromptFooterHint.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `SandboxPromptFooterHint`.
+- **`ShimmeredInput.tsx`** (`restored-src/src/components/PromptInput/ShimmeredInput.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `HighlightedInput`.
+- **`VoiceIndicator.tsx`** (`restored-src/src/components/PromptInput/VoiceIndicator.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `VoiceIndicator`, `VoiceWarmupHint`.
+- **`inputModes.ts`** (`restored-src/src/components/PromptInput/inputModes.ts`): Komponen UI yang dipakai TUI/React layer. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `prependModeCharacterToInput`, `getModeFromInput`, `getValueFromInput`, `isInputModeCharacter`.
+- **`inputPaste.ts`** (`restored-src/src/components/PromptInput/inputPaste.ts`): Determines whether the input text should be truncated. If so, it adds a truncated text placeholder and neturns @param text The input text @param nextPasteId The reference id to use @returns The new text to display and separate placeholder content if applica... Komponen UI yang dipakai TUI/React layer. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `maybeTruncateMessageForInput`, `maybeTruncateInput`.
+- **`useMaybeTruncateInput.ts`** (`restored-src/src/components/PromptInput/useMaybeTruncateInput.ts`): Komponen UI yang dipakai TUI/React layer. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `useMaybeTruncateInput`.
+- **`usePromptInputPlaceholder.ts`** (`restored-src/src/components/PromptInput/usePromptInputPlaceholder.ts`): Komponen UI yang dipakai TUI/React layer. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `usePromptInputPlaceholder`.
+- **`useShowFastIconHint.ts`** (`restored-src/src/components/PromptInput/useShowFastIconHint.ts`): Hook to manage the /fast hint display next to the fast icon. Shows the hint for 5 seconds once per session. Komponen UI yang dipakai TUI/React layer. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `useShowFastIconHint`.
+- **`useSwarmBanner.ts`** (`restored-src/src/components/PromptInput/useSwarmBanner.ts`): Hook that returns banner information for swarm, standalone agent, or --agent CLI context. - Leader (not in tmux): Returns "tmux -L ... attach" command with cyan background - Leader (in tmux / in-process): Falls through to standalone-agent check — shows /ren... Komponen UI yang dipakai TUI/React layer. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `useSwarmBanner`.
+- **`utils.ts`** (`restored-src/src/components/PromptInput/utils.ts`): Helper function to check if vim mode is currently enabled @returns boolean indicating if vim mode is active. Komponen UI yang dipakai TUI/React layer. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `isVimModeEnabled`, `getNewlineInstructions`, `isNonSpacePrintable`.
 
 ## Direktori: `restored-src/src/components/Settings`
 
-- **`Config.tsx`**: Mengekspor: Config.
-- **`Settings.tsx`**: Mengekspor: Settings.
-- **`Status.tsx`**: Mengekspor: Status.
-- **`Usage.tsx`**: Mengekspor: Usage.
+- **`Config.tsx`** (`restored-src/src/components/Settings/Config.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `Config`.
+- **`Settings.tsx`** (`restored-src/src/components/Settings/Settings.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `Settings`.
+- **`Status.tsx`** (`restored-src/src/components/Settings/Status.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `buildDiagnostics`, `Status`.
+- **`Usage.tsx`** (`restored-src/src/components/Settings/Usage.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `Usage`.
 
 ## Direktori: `restored-src/src/components/Spinner`
 
-- **`FlashingChar.tsx`**: Mengekspor: FlashingChar.
-- **`GlimmerMessage.tsx`**: Mengekspor: GlimmerMessage.
-- **`ShimmerChar.tsx`**: Mengekspor: ShimmerChar.
-- **`SpinnerAnimationRow.tsx`**: Mengekspor: SpinnerAnimationRowProps, SpinnerAnimationRow.
-- **`SpinnerGlyph.tsx`**: Mengekspor: SpinnerGlyph.
-- **`TeammateSpinnerLine.tsx`**: Extract the last 3 lines of content from a teammate's conversation. Shows recent activity from any message type (user or assistant).
-- **`TeammateSpinnerTree.tsx`**: Leader's active verb (when leader is actively processing)
-- **`index.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`teammateSelectHint.ts`**: Mengekspor: TEAMMATE_SELECT_HINT.
-- **`useShimmerAnimation.ts`**: Mengekspor: useShimmerAnimation.
-- **`useStalledAnimation.ts`**: Mengekspor: useStalledAnimation.
-- **`utils.ts`**: Mengekspor: getDefaultCharacters, interpolateColor, toRGBColor.
+- **`FlashingChar.tsx`** (`restored-src/src/components/Spinner/FlashingChar.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `FlashingChar`.
+- **`GlimmerMessage.tsx`** (`restored-src/src/components/Spinner/GlimmerMessage.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `GlimmerMessage`.
+- **`ShimmerChar.tsx`** (`restored-src/src/components/Spinner/ShimmerChar.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `ShimmerChar`.
+- **`SpinnerAnimationRow.tsx`** (`restored-src/src/components/Spinner/SpinnerAnimationRow.tsx`): The 50ms-animated portion of SpinnerWithVerb. Owns useAnimationFrame(50) and all values derived from the animation clock (frame, glimmer, token counter animation, elapsed-time, stalled intensity, thinking shimmer). The parent SpinnerWithVerb is freed from t... Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `SpinnerAnimationRowProps`, `SpinnerAnimationRow`.
+- **`SpinnerGlyph.tsx`** (`restored-src/src/components/Spinner/SpinnerGlyph.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `SpinnerGlyph`.
+- **`TeammateSpinnerLine.tsx`** (`restored-src/src/components/Spinner/TeammateSpinnerLine.tsx`): Extract the last 3 lines of content from a teammate's conversation. Shows recent activity from any message type (user or assistant). Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `TeammateSpinnerLine`.
+- **`TeammateSpinnerTree.tsx`** (`restored-src/src/components/Spinner/TeammateSpinnerTree.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `TeammateSpinnerTree`.
+- **`index.ts`** (`restored-src/src/components/Spinner/index.ts`): Barrel/entry point yang merapikan export modul di folder ini. Export utama: `FlashingChar`, `GlimmerMessage`, `ShimmerChar`, `SpinnerGlyph`, dan lainnya.
+- **`teammateSelectHint.ts`** (`restored-src/src/components/Spinner/teammateSelectHint.ts`): Komponen UI yang dipakai TUI/React layer. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `TEAMMATE_SELECT_HINT`.
+- **`useShimmerAnimation.ts`** (`restored-src/src/components/Spinner/useShimmerAnimation.ts`): Komponen UI yang dipakai TUI/React layer. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `useShimmerAnimation`.
+- **`useStalledAnimation.ts`** (`restored-src/src/components/Spinner/useStalledAnimation.ts`): Komponen UI yang dipakai TUI/React layer. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `useStalledAnimation`.
+- **`utils.ts`** (`restored-src/src/components/Spinner/utils.ts`): Komponen UI yang dipakai TUI/React layer. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getDefaultCharacters`, `interpolateColor`, `toRGBColor`, `hueToRgb`, dan lainnya.
 
 ## Direktori: `restored-src/src/components/StructuredDiff`
 
-- **`Fallback.tsx`**: / StructuredDiffFallback Component: Word-Level Diff Highlighting Example  This component shows diff changes with word-level highlighting. Here's a wal...
-- **`colorDiff.ts`**: Returns a static reason why the color-diff module is unavailable, or null if available. 'env' = disabled via CLAUDE_CODE_SYNTAX_HIGHLIGHT  The TS port...
+- **`Fallback.tsx`** (`restored-src/src/components/StructuredDiff/Fallback.tsx`): StructuredDiffFallback Component: Word-Level Diff Highlighting Example This component shows diff changes with word-level highlighting. Here's a walkthrough: Example: ''' // Original code function oldName(param) { return param.oldProperty; } // Changed code... Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `LineObject`, `StructuredDiffFallback`, `transformLinesToObjects`, `processAdjacentLines`, dan lainnya.
+- **`colorDiff.ts`** (`restored-src/src/components/StructuredDiff/colorDiff.ts`): Returns a static reason why the color-diff module is unavailable, or null if available. 'env' = disabled via CLAUDE_CODE_SYNTAX_HIGHLIGHT The TS port of color-diff works in all build modes, so the only way to disable it is via the env var. Komponen UI yang dipakai TUI/React layer. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `ColorModuleUnavailableReason`, `getColorModuleUnavailableReason`, `expectColorDiff`, `expectColorFile`, dan lainnya.
 
 ## Direktori: `restored-src/src/components/TrustDialog`
 
-- **`TrustDialog.tsx`**: Mengekspor: TrustDialog.
-- **`utils.ts`**: Mengekspor: getHooksSources, getBashPermissionSources, formatListWithAnd.
+- **`TrustDialog.tsx`** (`restored-src/src/components/TrustDialog/TrustDialog.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `TrustDialog`.
+- **`utils.ts`** (`restored-src/src/components/TrustDialog/utils.ts`): Get which setting sources have bash allow rules. Returns an array of file paths that have bash permissions. Komponen UI yang dipakai TUI/React layer. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getHooksSources`, `getBashPermissionSources`, `formatListWithAnd`, `getOtelHeadersHelperSources`, dan lainnya.
 
 ## Direktori: `restored-src/src/components/agents`
 
-- **`AgentDetail.tsx`**: Mengekspor: AgentDetail.
-- **`AgentEditor.tsx`**: Mengekspor: AgentEditor.
-- **`AgentNavigationFooter.tsx`**: Mengekspor: AgentNavigationFooter.
-- **`AgentsList.tsx`**: Mengekspor: AgentsList.
-- **`AgentsMenu.tsx`**: Mengekspor: AgentsMenu.
-- **`ColorPicker.tsx`**: Mengekspor: ColorPicker.
-- **`ModelSelector.tsx`**: Mengekspor: ModelSelector.
-- **`ToolSelector.tsx`**: Mengekspor: ToolSelector.
-- **`agentFileUtils.ts`**: Formats agent data as markdown file content
-- **`generateAgent.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`types.ts`**: Mengekspor: AGENT_PATHS, ModeState, AgentValidationResult.
-- **`utils.ts`**: Mengekspor: getAgentSourceDisplayName.
-- **`validateAgent.ts`**: Mengekspor: AgentValidationResult, validateAgentType, validateAgent.
+- **`AgentDetail.tsx`** (`restored-src/src/components/agents/AgentDetail.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `AgentDetail`.
+- **`AgentEditor.tsx`** (`restored-src/src/components/agents/AgentEditor.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `AgentEditor`.
+- **`AgentNavigationFooter.tsx`** (`restored-src/src/components/agents/AgentNavigationFooter.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `AgentNavigationFooter`.
+- **`AgentsList.tsx`** (`restored-src/src/components/agents/AgentsList.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `AgentsList`.
+- **`AgentsMenu.tsx`** (`restored-src/src/components/agents/AgentsMenu.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `AgentsMenu`.
+- **`ColorPicker.tsx`** (`restored-src/src/components/agents/ColorPicker.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `ColorPicker`.
+- **`ModelSelector.tsx`** (`restored-src/src/components/agents/ModelSelector.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `ModelSelector`.
+- **`ToolSelector.tsx`** (`restored-src/src/components/agents/ToolSelector.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `ToolSelector`.
+- **`agentFileUtils.ts`** (`restored-src/src/components/agents/agentFileUtils.ts`): Formats agent data as markdown file content. Komponen UI yang dipakai TUI/React layer. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `formatAgentAsMarkdown`, `getNewAgentFilePath`, `getActualAgentFilePath`, `getNewRelativeAgentFilePath`, dan lainnya.
+- **`generateAgent.ts`** (`restored-src/src/components/agents/generateAgent.ts`): Komponen UI yang dipakai TUI/React layer. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `generateAgent`.
+- **`types.ts`** (`restored-src/src/components/agents/types.ts`): Komponen UI yang dipakai TUI/React layer. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `AGENT_PATHS`, `ModeState`, `AgentValidationResult`.
+- **`utils.ts`** (`restored-src/src/components/agents/utils.ts`): Komponen UI yang dipakai TUI/React layer. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getAgentSourceDisplayName`.
+- **`validateAgent.ts`** (`restored-src/src/components/agents/validateAgent.ts`): Komponen UI yang dipakai TUI/React layer. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `AgentValidationResult`, `validateAgentType`, `validateAgent`.
 
 ## Direktori: `restored-src/src/components/agents/new-agent-creation`
 
-- **`CreateAgentWizard.tsx`**: Mengekspor: CreateAgentWizard.
+- **`CreateAgentWizard.tsx`** (`restored-src/src/components/agents/new-agent-creation/CreateAgentWizard.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `CreateAgentWizard`.
 
 ## Direktori: `restored-src/src/components/agents/new-agent-creation/wizard-steps`
 
-- **`ColorStep.tsx`**: Mengekspor: ColorStep.
-- **`ConfirmStep.tsx`**: Mengekspor: ConfirmStep.
-- **`ConfirmStepWrapper.tsx`**: Mengekspor: ConfirmStepWrapper.
-- **`DescriptionStep.tsx`**: Mengekspor: DescriptionStep.
-- **`GenerateStep.tsx`**: Mengekspor: GenerateStep.
-- **`LocationStep.tsx`**: Mengekspor: LocationStep.
-- **`MemoryStep.tsx`**: Mengekspor: MemoryStep.
-- **`MethodStep.tsx`**: Mengekspor: MethodStep.
-- **`ModelStep.tsx`**: Mengekspor: ModelStep.
-- **`PromptStep.tsx`**: Mengekspor: PromptStep.
-- **`ToolsStep.tsx`**: Mengekspor: ToolsStep.
-- **`TypeStep.tsx`**: Mengekspor: TypeStep.
+- **`ColorStep.tsx`** (`restored-src/src/components/agents/new-agent-creation/wizard-steps/ColorStep.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `ColorStep`.
+- **`ConfirmStep.tsx`** (`restored-src/src/components/agents/new-agent-creation/wizard-steps/ConfirmStep.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `ConfirmStep`.
+- **`ConfirmStepWrapper.tsx`** (`restored-src/src/components/agents/new-agent-creation/wizard-steps/ConfirmStepWrapper.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `ConfirmStepWrapper`.
+- **`DescriptionStep.tsx`** (`restored-src/src/components/agents/new-agent-creation/wizard-steps/DescriptionStep.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `DescriptionStep`.
+- **`GenerateStep.tsx`** (`restored-src/src/components/agents/new-agent-creation/wizard-steps/GenerateStep.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `GenerateStep`.
+- **`LocationStep.tsx`** (`restored-src/src/components/agents/new-agent-creation/wizard-steps/LocationStep.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `LocationStep`.
+- **`MemoryStep.tsx`** (`restored-src/src/components/agents/new-agent-creation/wizard-steps/MemoryStep.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `MemoryStep`.
+- **`MethodStep.tsx`** (`restored-src/src/components/agents/new-agent-creation/wizard-steps/MethodStep.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `MethodStep`.
+- **`ModelStep.tsx`** (`restored-src/src/components/agents/new-agent-creation/wizard-steps/ModelStep.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `ModelStep`.
+- **`PromptStep.tsx`** (`restored-src/src/components/agents/new-agent-creation/wizard-steps/PromptStep.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `PromptStep`.
+- **`ToolsStep.tsx`** (`restored-src/src/components/agents/new-agent-creation/wizard-steps/ToolsStep.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `ToolsStep`.
+- **`TypeStep.tsx`** (`restored-src/src/components/agents/new-agent-creation/wizard-steps/TypeStep.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `TypeStep`.
 
 ## Direktori: `restored-src/src/components/design-system`
 
-- **`Byline.tsx`**: The items to join with a middot separator
-- **`Dialog.tsx`**: Custom input guide content. Receives exitState for Ctrl+C/D pending display.
-- **`Divider.tsx`**: Width of the divider in characters. Defaults to terminal width.
-- **`FuzzyPicker.tsx`**: Hint label shown in the byline, e.g. "mention" → "Tab to mention".
-- **`KeyboardShortcutHint.tsx`**: The key or chord to display (e.g., "ctrl+o", "Enter", "↑/↓")
-- **`ListItem.tsx`**: Whether this item is currently focused (keyboard selection). Shows the pointer indicator (❯) when true.
-- **`LoadingState.tsx`**: The loading message to display next to the spinner.
-- **`Pane.tsx`**: Theme color for the top border line.
-- **`ProgressBar.tsx`**: How much progress to display, between 0 and 1 inclusive
-- **`Ratchet.tsx`**: Mengekspor: Ratchet.
-- **`StatusIcon.tsx`**: The status to display. Determines both the icon and color.  - `success`: Green checkmark (✓) - `error`: Red cross (✗) - `warning`: Yellow warning symb...
-- **`Tabs.tsx`**: Controlled mode: current selected tab id/title
-- **`ThemeProvider.tsx`**: The saved user preference. May be 'auto'.
-- **`ThemedBox.tsx`**: Mengekspor: Props.
-- **`ThemedText.tsx`**: Colors uncolored ThemedText in the subtree. Precedence: explicit `color` > this > dimColor. Crosses Box boundaries (Ink's style cascade doesn't).
-- **`color.ts`**: Curried theme-aware color function. Resolves theme keys to raw color values before delegating to the ink renderer's colorize.
+- **`Byline.tsx`** (`restored-src/src/components/design-system/Byline.tsx`): Joins children with a middot separator (" · ") for inline metadata display. Named after the publishing term "byline" - the line of metadata typically shown below a title (e.g., "John Doe · 5 min read · Mar 12"). Automatically filters out null/undefined/fals... Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `Byline`.
+- **`Dialog.tsx`** (`restored-src/src/components/design-system/Dialog.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `Dialog`.
+- **`Divider.tsx`** (`restored-src/src/components/design-system/Divider.tsx`): A horizontal divider line. @example // Full-width dimmed divider <Divider /> @example // Colored divider <Divider color="suggestion" /> @example // Fixed width <Divider width={40} /> @example // Full width minus padding (for indented content) <Divider paddi... Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `Divider`.
+- **`FuzzyPicker.tsx`** (`restored-src/src/components/design-system/FuzzyPicker.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `FuzzyPicker`.
+- **`KeyboardShortcutHint.tsx`** (`restored-src/src/components/design-system/KeyboardShortcutHint.tsx`): Renders a keyboard shortcut hint like "ctrl+o to expand" or "(tab to toggle)" Wrap in <Text dimColor> for the common dim styling. @example // Simple hint wrapped in dim Text <Text dimColor><KeyboardShortcutHint shortcut="esc" action="cancel" /></Text> // Wi... Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `KeyboardShortcutHint`.
+- **`ListItem.tsx`** (`restored-src/src/components/design-system/ListItem.tsx`): A list item component for selection UIs (dropdowns, multi-selects, menus). Handles the common pattern of: - Pointer indicator (❯) for focused items - Checkmark indicator (✓) for selected items - Scroll indicators (↓↑) for truncated lists - Color states for... Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `ListItem`.
+- **`LoadingState.tsx`** (`restored-src/src/components/design-system/LoadingState.tsx`): A spinner with loading message for async operations. @example // Basic loading <LoadingState message="Loading..." /> @example // Bold loading message <LoadingState message="Loading sessions" bold /> @example // With subtitle <LoadingState message="Loading s... Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `LoadingState`.
+- **`Pane.tsx`** (`restored-src/src/components/design-system/Pane.tsx`): A pane — a region of the terminal that appears below the REPL prompt, bounded by a colored top line with a one-row gap above and horizontal padding. Used by all slash-command screens: /config, /help, /plugins, /sandbox, /stats, /permissions. For confirm/can... Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `Pane`.
+- **`ProgressBar.tsx`** (`restored-src/src/components/design-system/ProgressBar.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `ProgressBar`.
+- **`Ratchet.tsx`** (`restored-src/src/components/design-system/Ratchet.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `Ratchet`.
+- **`StatusIcon.tsx`** (`restored-src/src/components/design-system/StatusIcon.tsx`): Renders a status indicator icon with appropriate color. @example // Success indicator <StatusIcon status="success" /> @example // Error with trailing space for text <Text><StatusIcon status="error" withSpace />Failed to connect</Text> @example // Status lin... Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `StatusIcon`.
+- **`Tabs.tsx`** (`restored-src/src/components/design-system/Tabs.tsx`): Opt into header-focus gating. Returns the current header focus state and a callback to hand focus back to the tab row. For a Select, pass 'isDisabled={headerFocused}' and 'onUpFromFirstItem={focusHeader}'; keep the parent Tabs' initialHeaderFocused at its d... Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `Tabs`, `Tab`, `useTabsWidth`, `useTabHeaderFocus`.
+- **`ThemeProvider.tsx`** (`restored-src/src/components/design-system/ThemeProvider.tsx`): Returns the resolved theme for rendering (never 'auto') and a setter that accepts any ThemeSetting (including 'auto'). Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `ThemeProvider`, `useTheme`, `useThemeSetting`, `usePreviewTheme`.
+- **`ThemedBox.tsx`** (`restored-src/src/components/design-system/ThemedBox.tsx`): Resolves a color value that may be a theme key to a raw Color. Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `Props`.
+- **`ThemedText.tsx`** (`restored-src/src/components/design-system/ThemedText.tsx`): Theme-aware Text component that resolves theme color keys to raw colors. This wraps the base Text component with theme resolution. Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `TextHoverColorContext`, `Props`, `ThemedText`.
+- **`color.ts`** (`restored-src/src/components/design-system/color.ts`): Curried theme-aware color function. Resolves theme keys to raw color values before delegating to the ink renderer's colorize. Komponen UI yang dipakai TUI/React layer. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `color`.
 
 ## Direktori: `restored-src/src/components/diff`
 
-- **`DiffDetailView.tsx`**: Displays the diff content for a single file. Uses StructuredDiff for word-level diffing and syntax highlighting. No scrolling - renders all lines (max...
-- **`DiffDialog.tsx`**: Mengekspor: DiffDialog.
-- **`DiffFileList.tsx`**: Mengekspor: DiffFileList.
+- **`DiffDetailView.tsx`** (`restored-src/src/components/diff/DiffDetailView.tsx`): Displays the diff content for a single file. Uses StructuredDiff for word-level diffing and syntax highlighting. No scrolling - renders all lines (max 400 due to parsing limits). Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `DiffDetailView`.
+- **`DiffDialog.tsx`** (`restored-src/src/components/diff/DiffDialog.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `DiffDialog`.
+- **`DiffFileList.tsx`** (`restored-src/src/components/diff/DiffFileList.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `DiffFileList`.
 
 ## Direktori: `restored-src/src/components/grove`
 
-- **`Grove.tsx`**: Mengekspor: GroveDecision, GroveDialog, PrivacySettingsDialog.
+- **`Grove.tsx`** (`restored-src/src/components/grove/Grove.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `GroveDecision`, `GroveDialog`, `PrivacySettingsDialog`.
 
 ## Direktori: `restored-src/src/components/hooks`
 
-- **`HooksConfigMenu.tsx`**: HooksConfigMenu is a read-only browser for configured hooks.  Users can drill into each hook event, see configured matchers and hooks (of any type: co...
-- **`PromptDialog.tsx`**: Mengekspor: PromptDialog.
-- **`SelectEventMode.tsx`**: SelectEventMode is the entrypoint of the Hooks config menu, where the user sees the list of available hook events.  The /hooks menu is read-only: sele...
-- **`SelectHookMode.tsx`**: SelectHookMode shows all hooks configured for a given event+matcher pair.  The /hooks menu is read-only: this view no longer offers "add new hook" and...
-- **`SelectMatcherMode.tsx`**: SelectMatcherMode shows the configured matchers for a selected hook event.  The /hooks menu is read-only: this view no longer offers "add new matcher"...
-- **`ViewHookMode.tsx`**: ViewHookMode shows read-only details for a single configured hook.  The /hooks menu is read-only; this view replaces the former delete-hook confirmati...
+- **`HooksConfigMenu.tsx`** (`restored-src/src/components/hooks/HooksConfigMenu.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `HooksConfigMenu`.
+- **`PromptDialog.tsx`** (`restored-src/src/components/hooks/PromptDialog.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `PromptDialog`.
+- **`SelectEventMode.tsx`** (`restored-src/src/components/hooks/SelectEventMode.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `SelectEventMode`.
+- **`SelectHookMode.tsx`** (`restored-src/src/components/hooks/SelectHookMode.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `SelectHookMode`.
+- **`SelectMatcherMode.tsx`** (`restored-src/src/components/hooks/SelectMatcherMode.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `SelectMatcherMode`.
+- **`ViewHookMode.tsx`** (`restored-src/src/components/hooks/ViewHookMode.tsx`): Get a human-readable label for the primary content field of a hook based on its type. Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `ViewHookMode`.
 
 ## Direktori: `restored-src/src/components/mcp`
 
-- **`CapabilitiesSection.tsx`**: Mengekspor: CapabilitiesSection.
-- **`ElicitationDialog.tsx`**: Called when the phase 2 waiting state is dismissed (URL elicitations only).
-- **`MCPAgentServerMenu.tsx`**: Menu for agent-specific MCP servers. These servers are defined in agent frontmatter and only connect when the agent runs. For HTTP/SSE servers, this a...
-- **`MCPListPanel.tsx`**: Mengekspor: MCPListPanel.
-- **`MCPReconnect.tsx`**: Mengekspor: MCPReconnect.
-- **`MCPRemoteServerMenu.tsx`**: Mengekspor: MCPRemoteServerMenu.
-- **`MCPSettings.tsx`**: Mengekspor: MCPSettings.
-- **`MCPStdioServerMenu.tsx`**: Mengekspor: MCPStdioServerMenu.
-- **`MCPToolDetailView.tsx`**: Mengekspor: MCPToolDetailView.
-- **`MCPToolListView.tsx`**: Mengekspor: MCPToolListView.
-- **`McpParsingWarnings.tsx`**: Mengekspor: McpParsingWarnings.
-- **`index.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
+- **`CapabilitiesSection.tsx`** (`restored-src/src/components/mcp/CapabilitiesSection.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `CapabilitiesSection`.
+- **`ElicitationDialog.tsx`** (`restored-src/src/components/mcp/ElicitationDialog.tsx`): Timer callback for enumTypeaheadRef — module-scope to avoid closure capture. Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `ElicitationDialog`.
+- **`MCPAgentServerMenu.tsx`** (`restored-src/src/components/mcp/MCPAgentServerMenu.tsx`): Menu for agent-specific MCP servers. These servers are defined in agent frontmatter and only connect when the agent runs. For HTTP/SSE servers, this allows pre-authentication before using the agent. Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `MCPAgentServerMenu`.
+- **`MCPListPanel.tsx`** (`restored-src/src/components/mcp/MCPListPanel.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `MCPListPanel`.
+- **`MCPReconnect.tsx`** (`restored-src/src/components/mcp/MCPReconnect.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `MCPReconnect`.
+- **`MCPRemoteServerMenu.tsx`** (`restored-src/src/components/mcp/MCPRemoteServerMenu.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `MCPRemoteServerMenu`.
+- **`MCPSettings.tsx`** (`restored-src/src/components/mcp/MCPSettings.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `MCPSettings`.
+- **`MCPStdioServerMenu.tsx`** (`restored-src/src/components/mcp/MCPStdioServerMenu.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `MCPStdioServerMenu`.
+- **`MCPToolDetailView.tsx`** (`restored-src/src/components/mcp/MCPToolDetailView.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `MCPToolDetailView`.
+- **`MCPToolListView.tsx`** (`restored-src/src/components/mcp/MCPToolListView.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `MCPToolListView`.
+- **`McpParsingWarnings.tsx`** (`restored-src/src/components/mcp/McpParsingWarnings.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `McpParsingWarnings`.
+- **`index.ts`** (`restored-src/src/components/mcp/index.ts`): Barrel/entry point yang merapikan export modul di folder ini. Export utama: `MCPAgentServerMenu`, `MCPListPanel`, `MCPReconnect`, `MCPRemoteServerMenu`, dan lainnya.
 
 ## Direktori: `restored-src/src/components/mcp/utils`
 
-- **`reconnectHelpers.tsx`**: Handles the result of a reconnect attempt and returns an appropriate user message
+- **`reconnectHelpers.tsx`** (`restored-src/src/components/mcp/utils/reconnectHelpers.tsx`): Handles the result of a reconnect attempt and returns an appropriate user message. Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `ReconnectResult`, `handleReconnectResult`, `handleReconnectError`.
 
 ## Direktori: `restored-src/src/components/memory`
 
-- **`MemoryFileSelector.tsx`**: Mengekspor: MemoryFileSelector.
-- **`MemoryUpdateNotification.tsx`**: Mengekspor: getRelativeMemoryPath, MemoryUpdateNotification.
+- **`MemoryFileSelector.tsx`** (`restored-src/src/components/memory/MemoryFileSelector.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `MemoryFileSelector`.
+- **`MemoryUpdateNotification.tsx`** (`restored-src/src/components/memory/MemoryUpdateNotification.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `getRelativeMemoryPath`, `MemoryUpdateNotification`.
 
 ## Direktori: `restored-src/src/components/messages`
 
-- **`AdvisorMessage.tsx`**: Mengekspor: AdvisorMessage.
-- **`AssistantRedactedThinkingMessage.tsx`**: Mengekspor: AssistantRedactedThinkingMessage.
-- **`AssistantTextMessage.tsx`**: Mengekspor: AssistantTextMessage.
-- **`AssistantThinkingMessage.tsx`**: When true, hide this thinking block entirely (used for past thinking in transcript mode)
-- **`AssistantToolUseMessage.tsx`**: Mengekspor: AssistantToolUseMessage.
-- **`AttachmentMessage.tsx`**: Mengekspor: AttachmentMessage.
-- **`CollapsedReadSearchContent.tsx`**: Mengekspor: CollapsedReadSearchContent.
-- **`CompactBoundaryMessage.tsx`**: Mengekspor: CompactBoundaryMessage.
-- **`GroupedToolUseContent.tsx`**: Mengekspor: GroupedToolUseContent.
-- **`HighlightedThinkingText.tsx`**: Mengekspor: HighlightedThinkingText.
-- **`HookProgressMessage.tsx`**: Mengekspor: HookProgressMessage.
-- **`PlanApprovalMessage.tsx`**: Renders a plan approval request with a planMode-colored border, showing the plan content and instructions for approving/rejecting.
-- **`RateLimitMessage.tsx`**: Mengekspor: getUpsellMessage, RateLimitMessage.
-- **`ShutdownMessage.tsx`**: Renders a shutdown request with a warning-colored border.
-- **`SystemAPIErrorMessage.tsx`**: Mengekspor: SystemAPIErrorMessage.
-- **`SystemTextMessage.tsx`**: Mengekspor: SystemTextMessage.
-- **`TaskAssignmentMessage.tsx`**: Renders a task assignment with a cyan border (team-related color).
-- **`UserAgentNotificationMessage.tsx`**: Mengekspor: UserAgentNotificationMessage.
-- **`UserBashInputMessage.tsx`**: Mengekspor: UserBashInputMessage.
-- **`UserBashOutputMessage.tsx`**: Mengekspor: UserBashOutputMessage.
-- **`UserChannelMessage.tsx`**: Mengekspor: UserChannelMessage.
-- **`UserCommandMessage.tsx`**: Mengekspor: UserCommandMessage.
-- **`UserImageMessage.tsx`**: Renders an image attachment in user messages. Shows as a clickable link if the image is stored and terminal supports hyperlinks. Uses MessageResponse ...
-- **`UserLocalCommandOutputMessage.tsx`**: Mengekspor: UserLocalCommandOutputMessage.
-- **`UserMemoryInputMessage.tsx`**: Mengekspor: UserMemoryInputMessage.
-- **`UserPlanMessage.tsx`**: Mengekspor: UserPlanMessage.
-- **`UserPromptMessage.tsx`**: Mengekspor: UserPromptMessage.
-- **`UserResourceUpdateMessage.tsx`**: URI for resource updates, tool name for polling updates
-- **`UserTeammateMessage.tsx`**: Parse all teammate messages from XML format: <teammate-message teammate_id="alice" color="red" summary="Brief update">message content</teammate-messag...
-- **`UserTextMessage.tsx`**: Mengekspor: UserTextMessage.
-- **`nullRenderingAttachments.ts`**: Attachment types that AttachmentMessage renders as `null` unconditionally (no visible output regardless of runtime state). Messages.tsx filters these ...
-- **`teamMemCollapsed.tsx`**: Plain function (not a React component) so the React Compiler won't hoist the teamMemory property accesses for memoization. This module is only loaded ...
-- **`teamMemSaved.ts`**: Returns the team-memory segment for the memory-saved UI, plus the count so the caller can derive the private count without accessing teamCount itself....
+- **`AdvisorMessage.tsx`** (`restored-src/src/components/messages/AdvisorMessage.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `AdvisorMessage`.
+- **`AssistantRedactedThinkingMessage.tsx`** (`restored-src/src/components/messages/AssistantRedactedThinkingMessage.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `AssistantRedactedThinkingMessage`.
+- **`AssistantTextMessage.tsx`** (`restored-src/src/components/messages/AssistantTextMessage.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `AssistantTextMessage`.
+- **`AssistantThinkingMessage.tsx`** (`restored-src/src/components/messages/AssistantThinkingMessage.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `AssistantThinkingMessage`.
+- **`AssistantToolUseMessage.tsx`** (`restored-src/src/components/messages/AssistantToolUseMessage.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `AssistantToolUseMessage`.
+- **`AttachmentMessage.tsx`** (`restored-src/src/components/messages/AttachmentMessage.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `AttachmentMessage`.
+- **`CollapsedReadSearchContent.tsx`** (`restored-src/src/components/messages/CollapsedReadSearchContent.tsx`): Render a single tool use in verbose mode. Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `CollapsedReadSearchContent`.
+- **`CompactBoundaryMessage.tsx`** (`restored-src/src/components/messages/CompactBoundaryMessage.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `CompactBoundaryMessage`.
+- **`GroupedToolUseContent.tsx`** (`restored-src/src/components/messages/GroupedToolUseContent.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `GroupedToolUseContent`.
+- **`HighlightedThinkingText.tsx`** (`restored-src/src/components/messages/HighlightedThinkingText.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `HighlightedThinkingText`.
+- **`HookProgressMessage.tsx`** (`restored-src/src/components/messages/HookProgressMessage.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `HookProgressMessage`.
+- **`PlanApprovalMessage.tsx`** (`restored-src/src/components/messages/PlanApprovalMessage.tsx`): Renders a plan approval request with a planMode-colored border, showing the plan content and instructions for approving/rejecting. Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `PlanApprovalRequestDisplay`, `PlanApprovalResponseDisplay`, `tryRenderPlanApprovalMessage`, `formatTeammateMessageContent`.
+- **`RateLimitMessage.tsx`** (`restored-src/src/components/messages/RateLimitMessage.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `getUpsellMessage`, `RateLimitMessage`.
+- **`ShutdownMessage.tsx`** (`restored-src/src/components/messages/ShutdownMessage.tsx`): Renders a shutdown request with a warning-colored border. Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `ShutdownRequestDisplay`, `ShutdownRejectedDisplay`, `tryRenderShutdownMessage`, `getShutdownMessageSummary`.
+- **`SystemAPIErrorMessage.tsx`** (`restored-src/src/components/messages/SystemAPIErrorMessage.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `SystemAPIErrorMessage`.
+- **`SystemTextMessage.tsx`** (`restored-src/src/components/messages/SystemTextMessage.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `SystemTextMessage`.
+- **`TaskAssignmentMessage.tsx`** (`restored-src/src/components/messages/TaskAssignmentMessage.tsx`): Renders a task assignment with a cyan border (team-related color). Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `TaskAssignmentDisplay`, `tryRenderTaskAssignmentMessage`, `getTaskAssignmentSummary`.
+- **`UserAgentNotificationMessage.tsx`** (`restored-src/src/components/messages/UserAgentNotificationMessage.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `UserAgentNotificationMessage`.
+- **`UserBashInputMessage.tsx`** (`restored-src/src/components/messages/UserBashInputMessage.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `UserBashInputMessage`.
+- **`UserBashOutputMessage.tsx`** (`restored-src/src/components/messages/UserBashOutputMessage.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `UserBashOutputMessage`.
+- **`UserChannelMessage.tsx`** (`restored-src/src/components/messages/UserChannelMessage.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `UserChannelMessage`.
+- **`UserCommandMessage.tsx`** (`restored-src/src/components/messages/UserCommandMessage.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `UserCommandMessage`.
+- **`UserImageMessage.tsx`** (`restored-src/src/components/messages/UserImageMessage.tsx`): Renders an image attachment in user messages. Shows as a clickable link if the image is stored and terminal supports hyperlinks. Uses MessageResponse styling to appear connected to the message above, unless addMargin is true (image starts a new user turn wi... Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `UserImageMessage`.
+- **`UserLocalCommandOutputMessage.tsx`** (`restored-src/src/components/messages/UserLocalCommandOutputMessage.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `UserLocalCommandOutputMessage`.
+- **`UserMemoryInputMessage.tsx`** (`restored-src/src/components/messages/UserMemoryInputMessage.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `UserMemoryInputMessage`.
+- **`UserPlanMessage.tsx`** (`restored-src/src/components/messages/UserPlanMessage.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `UserPlanMessage`.
+- **`UserPromptMessage.tsx`** (`restored-src/src/components/messages/UserPromptMessage.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `UserPromptMessage`.
+- **`UserResourceUpdateMessage.tsx`** (`restored-src/src/components/messages/UserResourceUpdateMessage.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `UserResourceUpdateMessage`.
+- **`UserTeammateMessage.tsx`** (`restored-src/src/components/messages/UserTeammateMessage.tsx`): Parse all teammate messages from XML format: <teammate-message teammate_id="alice" color="red" summary="Brief update">message content</teammate-message> Supports multiple messages in a single text block. Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `UserTeammateMessage`, `TeammateMessageContent`.
+- **`UserTextMessage.tsx`** (`restored-src/src/components/messages/UserTextMessage.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `UserTextMessage`.
+- **`nullRenderingAttachments.ts`** (`restored-src/src/components/messages/nullRenderingAttachments.ts`): True when this message is an attachment that AttachmentMessage renders as null with no visible output. Messages.tsx filters these out before counting and before applying the 200-message render cap, so invisible hook attachments (hook_success, hook_additiona... Komponen UI yang dipakai TUI/React layer. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `NullRenderingAttachmentType`, `isNullRenderingAttachment`.
+- **`teamMemCollapsed.tsx`** (`restored-src/src/components/messages/teamMemCollapsed.tsx`): Plain function (not a React component) so the React Compiler won't hoist the teamMemory* property accesses for memoization. This module is only loaded when feature('TEAMMEM') is true. Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `checkHasTeamMemOps`, `TeamMemCountParts`.
+- **`teamMemSaved.ts`** (`restored-src/src/components/messages/teamMemSaved.ts`): Returns the team-memory segment for the memory-saved UI, plus the count so the caller can derive the private count without accessing teamCount itself. Plain function (not a React component) so the React Compiler won't hoist the teamCount property access for... Komponen UI yang dipakai TUI/React layer. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `teamMemSavedPart`.
 
 ## Direktori: `restored-src/src/components/messages/UserToolResultMessage`
 
-- **`RejectedPlanMessage.tsx`**: Mengekspor: RejectedPlanMessage.
-- **`RejectedToolUseMessage.tsx`**: Mengekspor: RejectedToolUseMessage.
-- **`UserToolCanceledMessage.tsx`**: Mengekspor: UserToolCanceledMessage.
-- **`UserToolErrorMessage.tsx`**: Mengekspor: UserToolErrorMessage.
-- **`UserToolRejectMessage.tsx`**: Mengekspor: UserToolRejectMessage.
-- **`UserToolResultMessage.tsx`**: Mengekspor: UserToolResultMessage.
-- **`UserToolSuccessMessage.tsx`**: Mengekspor: UserToolSuccessMessage.
-- **`utils.tsx`**: Mengekspor: useGetToolFromMessages.
+- **`RejectedPlanMessage.tsx`** (`restored-src/src/components/messages/UserToolResultMessage/RejectedPlanMessage.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `RejectedPlanMessage`.
+- **`RejectedToolUseMessage.tsx`** (`restored-src/src/components/messages/UserToolResultMessage/RejectedToolUseMessage.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `RejectedToolUseMessage`.
+- **`UserToolCanceledMessage.tsx`** (`restored-src/src/components/messages/UserToolResultMessage/UserToolCanceledMessage.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `UserToolCanceledMessage`.
+- **`UserToolErrorMessage.tsx`** (`restored-src/src/components/messages/UserToolResultMessage/UserToolErrorMessage.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `UserToolErrorMessage`.
+- **`UserToolRejectMessage.tsx`** (`restored-src/src/components/messages/UserToolResultMessage/UserToolRejectMessage.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `UserToolRejectMessage`.
+- **`UserToolResultMessage.tsx`** (`restored-src/src/components/messages/UserToolResultMessage/UserToolResultMessage.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `UserToolResultMessage`.
+- **`UserToolSuccessMessage.tsx`** (`restored-src/src/components/messages/UserToolResultMessage/UserToolSuccessMessage.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `UserToolSuccessMessage`.
+- **`utils.tsx`** (`restored-src/src/components/messages/UserToolResultMessage/utils.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `useGetToolFromMessages`.
 
 ## Direktori: `restored-src/src/components/permissions/AskUserQuestionPermissionRequest`
 
-- **`AskUserQuestionPermissionRequest.tsx`**: Mengekspor: AskUserQuestionPermissionRequest.
-- **`PreviewBox.tsx`**: The preview content to display. Markdown is rendered with syntax highlighting for code blocks (```ts, ```py, etc.). Also supports plain multi-line tex...
-- **`PreviewQuestionView.tsx`**: Mengekspor: PreviewQuestionView.
-- **`QuestionNavigationBar.tsx`**: Mengekspor: QuestionNavigationBar.
-- **`QuestionView.tsx`**: Mengekspor: QuestionView.
-- **`SubmitQuestionsView.tsx`**: Mengekspor: SubmitQuestionsView.
-- **`use-multiple-choice-state.ts`**: Mengekspor: AnswerValue, QuestionState, MultipleChoiceState.
+- **`AskUserQuestionPermissionRequest.tsx`** (`restored-src/src/components/permissions/AskUserQuestionPermissionRequest/AskUserQuestionPermissionRequest.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `AskUserQuestionPermissionRequest`.
+- **`PreviewBox.tsx`** (`restored-src/src/components/permissions/AskUserQuestionPermissionRequest/PreviewBox.tsx`): A bordered monospace box for displaying preview content. Truncates content that exceeds maxLines with an indicator. The parent component should pass maxLines based on its available height budget. Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `PreviewBox`.
+- **`PreviewQuestionView.tsx`** (`restored-src/src/components/permissions/AskUserQuestionPermissionRequest/PreviewQuestionView.tsx`): A side-by-side question view for questions with preview content. Displays a vertical option list on the left with a preview panel on the right. Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `PreviewQuestionView`.
+- **`QuestionNavigationBar.tsx`** (`restored-src/src/components/permissions/AskUserQuestionPermissionRequest/QuestionNavigationBar.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `QuestionNavigationBar`.
+- **`QuestionView.tsx`** (`restored-src/src/components/permissions/AskUserQuestionPermissionRequest/QuestionView.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `QuestionView`.
+- **`SubmitQuestionsView.tsx`** (`restored-src/src/components/permissions/AskUserQuestionPermissionRequest/SubmitQuestionsView.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `SubmitQuestionsView`.
+- **`use-multiple-choice-state.ts`** (`restored-src/src/components/permissions/AskUserQuestionPermissionRequest/use-multiple-choice-state.ts`): Komponen UI yang dipakai TUI/React layer. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `AnswerValue`, `QuestionState`, `MultipleChoiceState`, `useMultipleChoiceState`.
 
 ## Direktori: `restored-src/src/components/permissions/BashPermissionRequest`
 
-- **`BashPermissionRequest.tsx`**: Mengekspor: BashPermissionRequest.
-- **`bashToolUseOptions.tsx`**: Check if a description already exists in the allow list. Compares lowercase and trailing-whitespace-trimmed versions.
+- **`BashPermissionRequest.tsx`** (`restored-src/src/components/permissions/BashPermissionRequest/BashPermissionRequest.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `BashPermissionRequest`.
+- **`bashToolUseOptions.tsx`** (`restored-src/src/components/permissions/BashPermissionRequest/bashToolUseOptions.tsx`): Check if a description already exists in the allow list. Compares lowercase and trailing-whitespace-trimmed versions. Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `BashToolUseOption`, `bashToolUseOptions`.
 
 ## Direktori: `restored-src/src/components/permissions/ComputerUseApproval`
 
-- **`ComputerUseApproval.tsx`**: Two-panel dispatcher. When `request.tccState` is present, macOS permissions (Accessibility / Screen Recording) are missing and the app list is irrelev...
+- **`ComputerUseApproval.tsx`** (`restored-src/src/components/permissions/ComputerUseApproval/ComputerUseApproval.tsx`): Two-panel dispatcher. When 'request.tccState' is present, macOS permissions (Accessibility / Screen Recording) are missing and the app list is irrelevant — show a TCC panel that opens System Settings. Otherwise show the app allowlist + grant-flags panel. Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `ComputerUseApproval`.
 
 ## Direktori: `restored-src/src/components/permissions/EnterPlanModePermissionRequest`
 
-- **`EnterPlanModePermissionRequest.tsx`**: Mengekspor: EnterPlanModePermissionRequest.
+- **`EnterPlanModePermissionRequest.tsx`** (`restored-src/src/components/permissions/EnterPlanModePermissionRequest/EnterPlanModePermissionRequest.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `EnterPlanModePermissionRequest`.
 
 ## Direktori: `restored-src/src/components/permissions/ExitPlanModePermissionRequest`
 
-- **`ExitPlanModePermissionRequest.tsx`**: Mengekspor: buildPermissionUpdates, autoNameSessionFromPlan, ExitPlanModePermissionRequest.
+- **`ExitPlanModePermissionRequest.tsx`** (`restored-src/src/components/permissions/ExitPlanModePermissionRequest/ExitPlanModePermissionRequest.tsx`): Build permission updates for plan approval, including prompt-based rules if provided. Prompt-based rules are only added when classifier permissions are enabled (Ant-only). Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `buildPermissionUpdates`, `autoNameSessionFromPlan`, `ExitPlanModePermissionRequest`, `buildPlanApprovalOptions`.
 
 ## Direktori: `restored-src/src/components/permissions`
 
-- **`FallbackPermissionRequest.tsx`**: Mengekspor: FallbackPermissionRequest.
-- **`PermissionDecisionDebugInfo.tsx`**: Mengekspor: PermissionDecisionDebugInfo.
-- **`PermissionDialog.tsx`**: Mengekspor: PermissionDialog.
-- **`PermissionExplanation.tsx`**: Mengekspor: usePermissionExplainerUI, PermissionExplainerContent.
-- **`PermissionPrompt.tsx`**: Mengekspor: FeedbackType, PermissionPromptOption, ToolAnalyticsContext.
-- **`PermissionRequest.tsx`**: Mengekspor: PermissionRequestProps, ToolUseConfirm, PermissionRequest.
-- **`PermissionRequestTitle.tsx`**: Mengekspor: PermissionRequestTitle.
-- **`PermissionRuleExplanation.tsx`**: When set, reasonString is plain text rendered with this theme color instead of <Ansi>.
-- **`SandboxPermissionRequest.tsx`**: Mengekspor: SandboxPermissionRequestProps, SandboxPermissionRequest.
-- **`WorkerBadge.tsx`**: Renders a colored badge showing the worker's name for permission prompts. Used to indicate which swarm worker is requesting the permission.
-- **`WorkerPendingPermission.tsx`**: Visual indicator shown on workers while waiting for leader to approve a permission request. Displays the pending tool with a spinner and information a...
-- **`hooks.ts`**: Mengekspor: UnaryEvent, usePermissionRequestLogging.
-- **`shellPermissionHelpers.tsx`**: Mengekspor: generateShellSuggestionsLabel.
-- **`useShellPermissionFeedback.ts`**: Shared feedback-mode state + handlers for shell permission dialogs (Bash, PowerShell). Encapsulates the yes/no input-mode toggle, feedback text state,...
-- **`utils.ts`**: Mengekspor: logUnaryPermissionEvent.
+- **`FallbackPermissionRequest.tsx`** (`restored-src/src/components/permissions/FallbackPermissionRequest.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `FallbackPermissionRequest`.
+- **`PermissionDecisionDebugInfo.tsx`** (`restored-src/src/components/permissions/PermissionDecisionDebugInfo.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `PermissionDecisionDebugInfo`.
+- **`PermissionDialog.tsx`** (`restored-src/src/components/permissions/PermissionDialog.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `PermissionDialog`.
+- **`PermissionExplanation.tsx`** (`restored-src/src/components/permissions/PermissionExplanation.tsx`): Hook that manages the permission explainer state. Creates the fetch promise lazily (only when user hits Ctrl+E) to avoid consuming tokens for explanations users never view. Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `usePermissionExplainerUI`, `PermissionExplainerContent`.
+- **`PermissionPrompt.tsx`** (`restored-src/src/components/permissions/PermissionPrompt.tsx`): Shared component for permission prompts with optional feedback input. Handles: - "Do you want to proceed?" question with optional Tab hint - Feature flag check for feedback capability - Input mode toggling (Tab to expand feedback input) - Analytics events f... Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `FeedbackType`, `PermissionPromptOption`, `ToolAnalyticsContext`, `PermissionPromptProps`, dan lainnya.
+- **`PermissionRequest.tsx`** (`restored-src/src/components/permissions/PermissionRequest.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `PermissionRequestProps`, `ToolUseConfirm`, `PermissionRequest`.
+- **`PermissionRequestTitle.tsx`** (`restored-src/src/components/permissions/PermissionRequestTitle.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `PermissionRequestTitle`.
+- **`PermissionRuleExplanation.tsx`** (`restored-src/src/components/permissions/PermissionRuleExplanation.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `PermissionRuleExplanationProps`, `PermissionRuleExplanation`.
+- **`SandboxPermissionRequest.tsx`** (`restored-src/src/components/permissions/SandboxPermissionRequest.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `SandboxPermissionRequestProps`, `SandboxPermissionRequest`.
+- **`WorkerBadge.tsx`** (`restored-src/src/components/permissions/WorkerBadge.tsx`): Renders a colored badge showing the worker's name for permission prompts. Used to indicate which swarm worker is requesting the permission. Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `WorkerBadgeProps`, `WorkerBadge`.
+- **`WorkerPendingPermission.tsx`** (`restored-src/src/components/permissions/WorkerPendingPermission.tsx`): Visual indicator shown on workers while waiting for leader to approve a permission request. Displays the pending tool with a spinner and information about what's being requested. Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `WorkerPendingPermission`.
+- **`hooks.ts`** (`restored-src/src/components/permissions/hooks.ts`): Logs permission request events using analytics and unary logging. Handles both the analytics event and the unary event logging. Komponen UI yang dipakai TUI/React layer. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `UnaryEvent`, `usePermissionRequestLogging`.
+- **`shellPermissionHelpers.tsx`** (`restored-src/src/components/permissions/shellPermissionHelpers.tsx`): Generate the label for the "Yes, and apply suggestions" option in shell permission dialogs (Bash, PowerShell). Parametrized by the shell tool name and an optional command transform (e.g., Bash strips output redirections so filenames don't show as commands). Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `generateShellSuggestionsLabel`.
+- **`useShellPermissionFeedback.ts`** (`restored-src/src/components/permissions/useShellPermissionFeedback.ts`): Shared feedback-mode state + handlers for shell permission dialogs (Bash, PowerShell). Encapsulates the yes/no input-mode toggle, feedback text state, focus tracking, and reject handling. Komponen UI yang dipakai TUI/React layer. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `useShellPermissionFeedback`.
+- **`utils.ts`** (`restored-src/src/components/permissions/utils.ts`): Komponen UI yang dipakai TUI/React layer. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `logUnaryPermissionEvent`.
 
 ## Direktori: `restored-src/src/components/permissions/FileEditPermissionRequest`
 
-- **`FileEditPermissionRequest.tsx`**: Mengekspor: FileEditPermissionRequest.
+- **`FileEditPermissionRequest.tsx`** (`restored-src/src/components/permissions/FileEditPermissionRequest/FileEditPermissionRequest.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `FileEditPermissionRequest`.
 
 ## Direktori: `restored-src/src/components/permissions/FilePermissionDialog`
 
-- **`FilePermissionDialog.tsx`**: Mengekspor: FilePermissionDialogProps, FilePermissionDialog.
-- **`ideDiffConfig.ts`**: Mengekspor: FileEdit, IDEDiffConfig, IDEDiffChangeInput.
-- **`permissionOptions.tsx`**: Check if a path is within the project's .claude/ folder. This is used to determine whether to show the special ".claude folder" permission option.
-- **`useFilePermissionDialog.ts`**: Mengekspor: ToolInput, UseFilePermissionDialogProps, UseFilePermissionDialogResult.
-- **`usePermissionHandler.ts`**: Mengekspor: PermissionHandlerParams, PermissionHandlerOptions, PERMISSION_HANDLERS.
+- **`FilePermissionDialog.tsx`** (`restored-src/src/components/permissions/FilePermissionDialog/FilePermissionDialog.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `FilePermissionDialogProps`, `FilePermissionDialog`.
+- **`ideDiffConfig.ts`** (`restored-src/src/components/permissions/FilePermissionDialog/ideDiffConfig.ts`): Komponen UI yang dipakai TUI/React layer. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `FileEdit`, `IDEDiffConfig`, `IDEDiffChangeInput`, `IDEDiffSupport`, dan lainnya.
+- **`permissionOptions.tsx`** (`restored-src/src/components/permissions/FilePermissionDialog/permissionOptions.tsx`): Check if a path is within the project's .claude/ folder. This is used to determine whether to show the special ".claude folder" permission option. Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `isInClaudeFolder`, `isInGlobalClaudeFolder`, `PermissionOption`, `PermissionOptionWithLabel`, dan lainnya.
+- **`useFilePermissionDialog.ts`** (`restored-src/src/components/permissions/FilePermissionDialog/useFilePermissionDialog.ts`): Hook for handling file permission dialogs with common logic. Komponen UI yang dipakai TUI/React layer. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `ToolInput`, `UseFilePermissionDialogProps`, `UseFilePermissionDialogResult`, `useFilePermissionDialog`.
+- **`usePermissionHandler.ts`** (`restored-src/src/components/permissions/FilePermissionDialog/usePermissionHandler.ts`): Komponen UI yang dipakai TUI/React layer. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `PermissionHandlerParams`, `PermissionHandlerOptions`, `PERMISSION_HANDLERS`.
 
 ## Direktori: `restored-src/src/components/permissions/FileWritePermissionRequest`
 
-- **`FileWritePermissionRequest.tsx`**: Mengekspor: FileWritePermissionRequest.
-- **`FileWriteToolDiff.tsx`**: Mengekspor: FileWriteToolDiff.
+- **`FileWritePermissionRequest.tsx`** (`restored-src/src/components/permissions/FileWritePermissionRequest/FileWritePermissionRequest.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `FileWritePermissionRequest`.
+- **`FileWriteToolDiff.tsx`** (`restored-src/src/components/permissions/FileWritePermissionRequest/FileWriteToolDiff.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `FileWriteToolDiff`.
 
 ## Direktori: `restored-src/src/components/permissions/FilesystemPermissionRequest`
 
-- **`FilesystemPermissionRequest.tsx`**: Mengekspor: FilesystemPermissionRequest.
+- **`FilesystemPermissionRequest.tsx`** (`restored-src/src/components/permissions/FilesystemPermissionRequest/FilesystemPermissionRequest.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `FilesystemPermissionRequest`.
 
 ## Direktori: `restored-src/src/components/permissions/NotebookEditPermissionRequest`
 
-- **`NotebookEditPermissionRequest.tsx`**: Mengekspor: NotebookEditPermissionRequest.
-- **`NotebookEditToolDiff.tsx`**: Mengekspor: NotebookEditToolDiff.
+- **`NotebookEditPermissionRequest.tsx`** (`restored-src/src/components/permissions/NotebookEditPermissionRequest/NotebookEditPermissionRequest.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `NotebookEditPermissionRequest`.
+- **`NotebookEditToolDiff.tsx`** (`restored-src/src/components/permissions/NotebookEditPermissionRequest/NotebookEditToolDiff.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `NotebookEditToolDiff`.
 
 ## Direktori: `restored-src/src/components/permissions/PowerShellPermissionRequest`
 
-- **`PowerShellPermissionRequest.tsx`**: Mengekspor: PowerShellPermissionRequest.
-- **`powershellToolUseOptions.tsx`**: Mengekspor: PowerShellToolUseOption, powershellToolUseOptions.
+- **`PowerShellPermissionRequest.tsx`** (`restored-src/src/components/permissions/PowerShellPermissionRequest/PowerShellPermissionRequest.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `PowerShellPermissionRequest`.
+- **`powershellToolUseOptions.tsx`** (`restored-src/src/components/permissions/PowerShellPermissionRequest/powershellToolUseOptions.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `PowerShellToolUseOption`, `powershellToolUseOptions`.
 
 ## Direktori: `restored-src/src/components/permissions/SedEditPermissionRequest`
 
-- **`SedEditPermissionRequest.tsx`**: Mengekspor: SedEditPermissionRequest.
+- **`SedEditPermissionRequest.tsx`** (`restored-src/src/components/permissions/SedEditPermissionRequest/SedEditPermissionRequest.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `SedEditPermissionRequest`.
 
 ## Direktori: `restored-src/src/components/permissions/SkillPermissionRequest`
 
-- **`SkillPermissionRequest.tsx`**: Mengekspor: SkillPermissionRequest.
+- **`SkillPermissionRequest.tsx`** (`restored-src/src/components/permissions/SkillPermissionRequest/SkillPermissionRequest.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `SkillPermissionRequest`.
 
 ## Direktori: `restored-src/src/components/permissions/WebFetchPermissionRequest`
 
-- **`WebFetchPermissionRequest.tsx`**: Mengekspor: WebFetchPermissionRequest.
+- **`WebFetchPermissionRequest.tsx`** (`restored-src/src/components/permissions/WebFetchPermissionRequest/WebFetchPermissionRequest.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `WebFetchPermissionRequest`.
 
 ## Direktori: `restored-src/src/components/permissions/rules`
 
-- **`AddPermissionRules.tsx`**: Mengekspor: optionForPermissionSaveDestination, AddPermissionRules.
-- **`AddWorkspaceDirectory.tsx`**: Mengekspor: AddWorkspaceDirectory.
-- **`PermissionRuleDescription.tsx`**: Mengekspor: PermissionRuleDescription.
-- **`PermissionRuleInput.tsx`**: Mengekspor: PermissionRuleInputProps, PermissionRuleInput.
-- **`PermissionRuleList.tsx`**: Mengekspor: PermissionRuleList.
-- **`RecentDenialsTab.tsx`**: Called when approved/retry state changes so parent can act on exit
-- **`RemoveWorkspaceDirectory.tsx`**: Mengekspor: RemoveWorkspaceDirectory.
-- **`WorkspaceTab.tsx`**: Mengekspor: WorkspaceTab.
+- **`AddPermissionRules.tsx`** (`restored-src/src/components/permissions/rules/AddPermissionRules.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `optionForPermissionSaveDestination`, `AddPermissionRules`.
+- **`AddWorkspaceDirectory.tsx`** (`restored-src/src/components/permissions/rules/AddWorkspaceDirectory.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `AddWorkspaceDirectory`.
+- **`PermissionRuleDescription.tsx`** (`restored-src/src/components/permissions/rules/PermissionRuleDescription.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `PermissionRuleDescription`.
+- **`PermissionRuleInput.tsx`** (`restored-src/src/components/permissions/rules/PermissionRuleInput.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `PermissionRuleInputProps`, `PermissionRuleInput`.
+- **`PermissionRuleList.tsx`** (`restored-src/src/components/permissions/rules/PermissionRuleList.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `PermissionRuleList`.
+- **`RecentDenialsTab.tsx`** (`restored-src/src/components/permissions/rules/RecentDenialsTab.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `RecentDenialsTab`.
+- **`RemoveWorkspaceDirectory.tsx`** (`restored-src/src/components/permissions/rules/RemoveWorkspaceDirectory.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `RemoveWorkspaceDirectory`.
+- **`WorkspaceTab.tsx`** (`restored-src/src/components/permissions/rules/WorkspaceTab.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `WorkspaceTab`.
 
 ## Direktori: `restored-src/src/components/sandbox`
 
-- **`SandboxConfigTab.tsx`**: Mengekspor: SandboxConfigTab.
-- **`SandboxDependenciesTab.tsx`**: Mengekspor: SandboxDependenciesTab.
-- **`SandboxDoctorSection.tsx`**: Mengekspor: SandboxDoctorSection.
-- **`SandboxOverridesTab.tsx`**: Mengekspor: SandboxOverridesTab.
-- **`SandboxSettings.tsx`**: Mengekspor: SandboxSettings.
+- **`SandboxConfigTab.tsx`** (`restored-src/src/components/sandbox/SandboxConfigTab.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `SandboxConfigTab`.
+- **`SandboxDependenciesTab.tsx`** (`restored-src/src/components/sandbox/SandboxDependenciesTab.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `SandboxDependenciesTab`.
+- **`SandboxDoctorSection.tsx`** (`restored-src/src/components/sandbox/SandboxDoctorSection.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `SandboxDoctorSection`.
+- **`SandboxOverridesTab.tsx`** (`restored-src/src/components/sandbox/SandboxOverridesTab.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `SandboxOverridesTab`.
+- **`SandboxSettings.tsx`** (`restored-src/src/components/sandbox/SandboxSettings.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `SandboxSettings`.
 
 ## Direktori: `restored-src/src/components/shell`
 
-- **`ExpandShellOutputContext.tsx`**: Context to indicate that shell output should be shown in full (not truncated). Used to auto-expand the most recent user `!` command output.  This foll...
-- **`OutputLine.tsx`**: Mengekspor: tryFormatJson, tryJsonFormatContent, linkifyUrlsInText.
-- **`ShellProgressMessage.tsx`**: Mengekspor: ShellProgressMessage.
-- **`ShellTimeDisplay.tsx`**: Mengekspor: ShellTimeDisplay.
+- **`ExpandShellOutputContext.tsx`** (`restored-src/src/components/shell/ExpandShellOutputContext.tsx`): Returns true if this component is rendered inside an ExpandShellOutputProvider, indicating the shell output should be shown in full rather than truncated. Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `ExpandShellOutputProvider`, `useExpandShellOutput`.
+- **`OutputLine.tsx`** (`restored-src/src/components/shell/OutputLine.tsx`): Underline ANSI codes in particular tend to leak out for some reason. I wasn't able to figure out why, or why emitting a reset ANSI code wasn't enough to prevent them from leaking. I also didn't want to strip all ANSI codes with stripAnsi(), because we used... Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `tryFormatJson`, `tryJsonFormatContent`, `linkifyUrlsInText`, `OutputLine`, dan lainnya.
+- **`ShellProgressMessage.tsx`** (`restored-src/src/components/shell/ShellProgressMessage.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `ShellProgressMessage`.
+- **`ShellTimeDisplay.tsx`** (`restored-src/src/components/shell/ShellTimeDisplay.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `ShellTimeDisplay`.
 
 ## Direktori: `restored-src/src/components/skills`
 
-- **`SkillsMenu.tsx`**: Mengekspor: SkillsMenu.
+- **`SkillsMenu.tsx`** (`restored-src/src/components/skills/SkillsMenu.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `SkillsMenu`.
 
 ## Direktori: `restored-src/src/components/tasks`
 
-- **`AsyncAgentDetailDialog.tsx`**: Mengekspor: AsyncAgentDetailDialog.
-- **`BackgroundTask.tsx`**: Mengekspor: BackgroundTask.
-- **`BackgroundTaskStatus.tsx`**: Mengekspor: BackgroundTaskStatus.
-- **`BackgroundTasksDialog.tsx`**: Mengekspor: BackgroundTasksDialog.
-- **`DreamDetailDialog.tsx`**: Mengekspor: DreamDetailDialog.
-- **`InProcessTeammateDetailDialog.tsx`**: Mengekspor: InProcessTeammateDetailDialog.
-- **`RemoteSessionDetailDialog.tsx`**: Mengekspor: formatToolUseSummary, RemoteSessionDetailDialog.
-- **`RemoteSessionProgress.tsx`**: Stage-appropriate counts line for a running review. Shared between the one-line pill (below) and RemoteSessionDetailDialog's reviewCountsLine so the t...
-- **`ShellDetailDialog.tsx`**: Mengekspor: ShellDetailDialog.
-- **`ShellProgress.tsx`**: Mengekspor: TaskStatusText, ShellProgress.
-- **`renderToolActivity.tsx`**: Mengekspor: renderToolActivity.
-- **`taskStatusUtils.tsx`**: Shared utilities for displaying task status across different task types.
+- **`AsyncAgentDetailDialog.tsx`** (`restored-src/src/components/tasks/AsyncAgentDetailDialog.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `AsyncAgentDetailDialog`.
+- **`BackgroundTask.tsx`** (`restored-src/src/components/tasks/BackgroundTask.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `BackgroundTask`.
+- **`BackgroundTaskStatus.tsx`** (`restored-src/src/components/tasks/BackgroundTaskStatus.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `BackgroundTaskStatus`.
+- **`BackgroundTasksDialog.tsx`** (`restored-src/src/components/tasks/BackgroundTasksDialog.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `BackgroundTasksDialog`.
+- **`DreamDetailDialog.tsx`** (`restored-src/src/components/tasks/DreamDetailDialog.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `DreamDetailDialog`.
+- **`InProcessTeammateDetailDialog.tsx`** (`restored-src/src/components/tasks/InProcessTeammateDetailDialog.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `InProcessTeammateDetailDialog`.
+- **`RemoteSessionDetailDialog.tsx`** (`restored-src/src/components/tasks/RemoteSessionDetailDialog.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `formatToolUseSummary`, `RemoteSessionDetailDialog`.
+- **`RemoteSessionProgress.tsx`** (`restored-src/src/components/tasks/RemoteSessionProgress.tsx`): Stage-appropriate counts line for a running review. Shared between the one-line pill (below) and RemoteSessionDetailDialog's reviewCountsLine so the two can't drift — they have historically disagreed on whether to show refuted counts and what to call the sy... Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `formatReviewStageCounts`, `RemoteSessionProgress`.
+- **`ShellDetailDialog.tsx`** (`restored-src/src/components/tasks/ShellDetailDialog.tsx`): Read the tail of the task output file. Only reads the last few KB, not the entire file. Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `ShellDetailDialog`.
+- **`ShellProgress.tsx`** (`restored-src/src/components/tasks/ShellProgress.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `TaskStatusText`, `ShellProgress`.
+- **`renderToolActivity.tsx`** (`restored-src/src/components/tasks/renderToolActivity.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `renderToolActivity`.
+- **`taskStatusUtils.tsx`** (`restored-src/src/components/tasks/taskStatusUtils.tsx`): Returns true if the given task status represents a terminal (finished) state. Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `isTerminalStatus`, `getTaskStatusIcon`, `getTaskStatusColor`, `describeTeammateActivity`, dan lainnya.
 
 ## Direktori: `restored-src/src/components/teams`
 
-- **`TeamStatus.tsx`**: Footer status indicator showing teammate count Similar to BackgroundTaskStatus but for teammates
-- **`TeamsDialog.tsx`**: Mengekspor: TeamsDialog.
+- **`TeamStatus.tsx`** (`restored-src/src/components/teams/TeamStatus.tsx`): Footer status indicator showing teammate count Similar to BackgroundTaskStatus but for teammates. Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `TeamStatus`.
+- **`TeamsDialog.tsx`** (`restored-src/src/components/teams/TeamsDialog.tsx`): Dialog for viewing teammates in the current team. Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `TeamsDialog`.
 
 ## Direktori: `restored-src/src/components/ui`
 
-- **`OrderedList.tsx`**: Mengekspor: OrderedList.
-- **`OrderedListItem.tsx`**: Mengekspor: OrderedListItemContext, OrderedListItem.
-- **`TreeSelect.tsx`**: Tree nodes to display.
+- **`OrderedList.tsx`** (`restored-src/src/components/ui/OrderedList.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `OrderedList`.
+- **`OrderedListItem.tsx`** (`restored-src/src/components/ui/OrderedListItem.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `OrderedListItemContext`, `OrderedListItem`.
+- **`TreeSelect.tsx`** (`restored-src/src/components/ui/TreeSelect.tsx`): TreeSelect is a generic component for selecting items from a hierarchical tree structure. It handles expand/collapse state, keyboard navigation, and renders the tree as a flat list using the Select component. Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `TreeNode`, `TreeSelectProps`, `TreeSelect`.
 
 ## Direktori: `restored-src/src/components/wizard`
 
-- **`WizardDialogLayout.tsx`**: Mengekspor: WizardDialogLayout.
-- **`WizardNavigationFooter.tsx`**: Mengekspor: WizardNavigationFooter.
-- **`WizardProvider.tsx`**: Mengekspor: WizardContext, WizardProvider.
-- **`index.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`useWizard.ts`**: Mengekspor: useWizard.
+- **`WizardDialogLayout.tsx`** (`restored-src/src/components/wizard/WizardDialogLayout.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `WizardDialogLayout`.
+- **`WizardNavigationFooter.tsx`** (`restored-src/src/components/wizard/WizardNavigationFooter.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `WizardNavigationFooter`.
+- **`WizardProvider.tsx`** (`restored-src/src/components/wizard/WizardProvider.tsx`): Komponen UI yang dipakai TUI/React layer. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `WizardContext`, `WizardProvider`.
+- **`index.ts`** (`restored-src/src/components/wizard/index.ts`): Barrel/entry point yang merapikan export modul di folder ini. Export utama: `WizardContextValue`, `WizardProviderProps`, `WizardStepComponent`, `useWizard`, dan lainnya.
+- **`useWizard.ts`** (`restored-src/src/components/wizard/useWizard.ts`): Komponen UI yang dipakai TUI/React layer. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `useWizard`.
 
 ## Direktori: `restored-src/src/constants`
 
-- **`apiLimits.ts`**: Anthropic API Limits  These constants define server-side limits enforced by the Anthropic API. Keep this file dependency-free to prevent circular impo...
-- **`betas.ts`**: Mengekspor: CLAUDE_CODE_20250219_BETA_HEADER, INTERLEAVED_THINKING_BETA_HEADER, CONTEXT_1M_BETA_HEADER.
-- **`common.ts`**: Mengekspor: getLocalISODate, getSessionStartDate, getLocalMonthYear.
-- **`cyberRiskInstruction.ts`**: CYBER_RISK_INSTRUCTION  This instruction provides guidance for Claude's behavior when handling security-related requests. It defines the boundary betw...
-- **`errorIds.ts`**: Error IDs for tracking error sources in production. These IDs are obfuscated identifiers that help us trace which logError() call generated an error. ...
-- **`figures.ts`**: Mengekspor: BLACK_CIRCLE, BULLET_OPERATOR, TEARDROP_ASTERISK.
-- **`files.ts`**: Binary file extensions to skip for text-based operations. These files can't be meaningfully compared as text and are often large.
-- **`github-app.ts`**: Mengekspor: PR_TITLE, GITHUB_ACTION_SETUP_DOCS_URL, WORKFLOW_CONTENT.
-- **`keys.ts`**: Mengekspor: getGrowthBookClientKey.
-- **`messages.ts`**: Mengekspor: NO_CONTENT_MESSAGE.
-- **`oauth.ts`**: Mengekspor: fileSuffixForOauthConfig, CLAUDE_AI_INFERENCE_SCOPE, CLAUDE_AI_PROFILE_SCOPE.
-- **`outputStyles.ts`**: If true, this output style will be automatically applied when the plugin is enabled. Only applicable to plugin output styles. When multiple plugins ha...
-- **`product.ts`**: Determine if we're in a staging environment for remote sessions. Checks session ID format and ingress URL.
-- **`prompts.ts`**: Mengekspor: CLAUDE_CODE_DOCS_MAP_URL, SYSTEM_PROMPT_DYNAMIC_BOUNDARY, prependBullets.
-- **`spinnerVerbs.ts`**: Mengekspor: getSpinnerVerbs, SPINNER_VERBS.
-- **`system.ts`**: All possible CLI sysprompt prefix values, used by splitSysPromptPrefix to identify prefix blocks by content rather than position.
-- **`systemPromptSections.ts`**: Create a memoized system prompt section. Computed once, cached until /clear or /compact.
-- **`toolLimits.ts`**: Constants related to tool result size limits
-- **`tools.ts`**: Mengekspor: ALL_AGENT_DISALLOWED_TOOLS, CUSTOM_AGENT_DISALLOWED_TOOLS, ASYNC_AGENT_ALLOWED_TOOLS.
-- **`turnCompletionVerbs.ts`**: Mengekspor: TURN_COMPLETION_VERBS.
-- **`xml.ts`**: Mengekspor: COMMAND_NAME_TAG, COMMAND_MESSAGE_TAG, COMMAND_ARGS_TAG.
+- **`apiLimits.ts`** (`restored-src/src/constants/apiLimits.ts`): Anthropic API Limits These constants define server-side limits enforced by the Anthropic API. Keep this file dependency-free to prevent circular imports. Last verified: 2025-12-22 Source: api/api/schemas/messages/blocks/ and api/api/config.py Future: See is... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `API_IMAGE_MAX_BASE64_SIZE`, `IMAGE_TARGET_RAW_SIZE`, `IMAGE_MAX_WIDTH`, `IMAGE_MAX_HEIGHT`, dan lainnya.
+- **`betas.ts`** (`restored-src/src/constants/betas.ts`): Bedrock only supports a limited number of beta headers and only through extraBodyParams. This set maintains the beta strings that should be in Bedrock extraBodyParams *and not* in Bedrock headers. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `CLAUDE_CODE_20250219_BETA_HEADER`, `INTERLEAVED_THINKING_BETA_HEADER`, `CONTEXT_1M_BETA_HEADER`, `CONTEXT_MANAGEMENT_BETA_HEADER`, dan lainnya.
+- **`common.ts`** (`restored-src/src/constants/common.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getLocalISODate`, `getSessionStartDate`, `getLocalMonthYear`.
+- **`cyberRiskInstruction.ts`** (`restored-src/src/constants/cyberRiskInstruction.ts`): CYBER_RISK_INSTRUCTION This instruction provides guidance for Claude's behavior when handling security-related requests. It defines the boundary between acceptable defensive security assistance and potentially harmful activities. IMPORTANT: DO NOT MODIFY TH... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `CYBER_RISK_INSTRUCTION`.
+- **`errorIds.ts`** (`restored-src/src/constants/errorIds.ts`): Error IDs for tracking error sources in production. These IDs are obfuscated identifiers that help us trace which logError() call generated an error. These errors are represented as individual const exports for optimal dead code elimination (external build... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `E_TOOL_USE_SUMMARY_GENERATION_FAILED`.
+- **`figures.ts`** (`restored-src/src/constants/figures.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `BLACK_CIRCLE`, `BULLET_OPERATOR`, `TEARDROP_ASTERISK`, `UP_ARROW`, dan lainnya.
+- **`files.ts`** (`restored-src/src/constants/files.ts`): Binary file extensions to skip for text-based operations. These files can't be meaningfully compared as text and are often large. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `BINARY_EXTENSIONS`, `hasBinaryExtension`, `isBinaryContent`.
+- **`github-app.ts`** (`restored-src/src/constants/github-app.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `PR_TITLE`, `GITHUB_ACTION_SETUP_DOCS_URL`, `WORKFLOW_CONTENT`, `PR_BODY`, dan lainnya.
+- **`keys.ts`** (`restored-src/src/constants/keys.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getGrowthBookClientKey`.
+- **`messages.ts`** (`restored-src/src/constants/messages.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `NO_CONTENT_MESSAGE`.
+- **`oauth.ts`** (`restored-src/src/constants/oauth.ts`): Client ID Metadata Document URL for MCP OAuth (CIMD / SEP-991). When an MCP auth server advertises client_id_metadata_document_supported: true, Claude Code uses this URL as its client_id instead of Dynamic Client Registration. The URL must point to a JSON d... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `fileSuffixForOauthConfig`, `CLAUDE_AI_INFERENCE_SCOPE`, `CLAUDE_AI_PROFILE_SCOPE`, `OAUTH_BETA_HEADER`, dan lainnya.
+- **`outputStyles.ts`** (`restored-src/src/constants/outputStyles.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `OutputStyleConfig`, `OutputStyles`, `DEFAULT_OUTPUT_STYLE_NAME`, `OUTPUT_STYLE_CONFIG`, dan lainnya.
+- **`product.ts`** (`restored-src/src/constants/product.ts`): Determine if we're in a staging environment for remote sessions. Checks session ID format and ingress URL. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `PRODUCT_URL`, `CLAUDE_AI_BASE_URL`, `CLAUDE_AI_STAGING_BASE_URL`, `CLAUDE_AI_LOCAL_BASE_URL`, dan lainnya.
+- **`prompts.ts`** (`restored-src/src/constants/prompts.ts`): Boundary marker separating static (cross-org cacheable) content from dynamic content. Everything BEFORE this marker in the system prompt array can use scope: 'global'. Everything AFTER contains user/session-specific content and should not be cached. WARNING... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `CLAUDE_CODE_DOCS_MAP_URL`, `SYSTEM_PROMPT_DYNAMIC_BOUNDARY`, `prependBullets`, `getSystemPrompt`, dan lainnya.
+- **`spinnerVerbs.ts`** (`restored-src/src/constants/spinnerVerbs.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getSpinnerVerbs`, `SPINNER_VERBS`.
+- **`system.ts`** (`restored-src/src/constants/system.ts`): All possible CLI sysprompt prefix values, used by splitSysPromptPrefix to identify prefix blocks by content rather than position. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `CLISyspromptPrefix`, `CLI_SYSPROMPT_PREFIXES`, `getCLISyspromptPrefix`, `getAttributionHeader`.
+- **`systemPromptSections.ts`** (`restored-src/src/constants/systemPromptSections.ts`): Create a memoized system prompt section. Computed once, cached until /clear or /compact. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `systemPromptSection`, `DANGEROUS_uncachedSystemPromptSection`, `resolveSystemPromptSections`, `clearSystemPromptSections`.
+- **`toolLimits.ts`** (`restored-src/src/constants/toolLimits.ts`): Constants related to tool result size limits. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `DEFAULT_MAX_RESULT_SIZE_CHARS`, `MAX_TOOL_RESULT_TOKENS`, `BYTES_PER_TOKEN`, `MAX_TOOL_RESULT_BYTES`, dan lainnya.
+- **`tools.ts`** (`restored-src/src/constants/tools.ts`): Async Agent Tool Availability Status (Source of Truth). Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `ALL_AGENT_DISALLOWED_TOOLS`, `CUSTOM_AGENT_DISALLOWED_TOOLS`, `ASYNC_AGENT_ALLOWED_TOOLS`, `IN_PROCESS_TEAMMATE_ALLOWED_TOOLS`, dan lainnya.
+- **`turnCompletionVerbs.ts`** (`restored-src/src/constants/turnCompletionVerbs.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `TURN_COMPLETION_VERBS`.
+- **`xml.ts`** (`restored-src/src/constants/xml.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `COMMAND_NAME_TAG`, `COMMAND_MESSAGE_TAG`, `COMMAND_ARGS_TAG`, `BASH_INPUT_TAG`, dan lainnya.
 
 ## Direktori: `restored-src/src/context`
 
-- **`QueuedMessageContext.tsx`**: Width reduction for container padding (e.g., 4 for paddingX={2})
-- **`fpsMetrics.tsx`**: Mengekspor: FpsMetricsProvider, useFpsMetrics.
-- **`mailbox.tsx`**: Mengekspor: MailboxProvider, useMailbox.
-- **`modalContext.tsx`**: Set by FullscreenLayout when rendering content in its `modal` slot — the absolute-positioned bottom-anchored pane for slash-command dialogs. Consumers...
-- **`notifications.tsx`**: Keys of notifications that this notification invalidates. If a notification is invalidated, it will be removed from the queue and, if currently displa...
-- **`overlayContext.tsx`**: Overlay tracking for Escape key coordination.  This solves the problem of escape key handling when overlays (like Select with onCancel) are open. The ...
-- **`promptOverlayContext.tsx`**: Portal for content that floats above the prompt so it escapes FullscreenLayout's bottom-slot `overflowY:hidden` clip.  The clip is load-bearing (CC-66...
-- **`stats.tsx`**: Mengekspor: StatsStore, createStatsStore, StatsContext.
-- **`voice.tsx`**: Mengekspor: VoiceState, VoiceProvider, useVoiceState.
+- **`QueuedMessageContext.tsx`** (`restored-src/src/context/QueuedMessageContext.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `useQueuedMessage`, `QueuedMessageProvider`.
+- **`fpsMetrics.tsx`** (`restored-src/src/context/fpsMetrics.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `FpsMetricsProvider`, `useFpsMetrics`.
+- **`mailbox.tsx`** (`restored-src/src/context/mailbox.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `MailboxProvider`, `useMailbox`.
+- **`modalContext.tsx`** (`restored-src/src/context/modalContext.tsx`): Available content rows/columns when inside a Modal, else falls back to the provided terminal size. Use instead of 'useTerminalSize()' when a component caps its visible content height — the modal's inner area is smaller than the terminal. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `ModalContext`, `useIsInsideModal`, `useModalOrTerminalSize`, `useModalScrollRef`.
+- **`notifications.tsx`** (`restored-src/src/context/notifications.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `Notification`, `useNotifications`, `getNext`.
+- **`overlayContext.tsx`** (`restored-src/src/context/overlayContext.tsx`): Hook to register a component as an active overlay. Automatically registers on mount and unregisters on unmount. @param id - Unique identifier for this overlay (e.g., 'select', 'multi-select') @param enabled - Whether to register (default: true). Use this to... Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `useRegisterOverlay`, `useIsOverlayActive`, `useIsModalOverlayActive`.
+- **`promptOverlayContext.tsx`** (`restored-src/src/context/promptOverlayContext.tsx`): Register suggestion data for the floating overlay. Clears on unmount. No-op outside the provider (non-fullscreen renders inline instead). Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `PromptOverlayData`, `PromptOverlayProvider`, `usePromptOverlay`, `usePromptOverlayDialog`, dan lainnya.
+- **`stats.tsx`** (`restored-src/src/context/stats.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `StatsStore`, `createStatsStore`, `StatsContext`, `StatsProvider`, dan lainnya.
+- **`voice.tsx`** (`restored-src/src/context/voice.tsx`): Subscribe to a slice of voice state. Only re-renders when the selected value changes (compared via Object.is). Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `VoiceState`, `VoiceProvider`, `useVoiceState`, `useSetVoiceState`, dan lainnya.
 
 ## Direktori: `restored-src/src/coordinator`
 
-- **`coordinatorMode.ts`**: Mengekspor: isCoordinatorMode, matchSessionMode, getCoordinatorUserContext.
+- **`coordinatorMode.ts`** (`restored-src/src/coordinator/coordinatorMode.ts`): Checks if the current coordinator mode matches the session's stored mode. If mismatched, flips the environment variable so isCoordinatorMode() returns the correct value for the resumed session. Returns a warning message if the mode was switched, or undefine... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `isCoordinatorMode`, `matchSessionMode`, `getCoordinatorUserContext`, `getCoordinatorSystemPrompt`.
 
 ## Direktori: `restored-src/src/entrypoints`
 
-- **`agentSdkTypes.ts`**: Main entrypoint for Claude Code Agent SDK types.  This file re-exports the public SDK API from: - sdk/coreTypes.ts - Common serializable types (messag...
-- **`cli.tsx`**: Bootstrap entrypoint - checks for special flags before loading the full CLI. All imports are dynamic to minimize module evaluation for fast paths.
-- **`init.ts`**: Mengekspor: init, initializeTelemetryAfterTrust.
-- **`mcp.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`sandboxTypes.ts`**: Sandbox types for the Claude Code Agent SDK  This file is the single source of truth for sandbox configuration types. Both the SDK and the settings va...
+- **`agentSdkTypes.ts`** (`restored-src/src/entrypoints/agentSdkTypes.ts`): Creates an MCP server instance that can be used with the SDK transport. This allows SDK users to define custom tools that run in the same process. If your SDK MCP calls will run longer than 60s, override CLAUDE_CODE_STREAM_CLOSE_TIMEOUT. Mengimplementasikan class utama untuk area fitur ini. Export utama: `SDKControlRequest`, `SDKControlResponse`, `Settings`, `ListSessionsOptions`, dan lainnya.
+- **`cli.tsx`** (`restored-src/src/entrypoints/cli.tsx`): Bootstrap entrypoint - checks for special flags before loading the full CLI. All imports are dynamic to minimize module evaluation for fast paths. Fast-path for --version has zero imports beyond this file. Modul React/Ink yang merender UI atau dialog interaktif.
+- **`init.ts`** (`restored-src/src/entrypoints/init.ts`): Initialize telemetry after trust has been granted. For remote-settings-eligible users, waits for settings to load (non-blocking), then re-applies env vars (to include remote settings) before initializing telemetry. For non-eligible users, initializes teleme... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `init`, `initializeTelemetryAfterTrust`.
+- **`mcp.ts`** (`restored-src/src/entrypoints/mcp.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `startMCPServer`.
+- **`sandboxTypes.ts`** (`restored-src/src/entrypoints/sandboxTypes.ts`): Network configuration schema for sandbox. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `SandboxNetworkConfigSchema`, `SandboxFilesystemConfigSchema`, `SandboxSettingsSchema`, `SandboxSettings`, dan lainnya.
 
 ## Direktori: `restored-src/src/entrypoints/sdk`
 
-- **`controlSchemas.ts`**: SDK Control Schemas - Zod schemas for the control protocol.  These schemas define the control protocol between SDK implementations and the CLI. Used b...
-- **`coreSchemas.ts`**: SDK Core Schemas - Zod schemas for serializable SDK data types.  These schemas are the single source of truth for SDK data types. TypeScript types are...
-- **`coreTypes.ts`**: Mengekspor: HOOK_EVENTS, EXIT_REASONS.
+- **`controlSchemas.ts`** (`restored-src/src/entrypoints/sdk/controlSchemas.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `JSONRPCMessagePlaceholder`, `SDKHookCallbackMatcherSchema`, `SDKControlInitializeRequestSchema`, `SDKControlInitializeResponseSchema`, dan lainnya.
+- **`coreSchemas.ts`** (`restored-src/src/entrypoints/sdk/coreSchemas.ts`): Placeholder for APIUserMessage from @anthropic-ai/sdk. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `ModelUsageSchema`, `OutputFormatTypeSchema`, `BaseOutputFormatSchema`, `JsonSchemaOutputFormatSchema`, dan lainnya.
+- **`coreTypes.ts`** (`restored-src/src/entrypoints/sdk/coreTypes.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `SandboxFilesystemConfig`, `SandboxIgnoreViolations`, `SandboxNetworkConfig`, `SandboxSettings`, dan lainnya.
 
 ## Direktori: `restored-src/src/hooks`
 
-- **`fileSuggestions.ts`**: Mengekspor: onIndexBuildComplete, clearFileSuggestionCaches, pathListSignature.
-- **`renderPlaceholder.ts`**: Mengekspor: renderPlaceholder.
-- **`unifiedSuggestions.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`useAfterFirstRender.ts`**: Mengekspor: useAfterFirstRender.
-- **`useApiKeyVerification.ts`**: Mengekspor: VerificationStatus, ApiKeyVerificationResult, useApiKeyVerification.
-- **`useArrowKeyHistory.tsx`**: Mengekspor: HistoryMode, useArrowKeyHistory.
-- **`useAssistantHistory.ts`**: Gated on viewerOnly — non-viewer sessions have no remote history to page.
-- **`useAwaySummary.ts`**: Appends a "while you were away" summary message after the terminal has been blurred for 5 minutes. Fires only when (a) 5min since blur, (b) no turn in...
-- **`useBackgroundTaskNavigation.ts`**: Mengekspor: useBackgroundTaskNavigation.
-- **`useBlink.ts`**: Hook for synchronized blinking animations that pause when offscreen.  Returns a ref to attach to the animated element and the current blink state. All...
-- **`useCanUseTool.tsx`**: Mengekspor: CanUseToolFn.
-- **`useCancelRequest.ts`**: CancelRequestHandler component for handling cancel/escape keybinding.  Must be rendered inside KeybindingSetup to have access to the keybinding contex...
-- **`useChromeExtensionNotification.tsx`**: Mengekspor: useChromeExtensionNotification.
-- **`useClaudeCodeHintRecommendation.tsx`**: Surfaces plugin-install prompts driven by `<claude-code-hint />` tags that CLIs/SDKs emit to stderr. See docs/claude-code-hints.md.  Show-once semanti...
-- **`useClipboardImageHint.ts`**: Hook that shows a notification when the terminal regains focus and the clipboard contains an image.  @param isFocused - Whether the terminal is curren...
-- **`useCommandKeybindings.tsx`**: Component that registers keybinding handlers for command bindings.  Must be rendered inside KeybindingSetup to have access to the keybinding context. ...
-- **`useCommandQueue.ts`**: React hook to subscribe to the unified command queue. Returns a frozen array that only changes reference on mutation. Components re-render only when t...
-- **`useCopyOnSelect.ts`**: Auto-copy the selection to the clipboard when the user finishes dragging (mouse-up with a non-empty selection) or multi-clicks to select a word/line. ...
-- **`useDeferredHookMessages.ts`**: Manages deferred SessionStart hook messages so the REPL can render immediately instead of blocking on hook execution (~500ms).  Hook messages are inje...
-- **`useDiffData.ts`**: Mengekspor: DiffFile, DiffData, useDiffData.
-- **`useDiffInIDE.ts`**: Mengekspor: useDiffInIDE, computeEditsFromContents.
-- **`useDirectConnect.ts`**: Mengekspor: useDirectConnect.
-- **`useDoublePress.ts`**: Mengekspor: DOUBLE_PRESS_TIMEOUT_MS, useDoublePress.
-- **`useDynamicConfig.ts`**: React hook for dynamic config values. Returns the default value initially, then updates when the config is fetched.
-- **`useElapsedTime.ts`**: Hook that returns formatted elapsed time since startTime. Uses useSyncExternalStore with interval-based updates for efficiency.  @param startTime - Un...
-- **`useExitOnCtrlCD.ts`**: Handle ctrl+c and ctrl+d for exiting the application.  Uses a time-based double-press mechanism: - First press: Shows "Press X again to exit" message ...
-- **`useExitOnCtrlCDWithKeybindings.ts`**: Convenience hook that wires up useExitOnCtrlCD with useKeybindings.  This is the standard way to use useExitOnCtrlCD in components. The separation exi...
-- **`useFileHistorySnapshotInit.ts`**: Mengekspor: useFileHistorySnapshotInit.
-- **`useGlobalKeybindings.tsx`**: Component that registers global keybinding handlers.  Must be rendered inside KeybindingSetup to have access to the keybinding context. This component...
-- **`useHistorySearch.ts`**: Mengekspor: useHistorySearch.
-- **`useIDEIntegration.tsx`**: Mengekspor: useIDEIntegration.
-- **`useIdeAtMentioned.ts`**: A hook that tracks IDE at-mention notifications by directly registering
-- **`useIdeConnectionStatus.ts`**: Mengekspor: IdeStatus, useIdeConnectionStatus.
-- **`useIdeLogging.ts`**: Mengekspor: useIdeLogging.
-- **`useIdeSelection.ts`**: Mengekspor: SelectionPoint, SelectionData, IDESelection.
-- **`useInboxPoller.ts`**: Mengekspor: useInboxPoller.
-- **`useInputBuffer.ts`**: Mengekspor: BufferEntry, UseInputBufferProps, UseInputBufferResult.
-- **`useIssueFlagBanner.ts`**: Mengekspor: isSessionContainerCompatible, hasFrictionSignal, useIssueFlagBanner.
-- **`useLogMessages.ts`**: Hook that logs messages to the transcript conversation ID that only changes when a new conversation is started.  @param messages The current conversat...
-- **`useLspPluginRecommendation.tsx`**: Hook for LSP plugin recommendations  Detects file edits and recommends LSP plugins when: - File extension matches an LSP plugin - LSP binary is alread...
-- **`useMailboxBridge.ts`**: Mengekspor: useMailboxBridge.
-- **`useMainLoopModel.ts`**: Mengekspor: useMainLoopModel.
-- **`useManagePlugins.ts`**: Hook to manage plugin state and synchronize with AppState.  On mount: loads all plugins, runs delisting enforcement, surfaces flagged- plugin notifica...
-- **`useMemoryUsage.ts`**: Hook to monitor Node.js process memory usage. Polls every 10 seconds; returns null while status is 'normal'.
-- **`useMergedClients.ts`**: Mengekspor: mergeClients, useMergedClients.
-- **`useMergedCommands.ts`**: Mengekspor: useMergedCommands.
-- **`useMergedTools.ts`**: React hook that assembles the full tool pool for the REPL.  Uses assembleToolPool() (the shared pure function used by both REPL and runAgent) to combi...
-- **`useMinDisplayTime.ts`**: Throttles a value so each distinct value stays visible for at least `minMs`. Prevents fast-cycling progress text from flickering past before it's read...
-- **`useNotifyAfterTimeout.ts`**: Hook that manages desktop notifications after a timeout period.
-- **`useOfficialMarketplaceNotification.tsx`**: Hook that handles official marketplace auto-installation and shows notifications for success/failure in the bottom right of the REPL.
-- **`usePasteHandler.ts`**: Mengekspor: usePasteHandler.
-- **`usePluginRecommendationBase.tsx`**: Shared state machine + install helper for plugin-recommendation hooks (LSP, claude-code-hint). Centralizes the gate chain, async-guard, and success/fa...
-- **`usePrStatus.ts`**: Polls PR review status every 60s while the session is active. When no interaction is detected for 60 minutes, the loop stops — no timers remain. React...
-- **`usePromptSuggestion.ts`**: Mengekspor: usePromptSuggestion.
-- **`usePromptsFromClaudeInChrome.tsx`**: A hook that listens for prompt notifications from the Claude for Chrome extension, enqueues them as user prompts, and syncs permission mode changes to...
-- **`useQueueProcessor.ts`**: Hook that processes queued commands when conditions are met.  Uses a single unified command queue (module-level store). Priority determines processing...
-- **`useRemoteSession.ts`**: Mengekspor: useRemoteSession.
-- **`useReplBridge.tsx`**: How long after a failure before replBridgeEnabled is auto-cleared (stops retries).
-- **`useSSHSession.ts`**: REPL integration hook for `claude ssh` sessions.  Sibling to useDirectConnect — same shape (isRemoteMode/sendMessage/ cancelRequest/disconnect), same ...
-- **`useScheduledTasks.ts`**: When true, bypasses the isLoading gate so tasks can enqueue while a query is streaming rather than deferring to the next 1s check tick after the turn ...
-- **`useSearchInput.ts`**: Esc + Ctrl+C abandon (distinct from onExit = Enter commit). When provided: single-Esc calls this directly (no clear-first-then-exit two-press). When a...
-- **`useSessionBackgrounding.ts`**: Hook for managing session backgrounding (Ctrl+B to background/foreground sessions).  Handles: - Calling onBackgroundQuery to spawn a background task f...
-- **`useSettings.ts`**: Settings type as stored in AppState (DeepImmutable wrapped). Use this type when you need to annotate variables that hold settings from useSettings()....
-- **`useSettingsChange.ts`**: Mengekspor: useSettingsChange.
-- **`useSkillImprovementSurvey.ts`**: Mengekspor: useSkillImprovementSurvey.
-- **`useSkillsChange.ts`**: Keep the commands list fresh across two triggers:  1. Skill file changes (watcher) — full cache clear + disk re-scan, since skill content changed on d...
-- **`useSwarmInitialization.ts`**: Swarm Initialization Hook  Initializes swarm features: teammate hooks and context. Handles both fresh spawns and resumed teammate sessions.  This hook...
-- **`useSwarmPermissionPoller.ts`**: Swarm Permission Poller Hook  This hook polls for permission responses from the team leader when running as a worker agent in a swarm. When a response...
-- **`useTaskListWatcher.ts`**: When undefined, the hook does nothing. The task list id is also used as the agent ID.
-- **`useTasksV2.ts`**: Singleton store for the TodoV2 task list. Owns the file watcher, timers, and cached task list. Multiple hook instances (REPL, Spinner, PromptInputFoot...
-- **`useTeammateViewAutoExit.ts`**: Auto-exits teammate viewing mode when the viewed teammate is killed or encounters an error. Users stay viewing completed teammates so they can review ...
-- **`useTeleportResume.tsx`**: Mengekspor: TeleportResumeError, TeleportSource, useTeleportResume.
-- **`useTerminalSize.ts`**: Mengekspor: useTerminalSize.
-- **`useTextInput.ts`**: Mengekspor: UseTextInputProps, useTextInput.
-- **`useTimeout.ts`**: Mengekspor: useTimeout.
-- **`useTurnDiffs.ts`**: Mengekspor: TurnFileDiff, TurnDiff, useTurnDiffs.
-- **`useTypeahead.tsx`**: Mengekspor: extractSearchToken, formatReplacementValue, applyShellSuggestion.
-- **`useUpdateNotification.ts`**: Mengekspor: getSemverPart, shouldShowUpdateNotification, useUpdateNotification.
-- **`useVimInput.ts`**: Mengekspor: useVimInput.
-- **`useVirtualScroll.ts`**: Estimated height (rows) for items not yet measured. Intentionally LOW: overestimating causes blank space (we stop mounting too early and the viewport ...
-- **`useVoice.ts`**: Mengekspor: normalizeLanguageForSTT, FIRST_PRESS_FALLBACK_MS, computeLevel.
-- **`useVoiceEnabled.ts`**: Combines user intent (settings.voiceEnabled) with auth + GB kill-switch. Only the auth half is memoized on authVersion — it's the expensive one (cold ...
-- **`useVoiceIntegration.tsx`**: Mengekspor: useVoiceIntegration, useVoiceKeybindingHandler, VoiceKeybindingHandler.
+- **`fileSuggestions.ts`** (`restored-src/src/hooks/fileSuggestions.ts`): Clear all file suggestion caches. Call this when resuming a session to ensure fresh file discovery. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `onIndexBuildComplete`, `clearFileSuggestionCaches`, `pathListSignature`, `getDirectoryNames`, dan lainnya.
+- **`renderPlaceholder.ts`** (`restored-src/src/hooks/renderPlaceholder.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `renderPlaceholder`.
+- **`unifiedSuggestions.ts`** (`restored-src/src/hooks/unifiedSuggestions.ts`): Creates a unified suggestion item from a source. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `generateUnifiedSuggestions`.
+- **`useAfterFirstRender.ts`** (`restored-src/src/hooks/useAfterFirstRender.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `useAfterFirstRender`.
+- **`useApiKeyVerification.ts`** (`restored-src/src/hooks/useApiKeyVerification.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `VerificationStatus`, `ApiKeyVerificationResult`, `useApiKeyVerification`.
+- **`useArrowKeyHistory.tsx`** (`restored-src/src/hooks/useArrowKeyHistory.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `HistoryMode`, `useArrowKeyHistory`.
+- **`useAssistantHistory.ts`** (`restored-src/src/hooks/useAssistantHistory.ts`): Lazy-load 'claude assistant' history on scroll-up. On mount: fetch newest page via anchor_to_latest, prepend to messages. On scroll-up near top: fetch next-older page via before_id, prepend with scroll anchoring (viewport stays put). No-op unless config.vie... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `useAssistantHistory`.
+- **`useAwaySummary.ts`** (`restored-src/src/hooks/useAwaySummary.ts`): Appends a "while you were away" summary message after the terminal has been blurred for 5 minutes. Fires only when (a) 5min since blur, (b) no turn in progress, and (c) no existing away_summary since the last user message. Focus state 'unknown' (terminal do... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `useAwaySummary`.
+- **`useBackgroundTaskNavigation.ts`** (`restored-src/src/hooks/useBackgroundTaskNavigation.ts`): Custom hook that handles Shift+Up/Down keyboard navigation for background tasks. When teammates (swarm) are present, navigates between leader and teammates. When only non-teammate background tasks exist, opens the background tasks dialog. Also handles Enter... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `useBackgroundTaskNavigation`.
+- **`useBlink.ts`** (`restored-src/src/hooks/useBlink.ts`): Hook for synchronized blinking animations that pause when offscreen. Returns a ref to attach to the animated element and the current blink state. All instances blink together because they derive state from the same animation clock. The clock only runs when... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `useBlink`.
+- **`useCanUseTool.tsx`** (`restored-src/src/hooks/useCanUseTool.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `CanUseToolFn`.
+- **`useCancelRequest.ts`** (`restored-src/src/hooks/useCancelRequest.ts`): Component that handles cancel requests via keybinding. Renders null but registers the 'chat:cancel' keybinding handler. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `CancelRequestHandler`.
+- **`useChromeExtensionNotification.tsx`** (`restored-src/src/hooks/useChromeExtensionNotification.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `useChromeExtensionNotification`.
+- **`useClaudeCodeHintRecommendation.tsx`** (`restored-src/src/hooks/useClaudeCodeHintRecommendation.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `useClaudeCodeHintRecommendation`.
+- **`useClipboardImageHint.ts`** (`restored-src/src/hooks/useClipboardImageHint.ts`): Hook that shows a notification when the terminal regains focus and the clipboard contains an image. @param isFocused - Whether the terminal is currently focused @param enabled - Whether image paste is enabled (onImagePaste is defined). Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `useClipboardImageHint`.
+- **`useCommandKeybindings.tsx`** (`restored-src/src/hooks/useCommandKeybindings.tsx`): Registers keybinding handlers for all "command:*" actions found in the user's keybinding configuration. When triggered, each handler submits the corresponding slash command (e.g., "command:commit" submits "/commit"). Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `CommandKeybindingHandlers`.
+- **`useCommandQueue.ts`** (`restored-src/src/hooks/useCommandQueue.ts`): React hook to subscribe to the unified command queue. Returns a frozen array that only changes reference on mutation. Components re-render only when the queue changes. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `useCommandQueue`.
+- **`useCopyOnSelect.ts`** (`restored-src/src/hooks/useCopyOnSelect.ts`): Auto-copy the selection to the clipboard when the user finishes dragging (mouse-up with a non-empty selection) or multi-clicks to select a word/line. Mirrors iTerm2's "Copy to pasteboard on selection" — the highlight is left intact so the user can see what... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `useCopyOnSelect`, `useSelectionBgColor`.
+- **`useDeferredHookMessages.ts`** (`restored-src/src/hooks/useDeferredHookMessages.ts`): Manages deferred SessionStart hook messages so the REPL can render immediately instead of blocking on hook execution (~500ms). Hook messages are injected asynchronously when the promise resolves. Returns a callback that onSubmit should call before the first... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `useDeferredHookMessages`.
+- **`useDiffData.ts`** (`restored-src/src/hooks/useDiffData.ts`): Hook to fetch current git diff data on demand. Fetches both stats and hunks when component mounts. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `DiffFile`, `DiffData`, `useDiffData`.
+- **`useDiffInIDE.ts`** (`restored-src/src/hooks/useDiffInIDE.ts`): Re-computes the edits from the old and new contents. This is necessary to apply any edits the user may have made to the new contents. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `useDiffInIDE`, `computeEditsFromContents`.
+- **`useDirectConnect.ts`** (`restored-src/src/hooks/useDirectConnect.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `useDirectConnect`.
+- **`useDoublePress.ts`** (`restored-src/src/hooks/useDoublePress.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `DOUBLE_PRESS_TIMEOUT_MS`, `useDoublePress`.
+- **`useDynamicConfig.ts`** (`restored-src/src/hooks/useDynamicConfig.ts`): React hook for dynamic config values. Returns the default value initially, then updates when the config is fetched. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `useDynamicConfig`.
+- **`useElapsedTime.ts`** (`restored-src/src/hooks/useElapsedTime.ts`): Hook that returns formatted elapsed time since startTime. Uses useSyncExternalStore with interval-based updates for efficiency. @param startTime - Unix timestamp in ms @param isRunning - Whether to actively update the timer @param ms - How often should we t... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `useElapsedTime`.
+- **`useExitOnCtrlCD.ts`** (`restored-src/src/hooks/useExitOnCtrlCD.ts`): Handle ctrl+c and ctrl+d for exiting the application. Uses a time-based double-press mechanism: - First press: Shows "Press X again to exit" message - Second press within timeout: Exits the application Note: We use time-based double-press rather than the ch... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `ExitState`, `useExitOnCtrlCD`.
+- **`useExitOnCtrlCDWithKeybindings.ts`** (`restored-src/src/hooks/useExitOnCtrlCDWithKeybindings.ts`): Convenience hook that wires up useExitOnCtrlCD with useKeybindings. This is the standard way to use useExitOnCtrlCD in components. The separation exists to avoid import cycles - useExitOnCtrlCD.ts doesn't import from the keybindings module directly. @param... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `ExitState`, `useExitOnCtrlCDWithKeybindings`.
+- **`useFileHistorySnapshotInit.ts`** (`restored-src/src/hooks/useFileHistorySnapshotInit.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `useFileHistorySnapshotInit`.
+- **`useGlobalKeybindings.tsx`** (`restored-src/src/hooks/useGlobalKeybindings.tsx`): Registers global keybinding handlers for: - ctrl+t: Toggle todo list - ctrl+o: Toggle transcript mode - ctrl+e: Toggle showing all messages in transcript - ctrl+c/escape: Exit transcript mode. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `GlobalKeybindingHandlers`.
+- **`useHistorySearch.ts`** (`restored-src/src/hooks/useHistorySearch.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `useHistorySearch`.
+- **`useIDEIntegration.tsx`** (`restored-src/src/hooks/useIDEIntegration.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `useIDEIntegration`.
+- **`useIdeAtMentioned.ts`** (`restored-src/src/hooks/useIdeAtMentioned.ts`): A hook that tracks IDE at-mention notifications by directly registering with MCP client notification handlers,. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `IDEAtMentioned`, `useIdeAtMentioned`.
+- **`useIdeConnectionStatus.ts`** (`restored-src/src/hooks/useIdeConnectionStatus.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `IdeStatus`, `useIdeConnectionStatus`.
+- **`useIdeLogging.ts`** (`restored-src/src/hooks/useIdeLogging.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `useIdeLogging`.
+- **`useIdeSelection.ts`** (`restored-src/src/hooks/useIdeSelection.ts`): A hook that tracks IDE text selection information by directly registering with MCP client notification handlers. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `SelectionPoint`, `SelectionData`, `IDESelection`, `useIdeSelection`.
+- **`useInboxPoller.ts`** (`restored-src/src/hooks/useInboxPoller.ts`): Polls the teammate inbox for new messages and submits them as turns. This hook: 1. Polls every 1s for unread messages (teammates or team leads) 2. When idle: submits messages immediately as a new turn 3. When busy: queues messages in AppState.inbox for UI d... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `useInboxPoller`.
+- **`useInputBuffer.ts`** (`restored-src/src/hooks/useInputBuffer.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `BufferEntry`, `UseInputBufferProps`, `UseInputBufferResult`, `useInputBuffer`.
+- **`useIssueFlagBanner.ts`** (`restored-src/src/hooks/useIssueFlagBanner.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `isSessionContainerCompatible`, `hasFrictionSignal`, `useIssueFlagBanner`.
+- **`useLogMessages.ts`** (`restored-src/src/hooks/useLogMessages.ts`): Hook that logs messages to the transcript conversation ID that only changes when a new conversation is started. @param messages The current conversation messages @param ignore When true, messages will not be recorded to the transcript. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `useLogMessages`.
+- **`useLspPluginRecommendation.tsx`** (`restored-src/src/hooks/useLspPluginRecommendation.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `LspRecommendationState`, `useLspPluginRecommendation`.
+- **`useMailboxBridge.ts`** (`restored-src/src/hooks/useMailboxBridge.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `useMailboxBridge`.
+- **`useMainLoopModel.ts`** (`restored-src/src/hooks/useMainLoopModel.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `useMainLoopModel`.
+- **`useManagePlugins.ts`** (`restored-src/src/hooks/useManagePlugins.ts`): Hook to manage plugin state and synchronize with AppState. On mount: loads all plugins, runs delisting enforcement, surfaces flagged- plugin notifications, populates AppState.plugins. This is the initial Layer-3 load — subsequent refresh goes through /reloa... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `useManagePlugins`.
+- **`useMemoryUsage.ts`** (`restored-src/src/hooks/useMemoryUsage.ts`): Hook to monitor Node.js process memory usage. Polls every 10 seconds; returns null while status is 'normal'. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `MemoryUsageStatus`, `MemoryUsageInfo`, `useMemoryUsage`.
+- **`useMergedClients.ts`** (`restored-src/src/hooks/useMergedClients.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `mergeClients`, `useMergedClients`.
+- **`useMergedCommands.ts`** (`restored-src/src/hooks/useMergedCommands.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `useMergedCommands`.
+- **`useMergedTools.ts`** (`restored-src/src/hooks/useMergedTools.ts`): React hook that assembles the full tool pool for the REPL. Uses assembleToolPool() (the shared pure function used by both REPL and runAgent) to combine built-in tools with MCP tools, applying deny rules and deduplication. Any extra initialTools are merged o... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `useMergedTools`.
+- **`useMinDisplayTime.ts`** (`restored-src/src/hooks/useMinDisplayTime.ts`): Throttles a value so each distinct value stays visible for at least 'minMs'. Prevents fast-cycling progress text from flickering past before it's readable. Unlike debounce (wait for quiet) or throttle (limit rate), this guarantees each value gets its minimu... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `useMinDisplayTime`.
+- **`useNotifyAfterTimeout.ts`** (`restored-src/src/hooks/useNotifyAfterTimeout.ts`): Hook that manages desktop notifications after a timeout period. Shows a notification in two cases: 1. Immediately if the app has been idle for longer than the threshold 2. After the specified timeout if the user doesn't interact within that time @param mess... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `DEFAULT_INTERACTION_THRESHOLD_MS`, `useNotifyAfterTimeout`.
+- **`useOfficialMarketplaceNotification.tsx`** (`restored-src/src/hooks/useOfficialMarketplaceNotification.tsx`): Hook that handles official marketplace auto-installation and shows notifications for success/failure in the bottom right of the REPL. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `useOfficialMarketplaceNotification`.
+- **`usePasteHandler.ts`** (`restored-src/src/hooks/usePasteHandler.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `usePasteHandler`.
+- **`usePluginRecommendationBase.tsx`** (`restored-src/src/hooks/usePluginRecommendationBase.tsx`): Call tryResolve inside a useEffect; it applies standard gates (remote mode, already-showing, in-flight) then runs resolve(). Non-null return becomes the recommendation. Include tryResolve in effect deps — its identity tracks recommendation, so clearing re-t... Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `usePluginRecommendationBase`, `installPluginAndNotify`.
+- **`usePrStatus.ts`** (`restored-src/src/hooks/usePrStatus.ts`): Polls PR review status every 60s while the session is active. When no interaction is detected for 60 minutes, the loop stops — no timers remain. React re-runs the effect when isLoading changes (turn starts/ends), restarting the loop. Effect setup schedules... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `PrStatusState`, `usePrStatus`.
+- **`usePromptSuggestion.ts`** (`restored-src/src/hooks/usePromptSuggestion.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `usePromptSuggestion`.
+- **`usePromptsFromClaudeInChrome.tsx`** (`restored-src/src/hooks/usePromptsFromClaudeInChrome.tsx`): A hook that listens for prompt notifications from the Claude for Chrome extension, enqueues them as user prompts, and syncs permission mode changes to the extension. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `usePromptsFromClaudeInChrome`.
+- **`useQueueProcessor.ts`** (`restored-src/src/hooks/useQueueProcessor.ts`): Hook that processes queued commands when conditions are met. Uses a single unified command queue (module-level store). Priority determines processing order: 'now' > 'next' (user input) > 'later' (task notifications). The dequeue() function handles priority... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `useQueueProcessor`.
+- **`useRemoteSession.ts`** (`restored-src/src/hooks/useRemoteSession.ts`): Hook for managing a remote CCR session in the REPL. Handles: - WebSocket connection to CCR - Converting SDK messages to REPL messages - Sending user input to CCR via HTTP POST - Permission request/response flow via existing ToolUseConfirm queue. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `useRemoteSession`.
+- **`useReplBridge.tsx`** (`restored-src/src/hooks/useReplBridge.tsx`): Hook that initializes an always-on bridge connection in the background and writes new user/assistant messages to the bridge session. Silently skips if bridge is not enabled or user is not OAuth-authenticated. Watches AppState.replBridgeEnabled — when toggle... Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `BRIDGE_FAILURE_DISMISS_MS`, `useReplBridge`.
+- **`useSSHSession.ts`** (`restored-src/src/hooks/useSSHSession.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `useSSHSession`.
+- **`useScheduledTasks.ts`** (`restored-src/src/hooks/useScheduledTasks.ts`): REPL wrapper for the cron scheduler. Mounts the scheduler once and tears it down on unmount. Fired prompts go into the command queue as 'later' priority, which the REPL drains via useCommandQueue between turns. Scheduler core (timer, file watcher, fire logi... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `useScheduledTasks`.
+- **`useSearchInput.ts`** (`restored-src/src/hooks/useSearchInput.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `useSearchInput`.
+- **`useSessionBackgrounding.ts`** (`restored-src/src/hooks/useSessionBackgrounding.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `useSessionBackgrounding`.
+- **`useSettings.ts`** (`restored-src/src/hooks/useSettings.ts`): React hook to access current settings from AppState. Settings automatically update when files change on disk via settingsChangeDetector. Use this instead of getSettings_DEPRECATED() in React components for reactive updates. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `ReadonlySettings`, `useSettings`.
+- **`useSettingsChange.ts`** (`restored-src/src/hooks/useSettingsChange.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `useSettingsChange`.
+- **`useSkillImprovementSurvey.ts`** (`restored-src/src/hooks/useSkillImprovementSurvey.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `useSkillImprovementSurvey`.
+- **`useSkillsChange.ts`** (`restored-src/src/hooks/useSkillsChange.ts`): Keep the commands list fresh across two triggers: 1. Skill file changes (watcher) — full cache clear + disk re-scan, since skill content changed on disk. 2. GrowthBook init/refresh — memo-only clear, since only 'isEnabled()' predicates may have changed. Han... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `useSkillsChange`.
+- **`useSwarmInitialization.ts`** (`restored-src/src/hooks/useSwarmInitialization.ts`): Hook that initializes swarm features when ENABLE_AGENT_SWARMS is true. Handles both: - Resumed teammate sessions (from --resume or /resume) where teamName/agentName are stored in transcript messages - Fresh spawns where context is read from environment vari... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `useSwarmInitialization`.
+- **`useSwarmPermissionPoller.ts`** (`restored-src/src/hooks/useSwarmPermissionPoller.ts`): Hook that polls for permission responses when running as a swarm worker. This hook: 1. Only activates when isSwarmWorker() returns true 2. Polls every 500ms for responses 3. When a response is found, invokes the registered callback 4. Cleans up the response... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `PermissionResponseCallback`, `registerPermissionCallback`, `unregisterPermissionCallback`, `hasPermissionCallback`, dan lainnya.
+- **`useTaskListWatcher.ts`** (`restored-src/src/hooks/useTaskListWatcher.ts`): Hook that watches a task list directory and automatically picks up open, unowned tasks to work on. This enables "tasks mode" where Claude watches for externally-created tasks and processes them one at a time. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `useTaskListWatcher`.
+- **`useTasksV2.ts`** (`restored-src/src/hooks/useTasksV2.ts`): Hook to get the current task list for the persistent UI display. Returns tasks when TodoV2 is enabled, otherwise returns undefined. All hook instances share a single file watcher via TasksV2Store. Hides the list after 5 seconds if there are no open tasks. Mengimplementasikan class utama untuk area fitur ini. Export utama: `useTasksV2`, `useTasksV2WithCollapseEffect`.
+- **`useTeammateViewAutoExit.ts`** (`restored-src/src/hooks/useTeammateViewAutoExit.ts`): Auto-exits teammate viewing mode when the viewed teammate is killed or encounters an error. Users stay viewing completed teammates so they can review the full transcript. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `useTeammateViewAutoExit`.
+- **`useTeleportResume.tsx`** (`restored-src/src/hooks/useTeleportResume.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `TeleportResumeError`, `TeleportSource`, `useTeleportResume`.
+- **`useTerminalSize.ts`** (`restored-src/src/hooks/useTerminalSize.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `useTerminalSize`.
+- **`useTextInput.ts`** (`restored-src/src/hooks/useTextInput.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `UseTextInputProps`, `useTextInput`.
+- **`useTimeout.ts`** (`restored-src/src/hooks/useTimeout.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `useTimeout`.
+- **`useTurnDiffs.ts`** (`restored-src/src/hooks/useTurnDiffs.ts`): Extract turn-based diffs from messages. A turn is defined as a user prompt followed by assistant responses and tool results. Each turn with file edits is included in the result. Uses incremental accumulation - only processes new messages since last render. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `TurnFileDiff`, `TurnDiff`, `useTurnDiffs`.
+- **`useTypeahead.tsx`** (`restored-src/src/hooks/useTypeahead.tsx`): Hook for handling typeahead functionality for both commands and file paths. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `extractSearchToken`, `formatReplacementValue`, `applyShellSuggestion`, `applyDirectorySuggestion`, dan lainnya.
+- **`useUpdateNotification.ts`** (`restored-src/src/hooks/useUpdateNotification.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getSemverPart`, `shouldShowUpdateNotification`, `useUpdateNotification`.
+- **`useVimInput.ts`** (`restored-src/src/hooks/useVimInput.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `useVimInput`.
+- **`useVirtualScroll.ts`** (`restored-src/src/hooks/useVirtualScroll.ts`): React-level virtualization for items inside a ScrollBox. The ScrollBox already does Ink-output-level viewport culling (render-node-to-output.ts:617 skips children outside the visible window), but all React fibers + Yoga nodes are still allocated. At ~250 KB... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `VirtualScrollResult`, `useVirtualScroll`.
+- **`useVoice.ts`** (`restored-src/src/hooks/useVoice.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `normalizeLanguageForSTT`, `FIRST_PRESS_FALLBACK_MS`, `computeLevel`, `useVoice`.
+- **`useVoiceEnabled.ts`** (`restored-src/src/hooks/useVoiceEnabled.ts`): Combines user intent (settings.voiceEnabled) with auth + GB kill-switch. Only the auth half is memoized on authVersion — it's the expensive one (cold getClaudeAIOAuthTokens memoize → sync 'security' spawn, ~60ms/call, ~180ms total in profile v5 when token r... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `useVoiceEnabled`.
+- **`useVoiceIntegration.tsx`** (`restored-src/src/hooks/useVoiceIntegration.tsx`): Component that handles hold-to-talk voice activation. The activation key is configurable via keybindings (voice:pushToTalk, default: space). Hold detection depends on OS auto-repeat delivering a stream of events at 30-80ms intervals. Two binding types work:... Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `useVoiceIntegration`, `useVoiceKeybindingHandler`, `VoiceKeybindingHandler`.
 
 ## Direktori: `restored-src/src/hooks/notifs`
 
-- **`useAutoModeUnavailableNotification.ts`**: Shows a one-shot notification when the shift-tab carousel wraps past where auto mode would have been. Covers all reasons (settings, circuit-breaker, o...
-- **`useCanSwitchToExistingSubscription.tsx`**: Hook to check if the user has a subscription on Console but isn't logged into it.
-- **`useDeprecationWarningNotification.tsx`**: Mengekspor: useDeprecationWarningNotification.
-- **`useFastModeNotification.tsx`**: Mengekspor: useFastModeNotification.
-- **`useIDEStatusIndicator.tsx`**: Mengekspor: useIDEStatusIndicator.
-- **`useInstallMessages.tsx`**: Mengekspor: useInstallMessages.
-- **`useLspInitializationNotification.tsx`**: Hook that polls LSP status and shows a notification when: 1. Manager initialization fails 2. Any LSP server enters an error state  Also adds errors to...
-- **`useMcpConnectivityStatus.tsx`**: Mengekspor: useMcpConnectivityStatus.
-- **`useModelMigrationNotifications.tsx`**: Mengekspor: useModelMigrationNotifications.
-- **`useNpmDeprecationNotification.tsx`**: Mengekspor: useNpmDeprecationNotification.
-- **`usePluginAutoupdateNotification.tsx`**: Hook that displays a notification when plugins have been auto-updated. The notification tells the user to run /reload-plugins to apply the updates.
-- **`usePluginInstallationStatus.tsx`**: Mengekspor: usePluginInstallationStatus.
-- **`useRateLimitWarningNotification.tsx`**: Mengekspor: useRateLimitWarningNotification.
-- **`useSettingsErrors.tsx`**: Mengekspor: useSettingsErrors.
-- **`useStartupNotification.ts`**: Fires notification(s) once on mount. Encapsulates the remote-mode gate and once-per-session ref guard that was hand-rolled across 10+ notifs/ hooks.  ...
-- **`useTeammateShutdownNotification.ts`**: Mengekspor: useTeammateLifecycleNotification.
+- **`useAutoModeUnavailableNotification.ts`** (`restored-src/src/hooks/notifs/useAutoModeUnavailableNotification.ts`): Shows a one-shot notification when the shift-tab carousel wraps past where auto mode would have been. Covers all reasons (settings, circuit-breaker, org-allowlist). The startup case (defaultMode: auto silently downgraded) is handled by verifyAutoModeGateAcc... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `useAutoModeUnavailableNotification`.
+- **`useCanSwitchToExistingSubscription.tsx`** (`restored-src/src/hooks/notifs/useCanSwitchToExistingSubscription.tsx`): Hook to check if the user has a subscription on Console but isn't logged into it. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `useCanSwitchToExistingSubscription`.
+- **`useDeprecationWarningNotification.tsx`** (`restored-src/src/hooks/notifs/useDeprecationWarningNotification.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `useDeprecationWarningNotification`.
+- **`useFastModeNotification.tsx`** (`restored-src/src/hooks/notifs/useFastModeNotification.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `useFastModeNotification`.
+- **`useIDEStatusIndicator.tsx`** (`restored-src/src/hooks/notifs/useIDEStatusIndicator.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `useIDEStatusIndicator`.
+- **`useInstallMessages.tsx`** (`restored-src/src/hooks/notifs/useInstallMessages.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `useInstallMessages`.
+- **`useLspInitializationNotification.tsx`** (`restored-src/src/hooks/notifs/useLspInitializationNotification.tsx`): Hook that polls LSP status and shows a notification when: 1. Manager initialization fails 2. Any LSP server enters an error state Also adds errors to appState.plugins.errors for /doctor display. Only active when ENABLE_LSP_TOOL is set. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `useLspInitializationNotification`.
+- **`useMcpConnectivityStatus.tsx`** (`restored-src/src/hooks/notifs/useMcpConnectivityStatus.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `useMcpConnectivityStatus`.
+- **`useModelMigrationNotifications.tsx`** (`restored-src/src/hooks/notifs/useModelMigrationNotifications.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `useModelMigrationNotifications`.
+- **`useNpmDeprecationNotification.tsx`** (`restored-src/src/hooks/notifs/useNpmDeprecationNotification.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `useNpmDeprecationNotification`.
+- **`usePluginAutoupdateNotification.tsx`** (`restored-src/src/hooks/notifs/usePluginAutoupdateNotification.tsx`): Hook that displays a notification when plugins have been auto-updated. The notification tells the user to run /reload-plugins to apply the updates. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `usePluginAutoupdateNotification`.
+- **`usePluginInstallationStatus.tsx`** (`restored-src/src/hooks/notifs/usePluginInstallationStatus.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `usePluginInstallationStatus`.
+- **`useRateLimitWarningNotification.tsx`** (`restored-src/src/hooks/notifs/useRateLimitWarningNotification.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `useRateLimitWarningNotification`.
+- **`useSettingsErrors.tsx`** (`restored-src/src/hooks/notifs/useSettingsErrors.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `useSettingsErrors`.
+- **`useStartupNotification.ts`** (`restored-src/src/hooks/notifs/useStartupNotification.ts`): Fires notification(s) once on mount. Encapsulates the remote-mode gate and once-per-session ref guard that was hand-rolled across 10+ notifs/ hooks. The compute fn runs exactly once on first effect. Return null to skip, a Notification to fire one, or an arr... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `useStartupNotification`.
+- **`useTeammateShutdownNotification.ts`** (`restored-src/src/hooks/notifs/useTeammateShutdownNotification.ts`): Fires batched notifications when in-process teammates spawn or shut down. Uses fold() to combine repeated events into a single notification like "3 agents spawned" or "2 agents shut down". Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `useTeammateLifecycleNotification`.
 
 ## Direktori: `restored-src/src/hooks/toolPermission`
 
-- **`PermissionContext.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`permissionLogging.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
+- **`PermissionContext.ts`** (`restored-src/src/hooks/toolPermission/PermissionContext.ts`): Create a PermissionQueueOps backed by a React state setter. This is the bridge between React's 'setToolUseConfirmQueue' and the generic queue interface used by PermissionContext. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `createPermissionContext`, `createPermissionQueueOps`, `createResolveOnce`, `PermissionContext`, dan lainnya.
+- **`permissionLogging.ts`** (`restored-src/src/hooks/toolPermission/permissionLogging.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `isCodeEditingTool`, `buildCodeEditToolAttributes`, `logPermissionDecision`, `PermissionLogContext`, dan lainnya.
 
 ## Direktori: `restored-src/src/hooks/toolPermission/handlers`
 
-- **`coordinatorHandler.ts`**: Handles the coordinator worker permission flow.  For coordinator workers, automated checks (hooks and classifier) are awaited sequentially before fall...
-- **`interactiveHandler.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`swarmWorkerHandler.ts`**: Handles the swarm worker permission flow.  When running as a swarm worker: 1. Tries classifier auto-approval for bash commands
+- **`coordinatorHandler.ts`** (`restored-src/src/hooks/toolPermission/handlers/coordinatorHandler.ts`): Handles the coordinator worker permission flow. For coordinator workers, automated checks (hooks and classifier) are awaited sequentially before falling through to the interactive dialog. Returns a PermissionDecision if the automated checks resolved the per... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `handleCoordinatorPermission`, `CoordinatorPermissionParams`.
+- **`interactiveHandler.ts`** (`restored-src/src/hooks/toolPermission/handlers/interactiveHandler.ts`): Handles the interactive (main-agent) permission flow. Pushes a ToolUseConfirm entry to the confirm queue with callbacks: onAbort, onAllow, onReject, recheckPermission, onUserInteraction. Runs permission hooks and bash classifier checks asynchronously in the... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `handleInteractivePermission`, `InteractivePermissionParams`.
+- **`swarmWorkerHandler.ts`** (`restored-src/src/hooks/toolPermission/handlers/swarmWorkerHandler.ts`): Handles the swarm worker permission flow. When running as a swarm worker: 1. Tries classifier auto-approval for bash commands 2. Forwards the permission request to the leader via mailbox 3. Registers callbacks for when the leader responds 4. Sets the pendin... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `handleSwarmWorkerPermission`, `SwarmWorkerPermissionParams`.
 
 ## Direktori: `restored-src/src/ink`
 
-- **`Ansi.tsx`**: When true, force all text to be rendered with dim styling
-- **`bidi.ts`**: Bidirectional text reordering for terminal rendering.  Terminals on Windows do not implement the Unicode Bidi Algorithm, so RTL text (Hebrew, Arabic, ...
-- **`clearTerminal.ts`**: Cross-platform terminal clearing with scrollback support. Detects modern terminals that support ESC[3J for clearing scrollback.
-- **`colorize.ts`**: xterm.js (VS Code, Cursor, code-server, Coder) has supported truecolor since 2017, but code-server/Coder containers often don't set COLORTERM=truecolo...
-- **`constants.ts`**: Mengekspor: FRAME_INTERVAL_MS.
-- **`dom.ts`**: Mengekspor: TextName, ElementNames, NodeNames.
-- **`focus.ts`**: DOM-like focus manager for the Ink terminal UI.  Pure state — tracks activeElement and a focus stack. Has no reference to the tree; callers pass the r...
-- **`frame.ts`**: DECSTBM scroll optimization hint (alt-screen only, null otherwise).
-- **`get-max-width.ts`**: Returns the yoga node's content width (computed width minus padding and border).  Warning: can return a value WIDER than the parent container. In a co...
-- **`hit-test.ts`**: File pengujian (unit/integration test).
-- **`ink.tsx`**: Mengekspor: Options, drainStdin.
-- **`instances.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`line-width-cache.ts`**: Mengekspor: lineWidth.
-- **`log-update.ts`**: Mengekspor: LogUpdate.
-- **`measure-element.ts`**: Element width.
-- **`measure-text.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`node-cache.ts`**: Cached layout bounds for each rendered node (used for blit + clearing). `top` is the yoga-local getComputedTop() — stored so ScrollBox viewport cullin...
-- **`optimizer.ts`**: Optimize a diff by applying all optimization rules in a single pass. This reduces the number of patches that need to be written to the terminal.  Rule...
-- **`output.ts`**: A grapheme cluster with precomputed terminal width, styleId, and hyperlink. Built once per unique line (cached via charCache), so the per-char hot loo...
-- **`parse-keypress.ts`**: Keyboard input parser - converts terminal input to key events  Uses the termio tokenizer for escape sequence boundary detection, then interprets seque...
-- **`reconciler.ts`**: Mengekspor: getOwnerChain, isDebugRepaintsEnabled, dispatcher.
-- **`render-border.ts`**: Mengekspor: BorderTextOptions, CUSTOM_BORDER_STYLES, BorderStyle.
-- **`render-node-to-output.ts`**: Mengekspor: resetLayoutShifted, didLayoutShift, ScrollHint.
-- **`render-to-screen.ts`**: Position of a match within a rendered message, relative to the message's own bounding box (row 0 = message top). Stable across scroll — to highlight o...
-- **`renderer.ts`**: Mengekspor: RenderOptions, Renderer.
-- **`root.ts`**: Output stream where app will be rendered.  @default process.stdout
-- **`screen.ts`**: Mengekspor: CharPool, HyperlinkPool, StylePool.
-- **`searchHighlight.ts`**: Highlight all visible occurrences of `query` in the screen buffer by inverting cell styles (SGR 7). Post-render, same damage-tracking machinery as app...
-- **`selection.ts`**: Text selection state for fullscreen mode.  Tracks a linear selection in screen-buffer coordinates (0-indexed col/row). Selection is line-based: cells ...
-- **`squash-text-nodes.ts`**: A segment of text with its associated styles. Used for structured rendering without ANSI string transforms.
-- **`stringWidth.ts`**: Fallback JavaScript implementation of stringWidth when Bun.stringWidth is not available.  Get the display width of a string as it would appear in a te...
-- **`styles.ts`**: Mengekspor: RGBColor, HexColor, Ansi256Color.
-- **`supports-hyperlinks.ts`**: Returns whether stdout supports OSC 8 hyperlinks. Extends the supports-hyperlinks library with additional terminal detection. @param options Optional ...
-- **`tabstops.ts`**: Mengekspor: expandTabs.
-- **`terminal-focus-state.ts`**: Mengekspor: TerminalFocusState, setTerminalFocused, getTerminalFocused.
-- **`terminal-querier.ts`**: Query the terminal and await responses without timeouts.  Terminal queries (DECRQM, DA1, OSC 11, etc.) share the stdin stream with keyboard input. Res...
-- **`terminal.ts`**: Checks if the terminal supports OSC 9;4 progress reporting. Supported terminals: - ConEmu (Windows) - all versions - Ghostty 1.2.0+ - iTerm2 3.6.6+  N...
-- **`termio.ts`**: ANSI Parser Module  A semantic ANSI escape sequence parser inspired by ghostty, tmux, and iTerm2.  Key features: - Semantic output: produces structure...
-- **`useTerminalNotification.ts`**: Report progress to the terminal via OSC 9;4 sequences. Supported terminals: ConEmu, Ghostty 1.2.0+, iTerm2 3.6.6+ Pass state=null to clear progress....
-- **`warn.ts`**: Mengekspor: ifNotInteger.
-- **`widest-line.ts`**: Mengekspor: widestLine.
-- **`wrap-text.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`wrapAnsi.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
+- **`Ansi.tsx`** (`restored-src/src/ink/Ansi.tsx`): Component that parses ANSI escape codes and renders them using Text components. Use this as an escape hatch when you have pre-formatted ANSI strings from external tools (like cli-highlight) that need to be rendered in Ink. Memoized to prevent re-renders whe... Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `Ansi`.
+- **`bidi.ts`** (`restored-src/src/ink/bidi.ts`): Reorder an array of ClusteredChars from logical order to visual order using the Unicode Bidi Algorithm. Active on terminals that lack native bidi support (Windows Terminal, conhost, WSL). Returns the same array on bidi-capable terminals (no-op). Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `reorderBidi`.
+- **`clearTerminal.ts`** (`restored-src/src/ink/clearTerminal.ts`): Clears the terminal screen. On supported terminals, also clears scrollback. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getClearTerminalSequence`, `clearTerminal`.
+- **`colorize.ts`** (`restored-src/src/ink/colorize.ts`): Apply TextStyles to a string using chalk. This is the inverse of parsing ANSI codes - we generate them from structured styles. Theme resolution happens at component layer, not here. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `CHALK_BOOSTED_FOR_XTERMJS`, `CHALK_CLAMPED_FOR_TMUX`, `ColorType`, `colorize`, dan lainnya.
+- **`constants.ts`** (`restored-src/src/ink/constants.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `FRAME_INTERVAL_MS`.
+- **`dom.ts`** (`restored-src/src/ink/dom.ts`): Mark a node and all its ancestors as dirty for re-rendering. Also marks yoga dirty for text remeasurement if this is a text node. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `TextName`, `ElementNames`, `NodeNames`, `DOMElement`, dan lainnya.
+- **`focus.ts`** (`restored-src/src/ink/focus.ts`): DOM-like focus manager for the Ink terminal UI. Pure state — tracks activeElement and a focus stack. Has no reference to the tree; callers pass the root when tree walks are needed. Stored on the root DOMElement so any node can reach it by walking parentNode... Mengimplementasikan class utama untuk area fitur ini. Export utama: `FocusManager`, `getRootNode`, `getFocusManager`.
+- **`frame.ts`** (`restored-src/src/ink/frame.ts`): Determines whether the screen should be cleared based on the current and previous frame. Returns the reason for clearing, or undefined if no clear is needed. Screen clearing is triggered when: 1. Terminal has been resized (viewport dimensions changed) → 're... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `Frame`, `emptyFrame`, `FlickerReason`, `FrameEvent`, dan lainnya.
+- **`get-max-width.ts`** (`restored-src/src/ink/get-max-width.ts`): Returns the yoga node's content width (computed width minus padding and border). Warning: can return a value WIDER than the parent container. In a column-direction flex parent, width is the cross axis — align-items: stretch never shrinks children below thei... Berisi fungsi utilitas/operasional yang dipakai modul lain.
+- **`hit-test.ts`** (`restored-src/src/ink/hit-test.ts`): Find the deepest DOM element whose rendered rect contains (col, row). Uses the nodeCache populated by renderNodeToOutput — rects are in screen coordinates with all offsets (including scrollTop translation) already applied. Children are traversed in reverse... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `hitTest`, `dispatchClick`, `dispatchHover`.
+- **`ink.tsx`** (`restored-src/src/ink/ink.tsx`): Discard pending stdin bytes so in-flight escape sequences (mouse tracking reports, bracketed-paste markers) don't leak to the shell after exit. Two layers of trickiness: 1. setRawMode is termios, not fcntl — the stdin fd stays blocking, so readSync on it wo... Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `Options`, `Ink`, `drainStdin`.
+- **`instances.ts`** (`restored-src/src/ink/instances.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain.
+- **`line-width-cache.ts`** (`restored-src/src/ink/line-width-cache.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `lineWidth`.
+- **`log-update.ts`** (`restored-src/src/ink/log-update.ts`): Render a slice of rows from the frame's screen. Each row is rendered followed by a newline. Cursor ends at (0, endY). Mengimplementasikan class utama untuk area fitur ini. Export utama: `LogUpdate`.
+- **`measure-element.ts`** (`restored-src/src/ink/measure-element.ts`): Measure the dimensions of a particular '<Box>' element. Berisi fungsi utilitas/operasional yang dipakai modul lain.
+- **`measure-text.ts`** (`restored-src/src/ink/measure-text.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain.
+- **`node-cache.ts`** (`restored-src/src/ink/node-cache.ts`): Cached layout bounds for each rendered node (used for blit + clearing). 'top' is the yoga-local getComputedTop() — stored so ScrollBox viewport culling can skip yoga reads for clean children whose position hasn't shifted (O(dirty) instead of O(mounted) firs... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `CachedLayout`, `nodeCache`, `pendingClears`, `addPendingClear`, dan lainnya.
+- **`optimizer.ts`** (`restored-src/src/ink/optimizer.ts`): Optimize a diff by applying all optimization rules in a single pass. This reduces the number of patches that need to be written to the terminal. Rules applied: - Remove empty stdout patches - Merge consecutive cursorMove patches - Remove no-op cursorMove (0... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `optimize`.
+- **`output.ts`** (`restored-src/src/ink/output.ts`): A grapheme cluster with precomputed terminal width, styleId, and hyperlink. Built once per unique line (cached via charCache), so the per-char hot loop is just property reads + setCellAt — no stringWidth, no style interning, no hyperlink extraction per fram... Mengimplementasikan class utama untuk area fitur ini. Export utama: `Operation`, `Clip`, `Output`.
+- **`parse-keypress.ts`** (`restored-src/src/ink/parse-keypress.ts`): DECRPM status values (response to DECRQM). Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `DECRPM_STATUS`, `TerminalResponse`, `KeyParseState`, `INITIAL_STATE`, dan lainnya.
+- **`reconciler.ts`** (`restored-src/src/ink/reconciler.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getOwnerChain`, `isDebugRepaintsEnabled`, `dispatcher`, `recordYogaMs`, dan lainnya.
+- **`render-border.ts`** (`restored-src/src/ink/render-border.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `BorderTextOptions`, `CUSTOM_BORDER_STYLES`, `BorderStyle`.
+- **`render-node-to-output.ts`** (`restored-src/src/ink/render-node-to-output.ts`): Build a mapping from each character position in the plain text to its segment index. Returns an array where charToSegment[i] is the segment index for character i. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `resetLayoutShifted`, `didLayoutShift`, `ScrollHint`, `resetScrollHint`, dan lainnya.
+- **`render-to-screen.ts`** (`restored-src/src/ink/render-to-screen.ts`): Render a React element (wrapped in all contexts the component needs — caller's job) to an isolated Screen buffer at the given width. Returns the Screen + natural height (from yoga). Used for search: render ONE message, scan its Screen for the query, get exa... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `MatchPosition`, `renderToScreen`, `scanPositions`, `applyPositionedHighlight`.
+- **`renderer.ts`** (`restored-src/src/ink/renderer.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `RenderOptions`, `Renderer`, `createRenderer`.
+- **`root.ts`** (`restored-src/src/ink/root.ts`): A managed Ink root, similar to react-dom's createRoot API. Separates instance creation from rendering so the same root can be reused for multiple sequential screens. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `RenderOptions`, `Instance`, `Root`, `renderSync`, dan lainnya.
+- **`screen.ts`** (`restored-src/src/ink/screen.ts`): Screen uses a packed Int32Array instead of Cell objects to eliminate GC pressure. For a 200x120 screen, this avoids allocating 24,000 objects. Cell data is stored as 2 Int32s per cell in a single contiguous array: word0: charId (full 32 bits — index into Ch... Mengimplementasikan class utama untuk area fitur ini. Export utama: `CharPool`, `HyperlinkPool`, `StylePool`, `CellWidth`, dan lainnya.
+- **`searchHighlight.ts`** (`restored-src/src/ink/searchHighlight.ts`): Highlight all visible occurrences of 'query' in the screen buffer by inverting cell styles (SGR 7). Post-render, same damage-tracking machinery as applySelectionOverlay — the diff picks up highlighted cells as ordinary changes, LogUpdate stays a pure diff e... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `applySearchHighlight`.
+- **`selection.ts`** (`restored-src/src/ink/selection.ts`): Select the word at (col, row) by scanning the screen buffer for the bounds of the same-class character run. Mutates the selection in place. No-op if the click is out of bounds or lands on a noSelect cell. Sets isDragging=true and anchorSpan so a subsequent... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `SelectionState`, `createSelectionState`, `startSelection`, `updateSelection`, dan lainnya.
+- **`squash-text-nodes.ts`** (`restored-src/src/ink/squash-text-nodes.ts`): A segment of text with its associated styles. Used for structured rendering without ANSI string transforms. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `StyledSegment`, `squashTextNodesToSegments`.
+- **`stringWidth.ts`** (`restored-src/src/ink/stringWidth.ts`): Fallback JavaScript implementation of stringWidth when Bun.stringWidth is not available. Get the display width of a string as it would appear in a terminal. This is a more accurate alternative to the string-width package that correctly handles characters li... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `stringWidth`.
+- **`styles.ts`** (`restored-src/src/ink/styles.ts`): Raw color value - not a theme key. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `RGBColor`, `HexColor`, `Ansi256Color`, `AnsiColor`, dan lainnya.
+- **`supports-hyperlinks.ts`** (`restored-src/src/ink/supports-hyperlinks.ts`): Returns whether stdout supports OSC 8 hyperlinks. Extends the supports-hyperlinks library with additional terminal detection. @param options Optional overrides for testing (env, stdoutSupported). Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `ADDITIONAL_HYPERLINK_TERMINALS`, `supportsHyperlinks`.
+- **`tabstops.ts`** (`restored-src/src/ink/tabstops.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `expandTabs`.
+- **`terminal-focus-state.ts`** (`restored-src/src/ink/terminal-focus-state.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `TerminalFocusState`, `setTerminalFocused`, `getTerminalFocused`, `getTerminalFocusState`, dan lainnya.
+- **`terminal-querier.ts`** (`restored-src/src/ink/terminal-querier.ts`): A terminal query: an outbound request sequence paired with a matcher that recognizes the expected inbound response. Built by 'decrqm()', 'oscColor()', 'kittyKeyboard()', etc. Mengimplementasikan class utama untuk area fitur ini. Export utama: `TerminalQuery`, `decrqm`, `da1`, `da2`, dan lainnya.
+- **`terminal.ts`** (`restored-src/src/ink/terminal.ts`): Checks if the terminal supports OSC 9;4 progress reporting. Supported terminals: - ConEmu (Windows) - all versions - Ghostty 1.2.0+ - iTerm2 3.6.6+ Note: Windows Terminal interprets OSC 9;4 as notifications, not progress. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `Progress`, `isProgressReportingAvailable`, `isSynchronizedOutputSupported`, `setXtversionName`, dan lainnya.
+- **`termio.ts`** (`restored-src/src/ink/termio.ts`): ANSI Parser Module A semantic ANSI escape sequence parser inspired by ghostty, tmux, and iTerm2. Key features: - Semantic output: produces structured actions, not string tokens - Streaming: can parse input incrementally via Parser class - Style tracking: ma... Export utama: `Parser`, `Action`, `Color`, `CursorAction`, dan lainnya.
+- **`useTerminalNotification.ts`** (`restored-src/src/ink/useTerminalNotification.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `TerminalWriteContext`, `TerminalWriteProvider`, `TerminalNotification`, `useTerminalNotification`.
+- **`warn.ts`** (`restored-src/src/ink/warn.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `ifNotInteger`.
+- **`widest-line.ts`** (`restored-src/src/ink/widest-line.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `widestLine`.
+- **`wrap-text.ts`** (`restored-src/src/ink/wrap-text.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `wrapText`.
+- **`wrapAnsi.ts`** (`restored-src/src/ink/wrapAnsi.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `wrapAnsi`.
 
 ## Direktori: `restored-src/src/ink/components`
 
-- **`AlternateScreen.tsx`**: Enable SGR mouse tracking (wheel + click/drag). Default true.
-- **`App.tsx`**: Mengekspor: handleMouseEvent.
-- **`AppContext.ts`**: Exit (unmount) the whole Ink app.
-- **`Box.tsx`**: Tab order index. Nodes with `tabIndex >= 0` participate in Tab/Shift+Tab cycling; `-1` means programmatically focusable only.
-- **`Button.tsx`**: Called when the button is activated via Enter, Space, or click.
-- **`ClockContext.tsx`**: Mengekspor: Clock, createClock, ClockContext.
-- **`CursorDeclarationContext.ts`**: Display column (terminal cell width) within the declared node
-- **`ErrorOverview.tsx`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`Link.tsx`**: Mengekspor: Props.
-- **`Newline.tsx`**: Number of newlines to insert.  @default 1
-- **`NoSelect.tsx`**: Extend the exclusion zone from column 0 to this box's right edge, for every row this box occupies. Use for gutters rendered inside a wider indented co...
-- **`RawAnsi.tsx`**: Pre-rendered ANSI lines. Each element must be exactly one terminal row (already wrapped to `width` by the producer) with ANSI escape codes inline.
-- **`ScrollBox.tsx`**: Scroll so `el`'s top is at the viewport top (plus `offset`). Unlike scrollTo which bakes a number that's stale by the time the throttled render fires,...
-- **`Spacer.tsx`**: A flexible space that expands along the major axis of its containing layout. It's useful as a shortcut for filling all the available spaces between el...
-- **`StdinContext.ts`**: Stdin stream passed to `render()` in `options.stdin` or `process.stdin` by default. Useful if your app needs to handle user input.
-- **`TerminalFocusContext.tsx`**: Mengekspor: TerminalFocusContextProps, TerminalFocusProvider.
-- **`TerminalSizeContext.tsx`**: Mengekspor: TerminalSize, TerminalSizeContext.
-- **`Text.tsx`**: Change text color. Accepts a raw color value (rgb, hex, ansi).
+- **`AlternateScreen.tsx`** (`restored-src/src/ink/components/AlternateScreen.tsx`): Run children in the terminal's alternate screen buffer, constrained to the viewport height. While mounted: - Enters the alt screen (DEC 1049), clears it, homes the cursor - Constrains its own height to the terminal row count, so overflow must be handled via... Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `AlternateScreen`.
+- **`App.tsx`** (`restored-src/src/ink/components/App.tsx`): Exported for testing. Mutates app.props.selection and click/hover state. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `App`, `handleMouseEvent`.
+- **`AppContext.ts`** (`restored-src/src/ink/components/AppContext.ts`): 'AppContext' is a React context, which exposes a method to manually exit the app (unmount). Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `Props`.
+- **`Box.tsx`** (`restored-src/src/ink/components/Box.tsx`): '<Box>' is an essential Ink component to build your layout. It's like '<div style="display: flex">' in the browser. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `Props`.
+- **`Button.tsx`** (`restored-src/src/ink/components/Button.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `Props`, `ButtonState`.
+- **`ClockContext.tsx`** (`restored-src/src/ink/components/ClockContext.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `Clock`, `createClock`, `ClockContext`, `ClockProvider`.
+- **`CursorDeclarationContext.ts`** (`restored-src/src/ink/components/CursorDeclarationContext.ts`): Setter for the declared cursor position. The optional second argument makes 'null' a conditional clear: the declaration is only cleared if the currently-declared node matches 'clearIfNode'. This makes the hook safe for sibling components (e.g. list items) t... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `CursorDeclaration`, `CursorDeclarationSetter`.
+- **`ErrorOverview.tsx`** (`restored-src/src/ink/components/ErrorOverview.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `ErrorOverview`.
+- **`Link.tsx`** (`restored-src/src/ink/components/Link.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `Props`, `Link`.
+- **`Newline.tsx`** (`restored-src/src/ink/components/Newline.tsx`): Adds one or more newline (\n) characters. Must be used within <Text> components. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `Props`, `Newline`.
+- **`NoSelect.tsx`** (`restored-src/src/ink/components/NoSelect.tsx`): Marks its contents as non-selectable in fullscreen text selection. Cells inside this box are skipped by both the selection highlight and the copied text — the gutter stays visually unchanged while the user drags, making it clear what will be copied. Use to... Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `NoSelect`.
+- **`RawAnsi.tsx`** (`restored-src/src/ink/components/RawAnsi.tsx`): Bypass the <Ansi> → React tree → Yoga → squash → re-serialize roundtrip for content that is already terminal-ready. Use this when an external renderer (e.g. the ColorDiff NAPI module) has already produced ANSI-escaped, width-wrapped output. A normal <Ansi>... Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `RawAnsi`.
+- **`ScrollBox.tsx`** (`restored-src/src/ink/components/ScrollBox.tsx`): A Box with 'overflow: scroll' and an imperative scroll API. Children are laid out at their full Yoga-computed height inside a constrained container. At render time, only children intersecting the visible window (scrollTop..scrollTop+height) are rendered (vi... Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `ScrollBoxHandle`, `ScrollBoxProps`.
+- **`Spacer.tsx`** (`restored-src/src/ink/components/Spacer.tsx`): A flexible space that expands along the major axis of its containing layout. It's useful as a shortcut for filling all the available spaces between elements. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `Spacer`.
+- **`StdinContext.ts`** (`restored-src/src/ink/components/StdinContext.ts`): 'StdinContext' is a React context, which exposes input stream. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `Props`.
+- **`TerminalFocusContext.tsx`** (`restored-src/src/ink/components/TerminalFocusContext.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `TerminalFocusState`, `TerminalFocusContextProps`, `TerminalFocusProvider`.
+- **`TerminalSizeContext.tsx`** (`restored-src/src/ink/components/TerminalSizeContext.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `TerminalSize`, `TerminalSizeContext`.
+- **`Text.tsx`** (`restored-src/src/ink/components/Text.tsx`): This component can display text, and change its style to make it colorful, bold, underline, italic or strikethrough. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `Props`, `Text`.
 
 ## Direktori: `restored-src/src/ink/events`
 
-- **`click-event.ts`**: Mouse click event. Fired on left-button release without drag, only when mouse tracking is enabled (i.e. inside <AlternateScreen>).  Bubbles from the d...
-- **`dispatcher.ts`**: Mengekspor: Dispatcher.
-- **`emitter.ts`**: Mengekspor: EventEmitter.
-- **`event-handlers.ts`**: Props for event handlers on Box and other host components.  Follows the React/DOM naming convention: - onEventName: handler for bubble phase - onEvent...
-- **`event.ts`**: Mengekspor: Event.
-- **`focus-event.ts`**: Focus event for component focus changes.  Dispatched when focus moves between elements. 'focus' fires on the newly focused element, 'blur' fires on th...
-- **`input-event.ts`**: Mengekspor: Key, InputEvent.
-- **`keyboard-event.ts`**: Keyboard event dispatched through the DOM tree via capture/bubble.  Follows browser KeyboardEvent semantics: `key` is the literal character for printa...
-- **`terminal-event.ts`**: Base class for all terminal events with DOM-style propagation.  Extends Event so existing event types (ClickEvent, InputEvent, TerminalFocusEvent) sha...
-- **`terminal-focus-event.ts`**: Event fired when the terminal window gains or loses focus.  Uses DECSET 1004 focus reporting - the terminal sends: - CSI I (\x1b[I) when the terminal ...
+- **`click-event.ts`** (`restored-src/src/ink/events/click-event.ts`): Mouse click event. Fired on left-button release without drag, only when mouse tracking is enabled (i.e. inside <AlternateScreen>). Bubbles from the deepest hit node up through parentNode. Call stopImmediatePropagation() to prevent ancestors' onClick from fi... Mengimplementasikan class utama untuk area fitur ini. Export utama: `ClickEvent`.
+- **`dispatcher.ts`** (`restored-src/src/ink/events/dispatcher.ts`): Owns event dispatch state and the capture/bubble dispatch loop. The reconciler host config reads currentEvent and currentUpdatePriority to implement resolveUpdatePriority, resolveEventType, and resolveEventTimeStamp — mirroring how react-dom's host config r... Mengimplementasikan class utama untuk area fitur ini. Export utama: `Dispatcher`.
+- **`emitter.ts`** (`restored-src/src/ink/events/emitter.ts`): Mengimplementasikan class utama untuk area fitur ini. Export utama: `EventEmitter`.
+- **`event-handlers.ts`** (`restored-src/src/ink/events/event-handlers.ts`): Props for event handlers on Box and other host components. Follows the React/DOM naming convention: - onEventName: handler for bubble phase - onEventNameCapture: handler for capture phase. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `EventHandlerProps`, `HANDLER_FOR_EVENT`, `EVENT_HANDLER_PROPS`.
+- **`event.ts`** (`restored-src/src/ink/events/event.ts`): Mengimplementasikan class utama untuk area fitur ini. Export utama: `Event`.
+- **`focus-event.ts`** (`restored-src/src/ink/events/focus-event.ts`): Focus event for component focus changes. Dispatched when focus moves between elements. 'focus' fires on the newly focused element, 'blur' fires on the previously focused one. Both bubble, matching react-dom's use of focusin/focusout semantics so parent comp... Mengimplementasikan class utama untuk area fitur ini. Export utama: `FocusEvent`.
+- **`input-event.ts`** (`restored-src/src/ink/events/input-event.ts`): Mengimplementasikan class utama untuk area fitur ini. Export utama: `Key`, `InputEvent`.
+- **`keyboard-event.ts`** (`restored-src/src/ink/events/keyboard-event.ts`): Keyboard event dispatched through the DOM tree via capture/bubble. Follows browser KeyboardEvent semantics: 'key' is the literal character for printable keys ('a', '3', ' ', '/') and a multi-char name for special keys ('down', 'return', 'escape', 'f1'). The... Mengimplementasikan class utama untuk area fitur ini. Export utama: `KeyboardEvent`.
+- **`terminal-event.ts`** (`restored-src/src/ink/events/terminal-event.ts`): Base class for all terminal events with DOM-style propagation. Extends Event so existing event types (ClickEvent, InputEvent, TerminalFocusEvent) share a common ancestor and can migrate later. Mirrors the browser's Event API: target, currentTarget, eventPha... Mengimplementasikan class utama untuk area fitur ini. Export utama: `TerminalEvent`, `EventTarget`.
+- **`terminal-focus-event.ts`** (`restored-src/src/ink/events/terminal-focus-event.ts`): Event fired when the terminal window gains or loses focus. Uses DECSET 1004 focus reporting - the terminal sends: - CSI I (\x1b[I) when the terminal gains focus - CSI O (\x1b[O) when the terminal loses focus. Mengimplementasikan class utama untuk area fitur ini. Export utama: `TerminalFocusEventType`, `TerminalFocusEvent`.
 
 ## Direktori: `restored-src/src/ink/hooks`
 
-- **`use-animation-frame.ts`**: Hook for synchronized animations that pause when offscreen.  Returns a ref to attach to the animated element and the current animation time. All insta...
-- **`use-app.ts`**: `useApp` is a React hook, which exposes a method to manually exit the app (unmount).
-- **`use-declared-cursor.ts`**: Declares where the terminal cursor should be parked after each frame.  Terminal emulators render IME preedit text at the physical cursor position, and...
-- **`use-input.ts`**: Enable or disable capturing of user input. Useful when there are multiple useInput hooks used at once to avoid handling the same input several times. ...
-- **`use-interval.ts`**: Returns the clock time, updating at the given interval. Subscribes as non-keepAlive — won't keep the clock alive on its own, but updates whenever a ke...
-- **`use-search-highlight.ts`**: Set the search highlight query on the Ink instance. Non-empty → all visible occurrences are inverted on the next frame (SGR 7, screen-buffer overlay, ...
-- **`use-selection.ts`**: Access to text selection operations on the Ink instance (fullscreen only). Returns no-op functions when fullscreen mode is disabled.
-- **`use-stdin.ts`**: `useStdin` is a React hook, which exposes stdin stream.
-- **`use-tab-status.ts`**: Mengekspor: TabStatusKind, useTabStatus.
-- **`use-terminal-focus.ts`**: Hook to check if the terminal has focus.  Uses DECSET 1004 focus reporting - the terminal sends escape sequences when it gains or loses focus. These a...
-- **`use-terminal-title.ts`**: Declaratively set the terminal tab/window title.  Pass a string to set the title. ANSI escape sequences are stripped automatically so callers don't ne...
-- **`use-terminal-viewport.ts`**: Whether the element is currently within the terminal viewport
+- **`use-animation-frame.ts`** (`restored-src/src/ink/hooks/use-animation-frame.ts`): Hook for synchronized animations that pause when offscreen. Returns a ref to attach to the animated element and the current animation time. All instances share the same clock, so animations stay in sync. The clock only runs when at least one keepAlive subsc... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `useAnimationFrame`.
+- **`use-app.ts`** (`restored-src/src/ink/hooks/use-app.ts`): 'useApp' is a React hook, which exposes a method to manually exit the app (unmount). Berisi fungsi utilitas/operasional yang dipakai modul lain.
+- **`use-declared-cursor.ts`** (`restored-src/src/ink/hooks/use-declared-cursor.ts`): Declares where the terminal cursor should be parked after each frame. Terminal emulators render IME preedit text at the physical cursor position, and screen readers / screen magnifiers track the native cursor — so parking it at the text input's caret makes... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `useDeclaredCursor`.
+- **`use-input.ts`** (`restored-src/src/ink/hooks/use-input.ts`): This hook is used for handling user input. It's a more convenient alternative to using 'StdinContext' and listening to 'data' events. The callback you pass to 'useInput' is called for each character when user enters any input. However, if user pastes text a... Berisi fungsi utilitas/operasional yang dipakai modul lain.
+- **`use-interval.ts`** (`restored-src/src/ink/hooks/use-interval.ts`): Interval hook backed by the shared Clock. Unlike 'useInterval' from 'usehooks-ts' (which creates its own setInterval), this piggybacks on the single shared clock so all timers consolidate into one wake-up. Pass 'null' for intervalMs to pause. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `useAnimationTimer`, `useInterval`.
+- **`use-search-highlight.ts`** (`restored-src/src/ink/hooks/use-search-highlight.ts`): Set the search highlight query on the Ink instance. Non-empty → all visible occurrences are inverted on the next frame (SGR 7, screen-buffer overlay, same damage machinery as selection). Empty → clears. This is a screen-space highlight — it matches the REND... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `useSearchHighlight`.
+- **`use-selection.ts`** (`restored-src/src/ink/hooks/use-selection.ts`): Access to text selection operations on the Ink instance (fullscreen only). Returns no-op functions when fullscreen mode is disabled. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `useSelection`, `useHasSelection`.
+- **`use-stdin.ts`** (`restored-src/src/ink/hooks/use-stdin.ts`): 'useStdin' is a React hook, which exposes stdin stream. Berisi fungsi utilitas/operasional yang dipakai modul lain.
+- **`use-tab-status.ts`** (`restored-src/src/ink/hooks/use-tab-status.ts`): Declaratively set the tab-status indicator (OSC 21337). Emits a colored dot + short status text to the tab sidebar. Terminals that don't support OSC 21337 discard the sequence silently, so this is safe to call unconditionally. Wrapped for tmux/screen passth... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `TabStatusKind`, `useTabStatus`.
+- **`use-terminal-focus.ts`** (`restored-src/src/ink/hooks/use-terminal-focus.ts`): Hook to check if the terminal has focus. Uses DECSET 1004 focus reporting - the terminal sends escape sequences when it gains or loses focus. These are handled automatically by Ink and filtered from useInput. @returns true if the terminal is focused (or foc... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `useTerminalFocus`.
+- **`use-terminal-title.ts`** (`restored-src/src/ink/hooks/use-terminal-title.ts`): Declaratively set the terminal tab/window title. Pass a string to set the title. ANSI escape sequences are stripped automatically so callers don't need to know about terminal encoding. Pass 'null' to opt out — the hook becomes a no-op and leaves the termina... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `useTerminalTitle`.
+- **`use-terminal-viewport.ts`** (`restored-src/src/ink/hooks/use-terminal-viewport.ts`): Hook to detect if a component is within the terminal viewport. Returns a callback ref and a viewport entry object. Attach the ref to the component you want to track. The entry is updated during the layout phase (useLayoutEffect) so callers always read fresh... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `useTerminalViewport`.
 
 ## Direktori: `restored-src/src/ink/layout`
 
-- **`engine.ts`**: Mengekspor: createLayoutNode.
-- **`geometry.ts`**: Edge insets (padding, margin, border)
-- **`node.ts`**: Mengekspor: LayoutEdge, LayoutEdge, LayoutGutter.
-- **`yoga.ts`**: Mengekspor: YogaLayoutNode, createYogaLayoutNode.
+- **`engine.ts`** (`restored-src/src/ink/layout/engine.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `createLayoutNode`.
+- **`geometry.ts`** (`restored-src/src/ink/layout/geometry.ts`): Edge insets (padding, margin, border). Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `Point`, `Size`, `Rectangle`, `Edges`, dan lainnya.
+- **`node.ts`** (`restored-src/src/ink/layout/node.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `LayoutEdge`, `LayoutGutter`, `LayoutDisplay`, `LayoutFlexDirection`, dan lainnya.
+- **`yoga.ts`** (`restored-src/src/ink/layout/yoga.ts`): Mengimplementasikan class utama untuk area fitur ini. Export utama: `YogaLayoutNode`, `createYogaLayoutNode`.
 
 ## Direktori: `restored-src/src/ink/termio`
 
-- **`ansi.ts`**: ANSI Control Characters and Escape Sequence Introducers  Based on ECMA-48 / ANSI X3.64 standards.
-- **`csi.ts`**: CSI (Control Sequence Introducer) Types  Enums and types for CSI command parameters.
-- **`dec.ts`**: DEC (Digital Equipment Corporation) Private Mode Sequences  DEC private modes use CSI ? N h (set) and CSI ? N l (reset) format. These are terminal-spe...
-- **`esc.ts`**: ESC Sequence Parser  Handles simple escape sequences: ESC + one or two characters
-- **`osc.ts`**: OSC (Operating System Command) Types and Parser
-- **`parser.ts`**: ANSI Parser - Semantic Action Generator  A streaming parser for ANSI escape sequences that produces semantic actions. Uses the tokenizer for escape se...
-- **`sgr.ts`**: SGR (Select Graphic Rendition) Parser  Parses SGR parameters and applies them to a TextStyle. Handles both semicolon (;) and colon (:) separated param...
-- **`tokenize.ts`**: Input Tokenizer - Escape sequence boundary detection  Splits terminal input into tokens: text chunks and raw escape sequences. Unlike the Parser which...
-- **`types.ts`**: ANSI Parser - Semantic Types  These types represent the semantic meaning of ANSI escape sequences, not their string representation. Inspired by ghostt...
+- **`ansi.ts`** (`restored-src/src/ink/termio/ansi.ts`): ANSI Control Characters and Escape Sequence Introducers Based on ECMA-48 / ANSI X3.64 standards. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `C0`, `ESC`, `BEL`, `SEP`, dan lainnya.
+- **`csi.ts`** (`restored-src/src/ink/termio/csi.ts`): Generate a CSI sequence: ESC [ p1;p2;...;pN final Single arg: treated as raw body Multiple args: last is final byte, rest are params joined by ;. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `CSI_PREFIX`, `CSI_RANGE`, `isCSIParam`, `isCSIIntermediate`, dan lainnya.
+- **`dec.ts`** (`restored-src/src/ink/termio/dec.ts`): DEC private mode numbers. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `DEC`, `decset`, `decreset`, `BSU`, dan lainnya.
+- **`esc.ts`** (`restored-src/src/ink/termio/esc.ts`): Parse a simple ESC sequence @param chars - Characters after ESC (not including ESC itself). Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `parseEsc`.
+- **`osc.ts`** (`restored-src/src/ink/termio/osc.ts`): Generate an OSC sequence: ESC ] p1;p2;...;pN <terminator> Uses ST terminator for Kitty (avoids beeps), BEL for others. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `OSC_PREFIX`, `ST`, `osc`, `wrapForMultiplexer`, dan lainnya.
+- **`parser.ts`** (`restored-src/src/ink/termio/parser.ts`): Parser class - maintains state for streaming/incremental parsing Usage: '''typescript const parser = new Parser() const actions1 = parser.feed('partial\x1b[') const actions2 = parser.feed('31mred') // state maintained internally '''. Mengimplementasikan class utama untuk area fitur ini. Export utama: `Parser`.
+- **`sgr.ts`** (`restored-src/src/ink/termio/sgr.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `applySGR`.
+- **`tokenize.ts`** (`restored-src/src/ink/termio/tokenize.ts`): Create a streaming tokenizer for terminal input. Usage: '''typescript const tokenizer = createTokenizer() const tokens1 = tokenizer.feed('hello\x1b[') const tokens2 = tokenizer.feed('A') // completes the escape sequence const remaining = tokenizer.flush() /... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `Token`, `Tokenizer`, `createTokenizer`.
+- **`types.ts`** (`restored-src/src/ink/termio/types.ts`): ANSI Parser - Semantic Types These types represent the semantic meaning of ANSI escape sequences, not their string representation. Inspired by ghostty's action-based design. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `NamedColor`, `Color`, `UnderlineStyle`, `TextStyle`, dan lainnya.
 
 ## Direktori: `restored-src/src/keybindings`
 
-- **`KeybindingContext.tsx`**: Handler registration for action callbacks
-- **`KeybindingProviderSetup.tsx`**: Setup utilities for integrating KeybindingProvider into the app.  This file provides the bindings and a composed provider that can be added to the app...
-- **`defaultBindings.ts`**: Default keybindings that match current Claude Code behavior. These are loaded first, then user keybindings.json overrides them.
-- **`loadUserBindings.ts`**: User keybinding configuration loader with hot-reload support.  Loads keybindings from ~/.claude/keybindings.json and watches for changes to reload the...
-- **`match.ts`**: Modifier keys from Ink's Key type that we care about for matching. Note: `fn` from Key is intentionally excluded as it's rarely used and not commonly ...
-- **`parser.ts`**: Parse a keystroke string like "ctrl+shift+k" into a ParsedKeystroke. Supports various modifier aliases (ctrl/control, alt/opt/option/meta, cmd/command...
-- **`reservedShortcuts.ts`**: Shortcuts that are typically intercepted by the OS, terminal, or shell and will likely never reach the application.
-- **`resolver.ts`**: Resolve a key input to an action. Pure function - no state, no side effects, just matching logic.  @param input - The character input from Ink @param ...
-- **`schema.ts`**: Zod schema for keybindings.json configuration. Used for validation and JSON schema generation.
-- **`shortcutFormat.ts`**: Get the display text for a configured shortcut without React hooks. Use this in non-React contexts (commands, services, etc.).  This lives in its own ...
-- **`template.ts`**: Keybindings template generator. Generates a well-documented template file for ~/.claude/keybindings.json
-- **`useKeybinding.ts`**: Which context this binding belongs to (default: 'Global')
-- **`useShortcutDisplay.ts`**: Hook to get the display text for a configured shortcut. Returns the configured binding or a fallback if unavailable.  @param action - The action name ...
-- **`validate.ts`**: Types of validation issues that can occur with keybindings.
+- **`KeybindingContext.tsx`** (`restored-src/src/keybindings/KeybindingContext.tsx`): Optional hook that returns undefined outside of KeybindingProvider. Useful for components that may render before provider is available. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `KeybindingProvider`, `useKeybindingContext`, `useOptionalKeybindingContext`, `useRegisterKeybindingContext`.
+- **`KeybindingProviderSetup.tsx`** (`restored-src/src/keybindings/KeybindingProviderSetup.tsx`): Timeout for chord sequences in milliseconds. If the user doesn't complete the chord within this time, it's cancelled. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `KeybindingSetup`.
+- **`defaultBindings.ts`** (`restored-src/src/keybindings/defaultBindings.ts`): Default keybindings that match current Claude Code behavior. These are loaded first, then user keybindings.json overrides them. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `DEFAULT_BINDINGS`.
+- **`loadUserBindings.ts`** (`restored-src/src/keybindings/loadUserBindings.ts`): Check if keybinding customization is enabled. Returns true if the tengu_keybinding_customization_release GrowthBook gate is enabled. This function is exported so other parts of the codebase (e.g., /doctor) can check the same condition consistently. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `isKeybindingCustomizationEnabled`, `KeybindingsLoadResult`, `getKeybindingsPath`, `loadKeybindings`, dan lainnya.
+- **`match.ts`** (`restored-src/src/keybindings/match.ts`): Extract the normalized key name from Ink's Key + input. Maps Ink's boolean flags (key.escape, key.return, etc.) to string names that match our ParsedKeystroke.key format. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getKeyName`, `matchesKeystroke`, `matchesBinding`.
+- **`parser.ts`** (`restored-src/src/keybindings/parser.ts`): Parse a keystroke string like "ctrl+shift+k" into a ParsedKeystroke. Supports various modifier aliases (ctrl/control, alt/opt/option/meta, cmd/command/super/win). Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `parseKeystroke`, `parseChord`, `keystrokeToString`, `chordToString`, dan lainnya.
+- **`reservedShortcuts.ts`** (`restored-src/src/keybindings/reservedShortcuts.ts`): Shortcuts that are typically intercepted by the OS, terminal, or shell and will likely never reach the application. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `ReservedShortcut`, `NON_REBINDABLE`, `TERMINAL_RESERVED`, `MACOS_RESERVED`, dan lainnya.
+- **`resolver.ts`** (`restored-src/src/keybindings/resolver.ts`): Resolve a key input to an action. Pure function - no state, no side effects, just matching logic. @param input - The character input from Ink @param key - The Key object from Ink with modifier flags @param activeContexts - Array of currently active contexts... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `ResolveResult`, `ChordResolveResult`, `resolveKey`, `getBindingDisplayText`, dan lainnya.
+- **`schema.ts`** (`restored-src/src/keybindings/schema.ts`): Valid context names where keybindings can be applied. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `KEYBINDING_CONTEXTS`, `KEYBINDING_CONTEXT_DESCRIPTIONS`, `KEYBINDING_ACTIONS`, `KeybindingBlockSchema`, dan lainnya.
+- **`shortcutFormat.ts`** (`restored-src/src/keybindings/shortcutFormat.ts`): Get the display text for a configured shortcut without React hooks. Use this in non-React contexts (commands, services, etc.). This lives in its own module (not useShortcutDisplay.ts) so that non-React callers like query/stopHooks.ts don't pull React into t... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getShortcutDisplay`.
+- **`template.ts`** (`restored-src/src/keybindings/template.ts`): Generate a template keybindings.json file content. Creates a fully valid JSON file with all default bindings that users can customize. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `generateKeybindingsTemplate`.
+- **`useKeybinding.ts`** (`restored-src/src/keybindings/useKeybinding.ts`): Ink-native hook for handling a keybinding. The handler stays in the component (React way). The binding (keystroke → action) comes from config. Supports chord sequences (e.g., "ctrl+k ctrl+s"). When a chord is started, the hook will manage the pending state... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `useKeybinding`, `useKeybindings`.
+- **`useShortcutDisplay.ts`** (`restored-src/src/keybindings/useShortcutDisplay.ts`): Hook to get the display text for a configured shortcut. Returns the configured binding or a fallback if unavailable. @param action - The action name (e.g., 'app:toggleTranscript') @param context - The keybinding context (e.g., 'Global') @param fallback - Fa... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `useShortcutDisplay`.
+- **`validate.ts`** (`restored-src/src/keybindings/validate.ts`): Types of validation issues that can occur with keybindings. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `KeybindingWarningType`, `KeybindingWarning`, `checkDuplicateKeysInJson`, `validateUserConfig`, dan lainnya.
 
 ## Direktori: `restored-src/src/memdir`
 
-- **`findRelevantMemories.ts`**: Find memory files relevant to a query by scanning memory file headers and asking Sonnet to select the most relevant ones.  Returns absolute file paths...
-- **`memdir.ts`**: Mengekspor: ENTRYPOINT_NAME, MAX_ENTRYPOINT_LINES, MAX_ENTRYPOINT_BYTES.
-- **`memoryAge.ts`**: Days elapsed since mtime.  Floor-rounded — 0 for today, 1 for yesterday, 2+ for older.  Negative inputs (future mtime, clock skew) clamp to 0.
-- **`memoryScan.ts`**: Memory-directory scanning primitives. Split out of findRelevantMemories.ts so extractMemories can import the scan without pulling in sideQuery and the...
-- **`memoryTypes.ts`**: Memory type taxonomy.  Memories are constrained to four types capturing context NOT derivable from the current project state. Code patterns, architect...
-- **`paths.ts`**: Whether auto-memory features are enabled (memdir, agent memory, past session search). Enabled by default. Priority chain (first defined wins): 1. CLAU...
-- **`teamMemPaths.ts`**: Error thrown when a path validation detects a traversal or injection attempt.
-- **`teamMemPrompts.ts`**: Build the combined prompt when both auto memory and team memory are enabled. Closed four-type taxonomy (user / feedback / project / reference) with pe...
+- **`findRelevantMemories.ts`** (`restored-src/src/memdir/findRelevantMemories.ts`): Find memory files relevant to a query by scanning memory file headers and asking Sonnet to select the most relevant ones. Returns absolute file paths + mtime of the most relevant memories (up to 5). Excludes MEMORY.md (already loaded in system prompt). mtim... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `RelevantMemory`, `findRelevantMemories`.
+- **`memdir.ts`** (`restored-src/src/memdir/memdir.ts`): Truncate MEMORY.md content to the line AND byte caps, appending a warning that names which cap fired. Line-truncates first (natural boundary), then byte-truncates at the last newline before the cap so we don't cut mid-line. Shared by buildMemoryPrompt and c... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `ENTRYPOINT_NAME`, `MAX_ENTRYPOINT_LINES`, `MAX_ENTRYPOINT_BYTES`, `EntrypointTruncation`, dan lainnya.
+- **`memoryAge.ts`** (`restored-src/src/memdir/memoryAge.ts`): Human-readable age string. Models are poor at date arithmetic — a raw ISO timestamp doesn't trigger staleness reasoning the way "47 days ago" does. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `memoryAgeDays`, `memoryAge`, `memoryFreshnessText`, `memoryFreshnessNote`.
+- **`memoryScan.ts`** (`restored-src/src/memdir/memoryScan.ts`): Scan a memory directory for .md files, read their frontmatter, and return a header list sorted newest-first (capped at MAX_MEMORY_FILES). Shared by findRelevantMemories (query-time recall) and extractMemories (pre-injects the listing so the extraction agent... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `MemoryHeader`, `scanMemoryFiles`, `formatMemoryManifest`.
+- **`memoryTypes.ts`** (`restored-src/src/memdir/memoryTypes.ts`): Memory type taxonomy. Memories are constrained to four types capturing context NOT derivable from the current project state. Code patterns, architecture, git history, and file structure are derivable (via grep/git/CLAUDE.md) and should NOT be saved as memor... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `MEMORY_TYPES`, `MemoryType`, `parseMemoryType`, `TYPES_SECTION_COMBINED`, dan lainnya.
+- **`paths.ts`** (`restored-src/src/memdir/paths.ts`): Whether auto-memory features are enabled (memdir, agent memory, past session search). Enabled by default. Priority chain (first defined wins): 1. CLAUDE_CODE_DISABLE_AUTO_MEMORY env var (1/true → OFF, 0/false → ON) 2. CLAUDE_CODE_SIMPLE (--bare) → OFF 3. CC... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `isAutoMemoryEnabled`, `isExtractModeActive`, `getMemoryBaseDir`, `hasAutoMemPathOverride`, dan lainnya.
+- **`teamMemPaths.ts`** (`restored-src/src/memdir/teamMemPaths.ts`): Error thrown when a path validation detects a traversal or injection attempt. Mengimplementasikan class utama untuk area fitur ini. Export utama: `PathTraversalError`, `isTeamMemoryEnabled`, `getTeamMemPath`, `getTeamMemEntrypoint`, dan lainnya.
+- **`teamMemPrompts.ts`** (`restored-src/src/memdir/teamMemPrompts.ts`): Build the combined prompt when both auto memory and team memory are enabled. Closed four-type taxonomy (user / feedback / project / reference) with per-type <scope> guidance embedded in XML-style <type> blocks. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `buildCombinedMemoryPrompt`.
 
 ## Direktori: `restored-src/src/migrations`
 
-- **`migrateAutoUpdatesToSettings.ts`**: Migration: Move user-set autoUpdates preference to settings.json env var Only migrates if user explicitly disabled auto-updates (not for protection) T...
-- **`migrateBypassPermissionsAcceptedToSettings.ts`**: Migration: Move bypassPermissionsModeAccepted from global config to settings.json as skipDangerousModePermissionPrompt. This is a better home since se...
-- **`migrateEnableAllProjectMcpServersToSettings.ts`**: Migration: Move MCP server approval fields from project config to local settings This migrates both enableAllProjectMcpServers and enabledMcpjsonServe...
-- **`migrateFennecToOpus.ts`**: Migrate users on removed fennec model aliases to their new Opus 4.6 aliases. - fennec-latest → opus - fennec-latest[1m] → opus[1m] - fennec-fast-lates...
-- **`migrateLegacyOpusToCurrent.ts`**: Migrate first-party users off explicit Opus 4.0/4.1 model strings.  The 'opus' alias already resolves to Opus 4.6 for 1P, so anyone still on an explic...
-- **`migrateOpusToOpus1m.ts`**: Migrate users with 'opus' pinned in their settings to 'opus[1m]' when they are eligible for the merged Opus 1M experience (Max/Team Premium on 1P).  C...
-- **`migrateReplBridgeEnabledToRemoteControlAtStartup.ts`**: Migrate the `replBridgeEnabled` config key to `remoteControlAtStartup`.  The old key was an implementation detail that leaked into user-facing config....
-- **`migrateSonnet1mToSonnet45.ts`**: Migrate users who had "sonnet[1m]" saved to the explicit "sonnet-4-5-20250929[1m]".  The "sonnet" alias now resolves to Sonnet 4.6, so users who previ...
-- **`migrateSonnet45ToSonnet46.ts`**: Migrate Pro/Max/Team Premium first-party users off explicit Sonnet 4.5 model strings to the 'sonnet' alias (which now resolves to Sonnet 4.6).  Users ...
-- **`resetAutoModeOptInForDefaultOffer.ts`**: One-shot migration: clear skipAutoPermissionPrompt for users who accepted the old 2-option AutoModeOptInDialog but don't have auto as their default. R...
-- **`resetProToOpusDefault.ts`**: Mengekspor: resetProToOpusDefault.
+- **`migrateAutoUpdatesToSettings.ts`** (`restored-src/src/migrations/migrateAutoUpdatesToSettings.ts`): Migration: Move user-set autoUpdates preference to settings.json env var Only migrates if user explicitly disabled auto-updates (not for protection) This preserves user intent while allowing native installations to auto-update. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `migrateAutoUpdatesToSettings`.
+- **`migrateBypassPermissionsAcceptedToSettings.ts`** (`restored-src/src/migrations/migrateBypassPermissionsAcceptedToSettings.ts`): Migration: Move bypassPermissionsModeAccepted from global config to settings.json as skipDangerousModePermissionPrompt. This is a better home since settings.json is the user-configurable settings file. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `migrateBypassPermissionsAcceptedToSettings`.
+- **`migrateEnableAllProjectMcpServersToSettings.ts`** (`restored-src/src/migrations/migrateEnableAllProjectMcpServersToSettings.ts`): Migration: Move MCP server approval fields from project config to local settings This migrates both enableAllProjectMcpServers and enabledMcpjsonServers to the settings system for better management and consistency. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `migrateEnableAllProjectMcpServersToSettings`.
+- **`migrateFennecToOpus.ts`** (`restored-src/src/migrations/migrateFennecToOpus.ts`): Migrate users on removed fennec model aliases to their new Opus 4.6 aliases. - fennec-latest → opus - fennec-latest[1m] → opus[1m] - fennec-fast-latest → opus[1m] + fast mode - opus-4-5-fast → opus + fast mode Only touches userSettings. Reading and writing... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `migrateFennecToOpus`.
+- **`migrateLegacyOpusToCurrent.ts`** (`restored-src/src/migrations/migrateLegacyOpusToCurrent.ts`): Migrate first-party users off explicit Opus 4.0/4.1 model strings. The 'opus' alias already resolves to Opus 4.6 for 1P, so anyone still on an explicit 4.0/4.1 string pinned it in settings before 4.5 launched. parseUserSpecifiedModel now silently remaps the... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `migrateLegacyOpusToCurrent`.
+- **`migrateOpusToOpus1m.ts`** (`restored-src/src/migrations/migrateOpusToOpus1m.ts`): Migrate users with 'opus' pinned in their settings to 'opus[1m]' when they are eligible for the merged Opus 1M experience (Max/Team Premium on 1P). CLI invocations with --model opus are unaffected: that flag is a runtime override and does not touch userSett... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `migrateOpusToOpus1m`.
+- **`migrateReplBridgeEnabledToRemoteControlAtStartup.ts`** (`restored-src/src/migrations/migrateReplBridgeEnabledToRemoteControlAtStartup.ts`): Migrate the 'replBridgeEnabled' config key to 'remoteControlAtStartup'. The old key was an implementation detail that leaked into user-facing config. This migration copies the value to the new key and removes the old one. Idempotent — only acts when the old... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `migrateReplBridgeEnabledToRemoteControlAtStartup`.
+- **`migrateSonnet1mToSonnet45.ts`** (`restored-src/src/migrations/migrateSonnet1mToSonnet45.ts`): Migrate users who had "sonnet[1m]" saved to the explicit "sonnet-4-5-20250929[1m]". The "sonnet" alias now resolves to Sonnet 4.6, so users who previously set "sonnet[1m]" (targeting Sonnet 4.5 with 1M context) need to be pinned to the explicit version to p... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `migrateSonnet1mToSonnet45`.
+- **`migrateSonnet45ToSonnet46.ts`** (`restored-src/src/migrations/migrateSonnet45ToSonnet46.ts`): Migrate Pro/Max/Team Premium first-party users off explicit Sonnet 4.5 model strings to the 'sonnet' alias (which now resolves to Sonnet 4.6). Users may have been pinned to explicit Sonnet 4.5 strings by: - The earlier migrateSonnet1mToSonnet45 migration (s... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `migrateSonnet45ToSonnet46`.
+- **`resetAutoModeOptInForDefaultOffer.ts`** (`restored-src/src/migrations/resetAutoModeOptInForDefaultOffer.ts`): One-shot migration: clear skipAutoPermissionPrompt for users who accepted the old 2-option AutoModeOptInDialog but don't have auto as their default. Re-surfaces the dialog so they see the new "make it my default mode" option. Guard lives in GlobalConfig (~/... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `resetAutoModeOptInForDefaultOffer`.
+- **`resetProToOpusDefault.ts`** (`restored-src/src/migrations/resetProToOpusDefault.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `resetProToOpusDefault`.
 
 ## Direktori: `restored-src/src/moreright`
 
-- **`useMoreRight.tsx`**: Mengekspor: useMoreRight.
+- **`useMoreRight.tsx`** (`restored-src/src/moreright/useMoreRight.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `useMoreRight`.
 
 ## Direktori: `restored-src/src/native-ts/color-diff`
 
-- **`index.ts`**: Pure TypeScript port of vendor/color-diff-src.  The Rust version uses syntect+bat for syntax highlighting and the similar crate for word diffing. This...
+- **`index.ts`** (`restored-src/src/native-ts/color-diff/index.ts`): Barrel/entry point yang merapikan export modul di folder ini. Mengimplementasikan class utama untuk area fitur ini. Export utama: `Hunk`, `SyntaxTheme`, `NativeModule`, `ColorDiff`, dan lainnya.
 
 ## Direktori: `restored-src/src/native-ts/file-index`
 
-- **`index.ts`**: Pure-TypeScript port of vendor/file-index-src (Rust NAPI module).  The native module wraps nucleo (https:github.com/helix-editor/nucleo) for high-perf...
+- **`index.ts`** (`restored-src/src/native-ts/file-index/index.ts`): Pure-TypeScript port of vendor/file-index-src (Rust NAPI module). The native module wraps nucleo (https://github.com/helix-editor/nucleo) for high-performance fuzzy file searching. This port reimplements the same API and scoring behavior without native depe... Barrel/entry point yang merapikan export modul di folder ini. Mengimplementasikan class utama untuk area fitur ini. Export utama: `SearchResult`, `FileIndex`, `yieldToEventLoop`, `CHUNK_MS`, dan lainnya.
 
 ## Direktori: `restored-src/src/native-ts/yoga-layout`
 
-- **`enums.ts`**: Yoga enums — ported from yoga-layout/src/generated/YGEnums.ts Kept as `const` objects (not TS enums) per repo convention. Values match upstream exactl...
-- **`index.ts`**: Pure-TypeScript port of yoga-layout (Meta's flexbox engine).  This matches the `yoga-layout/load` API surface used by src/ink/layout/yoga.ts. The upst...
+- **`enums.ts`** (`restored-src/src/native-ts/yoga-layout/enums.ts`): Yoga enums — ported from yoga-layout/src/generated/YGEnums.ts Kept as 'const' objects (not TS enums) per repo convention. Values match upstream exactly so callers don't change. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `Align`, `BoxSizing`, `Dimension`, `Direction`, dan lainnya.
+- **`index.ts`** (`restored-src/src/native-ts/yoga-layout/index.ts`): Barrel/entry point yang merapikan export modul di folder ini. Mengimplementasikan class utama untuk area fitur ini. Export utama: `Align`, `BoxSizing`, `Dimension`, `Direction`, dan lainnya.
 
 ## Direktori: `restored-src/src/outputStyles`
 
-- **`loadOutputStylesDir.ts`**: Loads markdown files from .claude/output-styles directories throughout the project and from ~/.claude/output-styles directory and converts them to out...
+- **`loadOutputStylesDir.ts`** (`restored-src/src/outputStyles/loadOutputStylesDir.ts`): Loads markdown files from .claude/output-styles directories throughout the project and from ~/.claude/output-styles directory and converts them to output styles. Each filename becomes a style name, and the file content becomes the style prompt. The frontmat... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getOutputStyleDirStyles`, `clearOutputStyleCaches`.
 
 ## Direktori: `restored-src/src/plugins`
 
-- **`builtinPlugins.ts`**: Built-in Plugin Registry  Manages built-in plugins that ship with the CLI and can be enabled/disabled by users via the /plugin UI.  Built-in plugins d...
+- **`builtinPlugins.ts`** (`restored-src/src/plugins/builtinPlugins.ts`): Register a built-in plugin. Call this from initBuiltinPlugins() at startup. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `BUILTIN_MARKETPLACE_NAME`, `registerBuiltinPlugin`, `isBuiltinPluginId`, `getBuiltinPluginDefinition`, dan lainnya.
 
 ## Direktori: `restored-src/src/plugins/bundled`
 
-- **`index.ts`**: Built-in Plugin Initialization  Initializes built-in plugins that ship with the CLI and appear in the /plugin UI for users to enable/disable.  Not all...
+- **`index.ts`** (`restored-src/src/plugins/bundled/index.ts`): Built-in Plugin Initialization Initializes built-in plugins that ship with the CLI and appear in the /plugin UI for users to enable/disable. Not all bundled features should be built-in plugins — use this for features that users should be able to explicitly... Barrel/entry point yang merapikan export modul di folder ini. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `initBuiltinPlugins`.
 
 ## Direktori: `restored-src/src/query`
 
-- **`config.ts`**: Mengekspor: QueryConfig, buildQueryConfig.
-- **`deps.ts`**: Mengekspor: QueryDeps, productionDeps.
-- **`stopHooks.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`tokenBudget.ts`**: Mengekspor: BudgetTracker, createBudgetTracker, TokenBudgetDecision.
+- **`config.ts`** (`restored-src/src/query/config.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `QueryConfig`, `buildQueryConfig`.
+- **`deps.ts`** (`restored-src/src/query/deps.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `QueryDeps`, `productionDeps`.
+- **`stopHooks.ts`** (`restored-src/src/query/stopHooks.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `handleStopHooks`.
+- **`tokenBudget.ts`** (`restored-src/src/query/tokenBudget.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `BudgetTracker`, `createBudgetTracker`, `TokenBudgetDecision`, `checkTokenBudget`.
 
 ## Direktori: `restored-src/src/remote`
 
-- **`RemoteSessionManager.ts`**: Type guard to check if a message is an SDKMessage (not a control message)
-- **`SessionsWebSocket.ts`**: Maximum retries for 4001 (session not found). During compaction the server may briefly consider the session stale; a short retry window lets the clien...
-- **`remotePermissionBridge.ts`**: Create a synthetic AssistantMessage for remote permission requests. The ToolUseConfirm type requires an AssistantMessage, but in remote mode we don't ...
-- **`sdkMessageAdapter.ts`**: Converts SDKMessage from CCR to REPL Message types.  The CCR backend sends SDK-format messages via WebSocket. The REPL expects internal Message types ...
+- **`RemoteSessionManager.ts`** (`restored-src/src/remote/RemoteSessionManager.ts`): Manages a remote CCR session. Coordinates: - WebSocket subscription for receiving messages from CCR - HTTP POST for sending user messages to CCR - Permission request/response flow. Mengimplementasikan class utama untuk area fitur ini. Export utama: `RemotePermissionResponse`, `RemoteSessionConfig`, `RemoteSessionCallbacks`, `RemoteSessionManager`, dan lainnya.
+- **`SessionsWebSocket.ts`** (`restored-src/src/remote/SessionsWebSocket.ts`): WebSocket client for connecting to CCR sessions via /v1/sessions/ws/{id}/subscribe Protocol: 1. Connect to wss://api.anthropic.com/v1/sessions/ws/{sessionId}/subscribe?organization_uuid=... 2. Send auth message: { type: 'auth', credential: { type: 'oauth',... Mengimplementasikan class utama untuk area fitur ini. Export utama: `SessionsWebSocketCallbacks`, `SessionsWebSocket`.
+- **`remotePermissionBridge.ts`** (`restored-src/src/remote/remotePermissionBridge.ts`): Create a synthetic AssistantMessage for remote permission requests. The ToolUseConfirm type requires an AssistantMessage, but in remote mode we don't have a real one — the tool use runs on the CCR container. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `createSyntheticAssistantMessage`, `createToolStub`.
+- **`sdkMessageAdapter.ts`** (`restored-src/src/remote/sdkMessageAdapter.ts`): Result of converting an SDKMessage. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `ConvertedMessage`, `convertSDKMessage`, `isSessionEndMessage`, `isSuccessResult`, dan lainnya.
 
 ## Direktori: `restored-src/src/schemas`
 
-- **`hooks.ts`**: Hook Zod schemas extracted to break import cycles.  This file contains hook-related schema definitions that were originally in src/utils/settings/type...
+- **`hooks.ts`** (`restored-src/src/schemas/hooks.ts`): Schema for hook command (excludes function hooks - they can't be persisted). Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `HookCommandSchema`, `HookMatcherSchema`, `HooksSchema`, `HookCommand`, dan lainnya.
 
 ## Direktori: `restored-src/src/screens`
 
-- **`Doctor.tsx`**: Mengekspor: Doctor.
-- **`REPL.tsx`**: Mengekspor: Props, Screen, REPL.
-- **`ResumeConversation.tsx`**: Mengekspor: ResumeConversation.
+- **`Doctor.tsx`** (`restored-src/src/screens/Doctor.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `Doctor`.
+- **`REPL.tsx`** (`restored-src/src/screens/REPL.tsx`): Small component to display transcript mode footer with dynamic keybinding. Must be rendered inside KeybindingSetup to access keybinding context. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `Props`, `Screen`, `REPL`.
+- **`ResumeConversation.tsx`** (`restored-src/src/screens/ResumeConversation.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `ResumeConversation`.
 
 ## Direktori: `restored-src/src/server`
 
-- **`createDirectConnectSession.ts`**: Mengekspor: DirectConnectError.
-- **`directConnectManager.ts`**: Mengekspor: DirectConnectConfig, DirectConnectCallbacks, DirectConnectSessionManager.
-- **`types.ts`**: Idle timeout for detached sessions (ms). 0 = never expire.
+- **`createDirectConnectSession.ts`** (`restored-src/src/server/createDirectConnectSession.ts`): Create a session on a direct-connect server. Posts to '${serverUrl}/sessions', validates the response, and returns a DirectConnectConfig ready for use by the REPL or headless runner. Throws DirectConnectError on network, HTTP, or response-parsing failures. Mengimplementasikan class utama untuk area fitur ini. Export utama: `DirectConnectError`, `createDirectConnectSession`.
+- **`directConnectManager.ts`** (`restored-src/src/server/directConnectManager.ts`): Mengimplementasikan class utama untuk area fitur ini. Export utama: `DirectConnectConfig`, `DirectConnectCallbacks`, `DirectConnectSessionManager`.
+- **`types.ts`** (`restored-src/src/server/types.ts`): Stable session key → session metadata. Persisted to ~/.claude/server-sessions.json so sessions can be resumed across server restarts. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `connectResponseSchema`, `ServerConfig`, `SessionState`, `SessionInfo`, dan lainnya.
 
 ## Direktori: `restored-src/src/services/AgentSummary`
 
-- **`agentSummary.ts`**: Periodic background summarization for coordinator mode sub-agents.  Forks the sub-agent's conversation every ~30s using runForkedAgent() to generate a...
+- **`agentSummary.ts`** (`restored-src/src/services/AgentSummary/agentSummary.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `startAgentSummarization`.
 
 ## Direktori: `restored-src/src/services/MagicDocs`
 
-- **`magicDocs.ts`**: Magic Docs automatically maintains markdown documentation files marked with special headers. When a file with "# MAGIC DOC: [title]" is read, it runs ...
-- **`prompts.ts`**: Get the Magic Docs update prompt template
+- **`magicDocs.ts`** (`restored-src/src/services/MagicDocs/magicDocs.ts`): Detect if a file content contains a Magic Doc header Returns an object with title and optional instructions, or null if not a magic doc. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `clearTrackedMagicDocs`, `detectMagicDocHeader`, `registerMagicDoc`, `initMagicDocs`.
+- **`prompts.ts`** (`restored-src/src/services/MagicDocs/prompts.ts`): Build the Magic Docs update prompt with variable substitution. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `buildMagicDocsUpdatePrompt`.
 
 ## Direktori: `restored-src/src/services/PromptSuggestion`
 
-- **`promptSuggestion.ts`**: Mengekspor: PromptVariant, getPromptVariant, shouldEnablePromptSuggestion.
-- **`speculation.ts`**: Mengekspor: ActiveSpeculationState, prepareMessagesForInjection, isSpeculationEnabled.
+- **`promptSuggestion.ts`** (`restored-src/src/services/PromptSuggestion/promptSuggestion.ts`): Returns a suppression reason if suggestions should not be generated, or null if generation is allowed. Shared by main and pipelined paths. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `PromptVariant`, `getPromptVariant`, `shouldEnablePromptSuggestion`, `abortPromptSuggestion`, dan lainnya.
+- **`speculation.ts`** (`restored-src/src/services/PromptSuggestion/speculation.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `ActiveSpeculationState`, `prepareMessagesForInjection`, `isSpeculationEnabled`, `startSpeculation`, dan lainnya.
 
 ## Direktori: `restored-src/src/services/SessionMemory`
 
-- **`prompts.ts`**: Mengekspor: DEFAULT_SESSION_MEMORY_TEMPLATE, truncateSessionMemoryForCompact.
-- **`sessionMemory.ts`**: Session Memory automatically maintains a markdown file with notes about the current conversation. It runs periodically in the background using a forke...
-- **`sessionMemoryUtils.ts`**: Session Memory utility functions that can be imported without circular dependencies. These are separate from the main sessionMemory.ts to avoid import...
+- **`prompts.ts`** (`restored-src/src/services/SessionMemory/prompts.ts`): Load custom session memory template from file if it exists. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `DEFAULT_SESSION_MEMORY_TEMPLATE`, `loadSessionMemoryTemplate`, `loadSessionMemoryPrompt`, `isSessionMemoryEmpty`, dan lainnya.
+- **`sessionMemory.ts`** (`restored-src/src/services/SessionMemory/sessionMemory.ts`): Reset the last memory message UUID (for testing). Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `resetLastMemoryMessageUuid`, `shouldExtractMemory`, `initSessionMemory`, `ManualExtractionResult`, dan lainnya.
+- **`sessionMemoryUtils.ts`** (`restored-src/src/services/SessionMemory/sessionMemoryUtils.ts`): Configuration for session memory extraction thresholds. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `SessionMemoryConfig`, `DEFAULT_SESSION_MEMORY_CONFIG`, `getLastSummarizedMessageId`, `setLastSummarizedMessageId`, dan lainnya.
 
 ## Direktori: `restored-src/src/services/analytics`
 
-- **`config.ts`**: Shared analytics configuration  Common logic for determining when analytics should be disabled across all analytics systems (Datadog, 1P)
-- **`datadog.ts`**: Mengekspor: initializeDatadog.
-- **`firstPartyEventLogger.ts`**: Configuration for sampling individual event types. Each event name maps to an object containing sample_rate (0-1). Events not in the config are logged...
-- **`firstPartyEventLoggingExporter.ts`**: Mengekspor: FirstPartyEventLoggingExporter.
-- **`growthbook.ts`**: User attributes sent to GrowthBook for targeting. Uses UUID suffix (not Uuid) to align with GrowthBook conventions.
-- **`index.ts`**: Analytics service - public API for event logging  This module serves as the main entry point for analytics events in Claude CLI.  DESIGN: This module ...
-- **`metadata.ts`**: Shared event metadata enrichment for analytics systems  This module provides a single source of truth for collecting and formatting event metadata acr...
-- **`sink.ts`**: Analytics sink implementation  This module contains the actual analytics routing logic and should be initialized during app startup. It routes events ...
-- **`sinkKillswitch.ts`**: GrowthBook JSON config that disables individual analytics sinks. Shape: { datadog?: boolean, firstParty?: boolean } A value of true for a key stops al...
+- **`config.ts`** (`restored-src/src/services/analytics/config.ts`): Check if analytics operations should be disabled Analytics is disabled in the following cases: - Test environment (NODE_ENV === 'test') - Third-party cloud providers (Bedrock/Vertex) - Privacy level is no-telemetry or essential-traffic. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `isAnalyticsDisabled`, `isFeedbackSurveyDisabled`.
+- **`datadog.ts`** (`restored-src/src/services/analytics/datadog.ts`): Flush remaining Datadog logs and shut down. Called from gracefulShutdown() before process.exit() since forceExit() prevents the beforeExit handler from firing. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `initializeDatadog`, `shutdownDatadog`, `trackDatadogEvent`.
+- **`firstPartyEventLogger.ts`** (`restored-src/src/services/analytics/firstPartyEventLogger.ts`): Configuration for sampling individual event types. Each event name maps to an object containing sample_rate (0-1). Events not in the config are logged at 100% rate. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `EventSamplingConfig`, `getEventSamplingConfig`, `shouldSampleEvent`, `shutdown1PEventLogging`, dan lainnya.
+- **`firstPartyEventLoggingExporter.ts`** (`restored-src/src/services/analytics/firstPartyEventLoggingExporter.ts`): Exporter for 1st-party event logging to /api/event_logging/batch. Export cycles are controlled by OpenTelemetry's BatchLogRecordProcessor, which triggers export() when either: - Time interval elapses (default: 5 seconds via scheduledDelayMillis) - Batch siz... Mengimplementasikan class utama untuk area fitur ini. Export utama: `FirstPartyEventLoggingExporter`.
+- **`growthbook.ts`** (`restored-src/src/services/analytics/growthbook.ts`): User attributes sent to GrowthBook for targeting. Uses UUID suffix (not Uuid) to align with GrowthBook conventions. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `GrowthBookUserAttributes`, `onGrowthBookRefresh`, `hasGrowthBookEnvOverride`, `getAllGrowthBookFeatures`, dan lainnya.
+- **`index.ts`** (`restored-src/src/services/analytics/index.ts`): Analytics service - public API for event logging This module serves as the main entry point for analytics events in Claude CLI. DESIGN: This module has NO dependencies to avoid import cycles. Events are queued until attachAnalyticsSink() is called during ap... Barrel/entry point yang merapikan export modul di folder ini. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS`, `AnalyticsMetadata_I_VERIFIED_THIS_IS_PII_TAGGED`, `stripProtoFields`, `AnalyticsSink`, dan lainnya.
+- **`metadata.ts`** (`restored-src/src/services/analytics/metadata.ts`): Marker type for verifying analytics metadata doesn't contain sensitive data This type forces explicit verification that string values being logged don't contain code snippets, file paths, or other sensitive information. The metadata is expected to be JSON-s... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS`, `sanitizeToolNameForAnalytics`, `isToolDetailsLoggingEnabled`, `isAnalyticsToolDetailsLoggingEnabled`, dan lainnya.
+- **`sink.ts`** (`restored-src/src/services/analytics/sink.ts`): Initialize analytics gates during startup. Updates gate values from server. Early events use cached values from previous session to avoid data loss during initialization. Called from main.tsx during setupBackend(). Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `initializeAnalyticsGates`, `initializeAnalyticsSink`.
+- **`sinkKillswitch.ts`** (`restored-src/src/services/analytics/sinkKillswitch.ts`): GrowthBook JSON config that disables individual analytics sinks. Shape: { datadog?: boolean, firstParty?: boolean } A value of true for a key stops all dispatch to that sink. Default {} (nothing killed). Fail-open: missing/malformed config = sink stays on.... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `SinkName`, `isSinkKilled`.
 
 ## Direktori: `restored-src/src/services/api`
 
-- **`adminRequests.ts`**: Mengekspor: AdminRequestType, AdminRequestStatus, AdminRequestSeatUpgradeDetails.
-- **`bootstrap.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`claude.ts`**: Mengekspor: getExtraBodyParams, getPromptCachingEnabled, getCacheControl.
-- **`client.ts`**: Mengekspor: CLIENT_REQUEST_ID_HEADER.
-- **`dumpPrompts.ts`**: Mengekspor: getLastApiRequests, clearApiRequestCache, clearDumpState.
-- **`emptyUsage.ts`**: Zero-initialized usage object. Extracted from logging.ts so that bridge/replBridge.ts can import it without transitively pulling in api/errors.ts → ut...
-- **`errorUtils.ts`**: Mengekspor: ConnectionErrorDetails, extractConnectionErrorDetails, getSSLErrorHint.
-- **`errors.ts`**: Mengekspor: API_ERROR_MESSAGE_PREFIX, startsWithApiErrorPrefix, PROMPT_TOO_LONG_ERROR_MESSAGE.
-- **`filesApi.ts`**: Files API client for managing files  This module provides functionality to download and upload files to Anthropic Public Files API. Used by the Claude...
-- **`firstTokenDate.ts`**: Fetch the user's first Claude Code token date and store in config. This is called after successful login to cache when they started using Claude Code....
-- **`grove.ts`**: Mengekspor: AccountSettings, GroveConfig, ApiResult.
-- **`logging.ts`**: Mengekspor: GlobalCacheStrategy, logAPIQuery, logAPIError.
-- **`metricsOptOut.ts`**: Internal function to call the API and check if metrics are enabled
-- **`overageCreditGrant.ts`**: Fetch the current user's overage credit grant eligibility from the backend. The backend resolves tier-specific amounts and role-based claim permission...
-- **`promptCacheBreakDetection.ts`**: Mengekspor: CACHE_TTL_1HOUR_MS, PromptStateSnapshot, recordPromptState.
-- **`referral.ts`**: Mengekspor: checkCachedPassesEligibility, formatCreditAmount, getCachedReferrerReward.
-- **`sessionIngress.ts`**: Mengekspor: clearSession, clearAllSessions.
-- **`ultrareviewQuota.ts`**: Peek the ultrareview quota for display and nudge decisions. Consume happens server-side at session creation. Null when not a subscriber or the endpoin...
-- **`usage.ts`**: Mengekspor: RateLimit, ExtraUsage, Utilization.
-- **`withRetry.ts`**: Mengekspor: BASE_DELAY_MS, RetryContext, CannotRetryError.
+- **`adminRequests.ts`** (`restored-src/src/services/api/adminRequests.ts`): Create an admin request (limit increase or seat upgrade). For Team/Enterprise users who don't have billing/admin permissions, this creates a request that their admin can act on. If a pending request of the same type already exists for this user, returns the... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `AdminRequestType`, `AdminRequestStatus`, `AdminRequestSeatUpgradeDetails`, `AdminRequestCreateParams`, dan lainnya.
+- **`bootstrap.ts`** (`restored-src/src/services/api/bootstrap.ts`): Fetch bootstrap data from the API and persist to disk cache. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `fetchBootstrapData`.
+- **`claude.ts`** (`restored-src/src/services/api/claude.ts`): Assemble the extra body parameters for the API request, based on the CLAUDE_CODE_EXTRA_BODY environment variable if present and on any beta headers (primarily for Bedrock requests). @param betaHeaders - An array of beta headers to include in the request. @r... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getExtraBodyParams`, `getPromptCachingEnabled`, `getCacheControl`, `configureTaskBudgetParams`, dan lainnya.
+- **`client.ts`** (`restored-src/src/services/api/client.ts`): Environment variables for different client types: Direct API: - ANTHROPIC_API_KEY: Required for direct API access AWS Bedrock: - AWS credentials configured via aws-sdk defaults - AWS_REGION or AWS_DEFAULT_REGION: Sets the AWS region for all models (default:... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getAnthropicClient`, `CLIENT_REQUEST_ID_HEADER`.
+- **`dumpPrompts.ts`** (`restored-src/src/services/api/dumpPrompts.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getLastApiRequests`, `clearApiRequestCache`, `clearDumpState`, `clearAllDumpState`, dan lainnya.
+- **`emptyUsage.ts`** (`restored-src/src/services/api/emptyUsage.ts`): Zero-initialized usage object. Extracted from logging.ts so that bridge/replBridge.ts can import it without transitively pulling in api/errors.ts → utils/messages.ts → BashTool.tsx → the world. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `EMPTY_USAGE`.
+- **`errorUtils.ts`** (`restored-src/src/services/api/errorUtils.ts`): Extracts connection error details from the error cause chain. The Anthropic SDK wraps underlying errors in the 'cause' property. This function walks the cause chain to find the root error code/message. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `ConnectionErrorDetails`, `extractConnectionErrorDetails`, `getSSLErrorHint`, `sanitizeAPIError`, dan lainnya.
+- **`errors.ts`** (`restored-src/src/services/api/errors.ts`): Parse actual/limit token counts from a raw prompt-too-long API error message like "prompt is too long: 137500 tokens > 135000 maximum". The raw string may be wrapped in SDK prefixes or JSON envelopes, or have different casing (Vertex), so this is intentiona... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `API_ERROR_MESSAGE_PREFIX`, `startsWithApiErrorPrefix`, `PROMPT_TOO_LONG_ERROR_MESSAGE`, `isPromptTooLongMessage`, dan lainnya.
+- **`filesApi.ts`** (`restored-src/src/services/api/filesApi.ts`): File specification parsed from CLI args Format: --file=<file_id>:<relative_path>. Mengimplementasikan class utama untuk area fitur ini. Export utama: `File`, `FilesApiConfig`, `DownloadResult`, `downloadFile`, dan lainnya.
+- **`firstTokenDate.ts`** (`restored-src/src/services/api/firstTokenDate.ts`): Fetch the user's first Claude Code token date and store in config. This is called after successful login to cache when they started using Claude Code. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `fetchAndStoreClaudeCodeFirstTokenDate`.
+- **`grove.ts`** (`restored-src/src/services/api/grove.ts`): Result type that distinguishes between API failure and success. - success: true means API call succeeded (data may still contain null fields) - success: false means API call failed after retry. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `AccountSettings`, `GroveConfig`, `ApiResult`, `getGroveSettings`, dan lainnya.
+- **`logging.ts`** (`restored-src/src/services/api/logging.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `NonNullableUsage`, `EMPTY_USAGE`, `GlobalCacheStrategy`, `logAPIQuery`, dan lainnya.
+- **`metricsOptOut.ts`** (`restored-src/src/services/api/metricsOptOut.ts`): Check if metrics are enabled for the current organization. Two-tier cache: - Disk (24h TTL): survives process restarts. Fresh disk cache → zero network. - In-memory (1h TTL): dedupes the background refresh within a process. The caller (bigqueryExporter) tol... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `checkMetricsEnabled`, `_clearMetricsEnabledCacheForTesting`.
+- **`overageCreditGrant.ts`** (`restored-src/src/services/api/overageCreditGrant.ts`): Get cached grant info. Returns null if no cache or cache is stale. Callers should render nothing (not block) when this returns null — refreshOverageCreditGrantCache fires lazily to populate it. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `OverageCreditGrantInfo`, `getCachedOverageCreditGrant`, `invalidateOverageCreditGrantCache`, `refreshOverageCreditGrantCache`, dan lainnya.
+- **`promptCacheBreakDetection.ts`** (`restored-src/src/services/api/promptCacheBreakDetection.ts`): Extended tracking snapshot — everything that could affect the server-side cache key that we can observe from the client. All fields are optional so the call site can add incrementally; undefined fields compare as stable. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `CACHE_TTL_1HOUR_MS`, `PromptStateSnapshot`, `recordPromptState`, `checkResponseForCacheBreak`, dan lainnya.
+- **`referral.ts`** (`restored-src/src/services/api/referral.ts`): Check cached passes eligibility from GlobalConfig Returns current cached state and cache status. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `fetchReferralEligibility`, `fetchReferralRedemptions`, `checkCachedPassesEligibility`, `formatCreditAmount`, dan lainnya.
+- **`sessionIngress.ts`** (`restored-src/src/services/api/sessionIngress.ts`): Append a log entry to the session using JWT token Uses optimistic concurrency control with Last-Uuid header Ensures sequential execution per session to prevent race conditions. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `appendSessionLog`, `getSessionLogs`, `getSessionLogsViaOAuth`, `getTeleportEvents`, dan lainnya.
+- **`ultrareviewQuota.ts`** (`restored-src/src/services/api/ultrareviewQuota.ts`): Peek the ultrareview quota for display and nudge decisions. Consume happens server-side at session creation. Null when not a subscriber or the endpoint errors. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `UltrareviewQuotaResponse`, `fetchUltrareviewQuota`.
+- **`usage.ts`** (`restored-src/src/services/api/usage.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `RateLimit`, `ExtraUsage`, `Utilization`, `fetchUtilization`.
+- **`withRetry.ts`** (`restored-src/src/services/api/withRetry.ts`): Clear AWS auth caches if appropriate. @returns true if action was taken. Mengimplementasikan class utama untuk area fitur ini. Export utama: `BASE_DELAY_MS`, `RetryContext`, `CannotRetryError`, `FallbackTriggeredError`, dan lainnya.
 
 ## Direktori: `restored-src/src/services/autoDream`
 
-- **`autoDream.ts`**: Mengekspor: initAutoDream.
-- **`config.ts`**: Whether background memory consolidation should run. User setting (autoDreamEnabled in settings.json) overrides the GrowthBook default when explicitly ...
-- **`consolidationLock.ts`**: mtime of the lock file = lastConsolidatedAt. 0 if absent. Per-turn cost: one stat.
-- **`consolidationPrompt.ts`**: Mengekspor: buildConsolidationPrompt.
+- **`autoDream.ts`** (`restored-src/src/services/autoDream/autoDream.ts`): Call once at startup (from backgroundHousekeeping alongside initExtractMemories), or per-test in beforeEach for a fresh closure. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `initAutoDream`, `executeAutoDream`.
+- **`config.ts`** (`restored-src/src/services/autoDream/config.ts`): Whether background memory consolidation should run. User setting (autoDreamEnabled in settings.json) overrides the GrowthBook default when explicitly set; otherwise falls through to tengu_onyx_plover. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `isAutoDreamEnabled`.
+- **`consolidationLock.ts`** (`restored-src/src/services/autoDream/consolidationLock.ts`): mtime of the lock file = lastConsolidatedAt. 0 if absent. Per-turn cost: one stat. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `readLastConsolidatedAt`, `tryAcquireConsolidationLock`, `rollbackConsolidationLock`, `listSessionsTouchedSince`, dan lainnya.
+- **`consolidationPrompt.ts`** (`restored-src/src/services/autoDream/consolidationPrompt.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `buildConsolidationPrompt`.
 
 ## Direktori: `restored-src/src/services`
 
-- **`awaySummary.ts`**: Generates a short session recap for the "while you were away" card. Returns null on abort, empty transcript, or error.
-- **`claudeAiLimits.ts`**: Mengekspor: getRateLimitDisplayName, OverageDisabledReason, ClaudeAILimits.
-- **`claudeAiLimitsHook.ts`**: Mengekspor: useClaudeAiLimits.
-- **`diagnosticTracking.ts`**: Mengekspor: Diagnostic, DiagnosticFile, DiagnosticTrackingService.
-- **`internalLogging.ts`**: Get the current Kubernetes namespace: Returns null on laptops/local development, "default" for devboxes in default namespace, "ts" for devboxes in ts ...
-- **`mcpServerApproval.tsx`**: Show MCP server approval dialogs for pending project servers. Uses the provided Ink root to render (reusing the existing instance from main.tsx instea...
-- **`mockRateLimits.ts`**: Mengekspor: MockHeaderKey, MockScenario, setMockHeader.
-- **`notifier.ts`**: Mengekspor: NotificationOptions.
-- **`preventSleep.ts`**: Prevents macOS from sleeping while Claude is working.  Uses the built-in `caffeinate` command to create a power assertion that prevents idle sleep. Th...
-- **`rateLimitMessages.ts`**: Centralized rate limit message generation Single source of truth for all rate limit-related messages
-- **`rateLimitMocking.ts`**: Facade for rate limit header processing This isolates mock logic from production code
-- **`tokenEstimation.ts`**: Mengekspor: roughTokenCountEstimation, bytesPerTokenForFileType, roughTokenCountEstimationForFileType.
-- **`vcr.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`voice.ts`**: Mengekspor: _resetArecordProbeForTesting, _resetAlsaCardsForTesting, RecordingAvailability.
-- **`voiceKeyterms.ts`**: Mengekspor: splitIdentifier.
-- **`voiceStreamSTT.ts`**: Mengekspor: FINALIZE_TIMEOUTS_MS, VoiceStreamCallbacks, FinalizeSource.
+- **`awaySummary.ts`** (`restored-src/src/services/awaySummary.ts`): Generates a short session recap for the "while you were away" card. Returns null on abort, empty transcript, or error. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `generateAwaySummary`.
+- **`claudeAiLimits.ts`** (`restored-src/src/services/claudeAiLimits.ts`): Calculate what fraction of a time window has elapsed. Used for time-relative early warning fallback. @param resetsAt - Unix epoch timestamp in seconds when the limit resets @param windowSeconds - Duration of the window in seconds @returns fraction (0-1) of... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getRateLimitErrorMessage`, `getRateLimitWarning`, `getUsingOverageText`, `RateLimitType`, dan lainnya.
+- **`claudeAiLimitsHook.ts`** (`restored-src/src/services/claudeAiLimitsHook.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `useClaudeAiLimits`.
+- **`diagnosticTracking.ts`** (`restored-src/src/services/diagnosticTracking.ts`): Mengimplementasikan class utama untuk area fitur ini. Export utama: `Diagnostic`, `DiagnosticFile`, `DiagnosticTrackingService`, `diagnosticTracker`.
+- **`internalLogging.ts`** (`restored-src/src/services/internalLogging.ts`): Get the OCI container ID from within a running container. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getContainerId`, `logPermissionContextForAnts`.
+- **`mcpServerApproval.tsx`** (`restored-src/src/services/mcpServerApproval.tsx`): Show MCP server approval dialogs for pending project servers. Uses the provided Ink root to render (reusing the existing instance from main.tsx instead of creating a separate one). Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `handleMcpjsonServerApprovals`.
+- **`mockRateLimits.ts`** (`restored-src/src/services/mockRateLimits.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `MockHeaderKey`, `MockScenario`, `setMockHeader`, `addExceededLimit`, dan lainnya.
+- **`notifier.ts`** (`restored-src/src/services/notifier.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `NotificationOptions`, `sendNotification`.
+- **`preventSleep.ts`** (`restored-src/src/services/preventSleep.ts`): Increment the reference count and start preventing sleep if needed. Call this when starting work that should keep the Mac awake. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `startPreventSleep`, `stopPreventSleep`, `forceStopPreventSleep`.
+- **`rateLimitMessages.ts`** (`restored-src/src/services/rateLimitMessages.ts`): All possible rate limit error message prefixes Export this to avoid fragile string matching in UI components. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `RATE_LIMIT_ERROR_PREFIXES`, `isRateLimitErrorMessage`, `RateLimitMessage`, `getRateLimitMessage`, dan lainnya.
+- **`rateLimitMocking.ts`** (`restored-src/src/services/rateLimitMocking.ts`): Process headers, applying mocks if /mock-limits command is active. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `processRateLimitHeaders`, `shouldProcessRateLimits`, `checkMockRateLimitError`, `isMockRateLimitError`, dan lainnya.
+- **`tokenEstimation.ts`** (`restored-src/src/services/tokenEstimation.ts`): Returns an estimated bytes-per-token ratio for a given file extension. Dense JSON has many single-character tokens ('{', '}', ':', ',', '"') which makes the real ratio closer to 2 rather than the default 4. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `countTokensWithAPI`, `countMessagesTokensWithAPI`, `roughTokenCountEstimation`, `bytesPerTokenForFileType`, dan lainnya.
+- **`vcr.ts`** (`restored-src/src/services/vcr.ts`): Generic fixture management helper Handles caching, reading, writing fixtures for any data type. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `withVCR`, `withStreamingVCR`, `withTokenCountVCR`.
+- **`voice.ts`** (`restored-src/src/services/voice.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `_resetArecordProbeForTesting`, `_resetAlsaCardsForTesting`, `checkVoiceDependencies`, `RecordingAvailability`, dan lainnya.
+- **`voiceKeyterms.ts`** (`restored-src/src/services/voiceKeyterms.ts`): Split an identifier (camelCase, PascalCase, kebab-case, snake_case, or path segments) into individual words. Fragments of 2 chars or fewer are discarded to avoid noise. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `splitIdentifier`, `getVoiceKeyterms`.
+- **`voiceStreamSTT.ts`** (`restored-src/src/services/voiceStreamSTT.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `FINALIZE_TIMEOUTS_MS`, `VoiceStreamCallbacks`, `FinalizeSource`, `VoiceStreamConnection`, dan lainnya.
 
 ## Direktori: `restored-src/src/services/compact`
 
-- **`apiMicrocompact.ts`**: Mengekspor: ContextEditStrategy, ContextManagementConfig, getAPIContextManagement.
-- **`autoCompact.ts`**: Mengekspor: getEffectiveContextWindowSize, AutoCompactTrackingState, AUTOCOMPACT_BUFFER_TOKENS.
-- **`compact.ts`**: Mengekspor: POST_COMPACT_MAX_FILES_TO_RESTORE, POST_COMPACT_TOKEN_BUDGET, POST_COMPACT_MAX_TOKENS_PER_FILE.
-- **`compactWarningHook.ts`**: React hook to subscribe to compact warning suppression state.  Lives in its own file so that compactWarningState.ts stays React-free: microCompact.ts ...
-- **`compactWarningState.ts`**: Tracks whether the "context left until autocompact" warning should be suppressed. We suppress immediately after successful compaction since we don't h...
-- **`grouping.ts`**: Groups messages at API-round boundaries: one group per API round-trip. A boundary fires when a NEW assistant response begins (different message.id fro...
-- **`microCompact.ts`**: Mengekspor: TIME_BASED_MC_CLEARED_MESSAGE, consumePendingCacheEdits, getPinnedCacheEdits.
-- **`postCompactCleanup.ts`**: Run cleanup of caches and tracking state after compaction. Call this after both auto-compact and manual /compact to free memory held by tracking struc...
-- **`prompt.ts`**: Mengekspor: getPartialCompactPrompt, getCompactPrompt, formatCompactSummary.
-- **`sessionMemoryCompact.ts`**: EXPERIMENT: Session memory compaction
-- **`timeBasedMCConfig.ts`**: GrowthBook config for time-based microcompact.  Triggers content-clearing microcompact when the gap since the last main-loop assistant message exceeds...
+- **`apiMicrocompact.ts`** (`restored-src/src/services/compact/apiMicrocompact.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `ContextEditStrategy`, `ContextManagementConfig`, `getAPIContextManagement`.
+- **`autoCompact.ts`** (`restored-src/src/services/compact/autoCompact.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getEffectiveContextWindowSize`, `AutoCompactTrackingState`, `AUTOCOMPACT_BUFFER_TOKENS`, `WARNING_THRESHOLD_BUFFER_TOKENS`, dan lainnya.
+- **`compact.ts`** (`restored-src/src/services/compact/compact.ts`): Strip image blocks from user messages before sending for compaction. Images are not needed for generating a conversation summary and can cause the compaction API call itself to hit the prompt-too-long limit, especially in CCD sessions where users frequently... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `POST_COMPACT_MAX_FILES_TO_RESTORE`, `POST_COMPACT_TOKEN_BUDGET`, `POST_COMPACT_MAX_TOKENS_PER_FILE`, `POST_COMPACT_MAX_TOKENS_PER_SKILL`, dan lainnya.
+- **`compactWarningHook.ts`** (`restored-src/src/services/compact/compactWarningHook.ts`): React hook to subscribe to compact warning suppression state. Lives in its own file so that compactWarningState.ts stays React-free: microCompact.ts imports the pure state functions, and pulling React into that module graph would drag it into the print-mode... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `useCompactWarningSuppression`.
+- **`compactWarningState.ts`** (`restored-src/src/services/compact/compactWarningState.ts`): Tracks whether the "context left until autocompact" warning should be suppressed. We suppress immediately after successful compaction since we don't have accurate token counts until the next API response. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `compactWarningStore`, `suppressCompactWarning`, `clearCompactWarningSuppression`.
+- **`grouping.ts`** (`restored-src/src/services/compact/grouping.ts`): Groups messages at API-round boundaries: one group per API round-trip. A boundary fires when a NEW assistant response begins (different message.id from the prior assistant). For well-formed conversations this is an API-safe split point — the API contract re... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `groupMessagesByApiRound`.
+- **`microCompact.ts`** (`restored-src/src/services/compact/microCompact.ts`): Get new pending cache edits to be included in the next API request. Returns null if there are no new pending edits. Clears the pending state (caller must pin them after insertion). Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `TIME_BASED_MC_CLEARED_MESSAGE`, `consumePendingCacheEdits`, `getPinnedCacheEdits`, `pinCacheEdits`, dan lainnya.
+- **`postCompactCleanup.ts`** (`restored-src/src/services/compact/postCompactCleanup.ts`): Run cleanup of caches and tracking state after compaction. Call this after both auto-compact and manual /compact to free memory held by tracking structures that are invalidated by compaction. Note: We intentionally do NOT clear invoked skill content here. S... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `runPostCompactCleanup`.
+- **`prompt.ts`** (`restored-src/src/services/compact/prompt.ts`): Formats the compact summary by stripping the <analysis> drafting scratchpad and replacing <summary> XML tags with readable section headers. @param summary The raw summary string potentially containing <analysis> and <summary> XML tags @returns The formatted... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getPartialCompactPrompt`, `getCompactPrompt`, `formatCompactSummary`, `getCompactUserSummaryMessage`.
+- **`sessionMemoryCompact.ts`** (`restored-src/src/services/compact/sessionMemoryCompact.ts`): Configuration for session memory compaction thresholds. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `SessionMemoryCompactConfig`, `DEFAULT_SM_COMPACT_CONFIG`, `setSessionMemoryCompactConfig`, `getSessionMemoryCompactConfig`, dan lainnya.
+- **`timeBasedMCConfig.ts`** (`restored-src/src/services/compact/timeBasedMCConfig.ts`): GrowthBook config for time-based microcompact. Triggers content-clearing microcompact when the gap since the last main-loop assistant message exceeds a threshold — the server-side prompt cache has almost certainly expired, so the full prefix will be rewritt... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `TimeBasedMCConfig`, `getTimeBasedMCConfig`.
 
 ## Direktori: `restored-src/src/services/extractMemories`
 
-- **`extractMemories.ts`**: Extracts durable memories from the current session transcript and writes them to the auto-memory directory (~/.claude/projects/<path>/memory/).  It ru...
-- **`prompts.ts`**: Prompt templates for the background memory extraction agent.  The extraction agent runs as a perfect fork of the main conversation — same system promp...
+- **`extractMemories.ts`** (`restored-src/src/services/extractMemories/extractMemories.ts`): Creates a canUseTool function that allows Read/Grep/Glob (unrestricted), read-only Bash commands, and Edit/Write only for paths within the auto-memory directory. Shared by extractMemories and autoDream. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `createAutoMemCanUseTool`, `initExtractMemories`, `executeExtractMemories`, `drainPendingExtraction`.
+- **`prompts.ts`** (`restored-src/src/services/extractMemories/prompts.ts`): Build the extraction prompt for auto-only memory (no team memory). Four-type taxonomy, no scope guidance (single directory). Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `buildExtractAutoOnlyPrompt`, `buildExtractCombinedPrompt`.
 
 ## Direktori: `restored-src/src/services/lsp`
 
-- **`LSPClient.ts`**: LSP client interface.
-- **`LSPDiagnosticRegistry.ts`**: Pending LSP diagnostic notification
-- **`LSPServerInstance.ts`**: LSP error code for "content modified" - indicates the server's state changed during request processing (e.g., rust-analyzer still indexing the project...
-- **`LSPServerManager.ts`**: LSP Server Manager interface returned by createLSPServerManager. Manages multiple LSP server instances and routes requests based on file extensions....
-- **`config.ts`**: Get all configured LSP servers from plugins. LSP servers are only supported via plugins, not user/project settings.  @returns Object containing server...
-- **`manager.ts`**: Initialization state of the LSP server manager
-- **`passiveFeedback.ts`**: Map LSP severity to Claude diagnostic severity  Maps LSP severity numbers to Claude diagnostic severity strings. Accepts numeric severity values (1=Er...
+- **`LSPClient.ts`** (`restored-src/src/services/lsp/LSPClient.ts`): LSP client interface. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `LSPClient`, `createLSPClient`.
+- **`LSPDiagnosticRegistry.ts`** (`restored-src/src/services/lsp/LSPDiagnosticRegistry.ts`): Pending LSP diagnostic notification. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `PendingLSPDiagnostic`, `registerPendingLSPDiagnostic`, `checkForLSPDiagnostics`, `clearAllLSPDiagnostics`, dan lainnya.
+- **`LSPServerInstance.ts`** (`restored-src/src/services/lsp/LSPServerInstance.ts`): LSP server instance interface returned by createLSPServerInstance. Manages the lifecycle of a single LSP server with state tracking and health monitoring. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `LSPServerInstance`, `createLSPServerInstance`.
+- **`LSPServerManager.ts`** (`restored-src/src/services/lsp/LSPServerManager.ts`): LSP Server Manager interface returned by createLSPServerManager. Manages multiple LSP server instances and routes requests based on file extensions. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `LSPServerManager`, `createLSPServerManager`.
+- **`config.ts`** (`restored-src/src/services/lsp/config.ts`): Get all configured LSP servers from plugins. LSP servers are only supported via plugins, not user/project settings. @returns Object containing servers configuration keyed by scoped server name. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getAllLspServers`.
+- **`manager.ts`** (`restored-src/src/services/lsp/manager.ts`): Test-only sync reset. shutdownLspServerManager() is async and tears down real connections; this only clears the module-scope singleton state so reinitializeLspServerManager() early-returns on 'not-started' in downstream tests on the same shard. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `_resetLspManagerForTesting`, `getLspServerManager`, `getInitializationStatus`, `isLspConnected`, dan lainnya.
+- **`passiveFeedback.ts`** (`restored-src/src/services/lsp/passiveFeedback.ts`): Convert LSP diagnostics to Claude diagnostic format Converts LSP PublishDiagnosticsParams to DiagnosticFile[] format used by Claude's attachment system. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `formatDiagnosticsForAttachment`, `HandlerRegistrationResult`, `registerLSPNotificationHandlers`.
 
 ## Direktori: `restored-src/src/services/mcp`
 
-- **`InProcessTransport.ts`**: In-process linked transport pair for running an MCP server and client in the same process without spawning a subprocess.  `send()` on one side deliver...
-- **`MCPConnectionManager.tsx`**: Mengekspor: useMcpReconnect, useMcpToggleEnabled, MCPConnectionManager.
-- **`SdkControlTransport.ts`**: SDK MCP Transport Bridge  This file implements a transport bridge that allows MCP servers running in the SDK process to communicate with the Claude Co...
-- **`auth.ts`**: Mengekspor: AuthenticationCancelledError, getServerKey, hasMcpDiscoveryButNoToken.
-- **`channelAllowlist.ts`**: Approved channel plugins allowlist. --channels plugin:name@marketplace entries only register if {marketplace, plugin} is on this list. server: entries...
-- **`channelNotification.ts`**: Channel notifications — lets an MCP server push user messages into the conversation. A "channel" (Discord, Slack, SMS, etc.) is just an MCP server tha...
-- **`channelPermissions.ts`**: Permission prompts over channels (Telegram, iMessage, Discord).  Mirrors `BridgePermissionCallbacks` — when CC hits a permission dialog, it ALSO sends...
-- **`claudeai.ts`**: Mengekspor: fetchClaudeAIMcpConfigsIfEligible, clearClaudeAIMcpConfigsCache, markClaudeAiMcpConnected.
-- **`client.ts`**: Mengekspor: McpAuthError, McpToolCallError_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS, isMcpSessionExpiredError.
-- **`config.ts`**: Mengekspor: getEnterpriseMcpFilePath, unwrapCcrProxyUrl, getMcpServerSignature.
-- **`elicitationHandler.ts`**: Configuration for the waiting state shown after the user opens a URL.
-- **`envExpansion.ts`**: Shared utilities for expanding environment variables in MCP server configurations
-- **`headersHelper.ts`**: Check if the MCP server config comes from project settings (projectSettings or localSettings) This is important for security checks
-- **`mcpStringUtils.ts`**: Pure string utility functions for MCP tool/server name parsing. This file has no heavy dependencies to keep it lightweight for consumers that only nee...
-- **`normalization.ts`**: Pure utility functions for MCP name normalization. This file has no dependencies to avoid circular imports.
-- **`oauthPort.ts`**: OAuth redirect port helpers — extracted from auth.ts to break the auth.ts ↔ xaaIdpLogin.ts circular dependency.
-- **`officialRegistry.ts`**: Fire-and-forget fetch of the official MCP registry.
-- **`types.ts`**: Mengekspor: ConfigScopeSchema, ConfigScope, TransportSchema.
-- **`useManageMCPConnections.ts`**: Mengekspor: useManageMCPConnections.
-- **`utils.ts`**: Mengekspor: filterToolsByServer, commandBelongsToServer, filterCommandsByServer.
-- **`vscodeSdkMcp.ts`**: Mengekspor: LogEventNotificationSchema, notifyVscodeFileUpdated, setupVscodeSdkMcp.
-- **`xaa.ts`**: Cross-App Access (XAA) / Enterprise Managed Authorization (SEP-990)  Obtains an MCP access token WITHOUT a browser consent screen by chaining: 1. RFC ...
-- **`xaaIdpLogin.ts`**: XAA IdP Login — acquires an OIDC id_token from an enterprise IdP via the standard authorization_code + PKCE flow, then caches it by IdP issuer.  This ...
+- **`InProcessTransport.ts`** (`restored-src/src/services/mcp/InProcessTransport.ts`): Creates a pair of linked transports for in-process MCP communication. Messages sent on one transport are delivered to the other's 'onmessage'. @returns [clientTransport, serverTransport]. Mengimplementasikan class utama untuk area fitur ini. Export utama: `createLinkedTransportPair`.
+- **`MCPConnectionManager.tsx`** (`restored-src/src/services/mcp/MCPConnectionManager.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `useMcpReconnect`, `useMcpToggleEnabled`, `MCPConnectionManager`.
+- **`SdkControlTransport.ts`** (`restored-src/src/services/mcp/SdkControlTransport.ts`): Callback function to send an MCP message and get the response. Mengimplementasikan class utama untuk area fitur ini. Export utama: `SendMcpMessageCallback`, `SdkControlClientTransport`, `SdkControlServerTransport`.
+- **`auth.ts`** (`restored-src/src/services/mcp/auth.ts`): Generates a unique key for server credentials based on both name and config hash This prevents credentials from being reused across different servers with the same name or different configurations. Mengimplementasikan class utama untuk area fitur ini. Export utama: `normalizeOAuthErrorBody`, `AuthenticationCancelledError`, `getServerKey`, `hasMcpDiscoveryButNoToken`, dan lainnya.
+- **`channelAllowlist.ts`** (`restored-src/src/services/mcp/channelAllowlist.ts`): Overall channels on/off. Checked before any per-server gating — when false, --channels is a no-op and no handlers register. Default false; GrowthBook 5-min refresh. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `ChannelAllowlistEntry`, `getChannelAllowlist`, `isChannelsEnabled`, `isChannelAllowlisted`.
+- **`channelNotification.ts`** (`restored-src/src/services/mcp/channelNotification.ts`): Structured permission reply from a channel server. Servers that support this declare 'capabilities.experimental['claude/channel/permission']' and emit this event INSTEAD of relaying "yes tbxkq" as text via notifications/claude/channel. Explicit opt-in per s... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `ChannelMessageNotificationSchema`, `CHANNEL_PERMISSION_METHOD`, `ChannelPermissionNotificationSchema`, `CHANNEL_PERMISSION_REQUEST_METHOD`, dan lainnya.
+- **`channelPermissions.ts`** (`restored-src/src/services/mcp/channelPermissions.ts`): GrowthBook runtime gate — separate from the channels gate (tengu_harbor) so channels can ship without permission-relay riding along (Kenneth: "no bake time if it goes out tomorrow"). Default false; flip without a release. Checked once at useManageMCPConnect... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `isChannelPermissionRelayEnabled`, `ChannelPermissionResponse`, `ChannelPermissionCallbacks`, `PERMISSION_REPLY_RE`, dan lainnya.
+- **`claudeai.ts`** (`restored-src/src/services/mcp/claudeai.ts`): Fetches MCP server configurations from Claude.ai org configs. These servers are managed by the organization via Claude.ai. Results are memoized for the session lifetime (fetch once per CLI session). Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `fetchClaudeAIMcpConfigsIfEligible`, `clearClaudeAIMcpConfigsCache`, `markClaudeAiMcpConnected`, `hasClaudeAiMcpEverConnected`.
+- **`client.ts`** (`restored-src/src/services/mcp/client.ts`): Custom error class to indicate that an MCP tool call failed due to authentication issues (e.g., expired OAuth token returning 401). This error should be caught at the tool execution layer to update the client's status to 'needs-auth'. Mengimplementasikan class utama untuk area fitur ini. Export utama: `McpAuthError`, `McpToolCallError_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS`, `isMcpSessionExpiredError`, `clearMcpAuthCache`, dan lainnya.
+- **`config.ts`** (`restored-src/src/services/mcp/config.ts`): Get the path to the managed MCP configuration file. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getEnterpriseMcpFilePath`, `unwrapCcrProxyUrl`, `getMcpServerSignature`, `dedupPluginMcpServers`, dan lainnya.
+- **`elicitationHandler.ts`** (`restored-src/src/services/mcp/elicitationHandler.ts`): Configuration for the waiting state shown after the user opens a URL. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `ElicitationWaitingState`, `ElicitationRequestEvent`, `registerElicitationHandler`, `runElicitationHooks`, dan lainnya.
+- **`envExpansion.ts`** (`restored-src/src/services/mcp/envExpansion.ts`): Shared utilities for expanding environment variables in MCP server configurations. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `expandEnvVarsInString`.
+- **`headersHelper.ts`** (`restored-src/src/services/mcp/headersHelper.ts`): Get dynamic headers for an MCP server using the headersHelper script @param serverName The name of the MCP server @param config The MCP server configuration @returns Headers object or null if not configured or failed. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getMcpHeadersFromHelper`, `getMcpServerHeaders`.
+- **`mcpStringUtils.ts`** (`restored-src/src/services/mcp/mcpStringUtils.ts`): Extracts MCP server information from a tool name string @param toolString The string to parse. Expected format: "mcp__serverName__toolName" @returns An object containing server name and optional tool name, or null if not a valid MCP rule Known limitation: I... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `mcpInfoFromString`, `getMcpPrefix`, `buildMcpToolName`, `getToolNameForPermissionCheck`, dan lainnya.
+- **`normalization.ts`** (`restored-src/src/services/mcp/normalization.ts`): Normalize server names to be compatible with the API pattern ^[a-zA-Z0-9_-]{1,64}$ Replaces any invalid characters (including dots and spaces) with underscores. For claude.ai servers (names starting with "claude.ai "), also collapses consecutive underscores... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `normalizeNameForMCP`.
+- **`oauthPort.ts`** (`restored-src/src/services/mcp/oauthPort.ts`): Builds a redirect URI on localhost with the given port and a fixed '/callback' path. RFC 8252 Section 7.3 (OAuth for Native Apps): loopback redirect URIs match any port as long as the path matches. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `buildRedirectUri`, `findAvailablePort`.
+- **`officialRegistry.ts`** (`restored-src/src/services/mcp/officialRegistry.ts`): Fire-and-forget fetch of the official MCP registry. Populates officialUrls for isOfficialMcpUrl lookups. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `prefetchOfficialMcpUrls`, `isOfficialMcpUrl`, `resetOfficialMcpUrlsForTesting`.
+- **`types.ts`** (`restored-src/src/services/mcp/types.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `ConfigScopeSchema`, `ConfigScope`, `TransportSchema`, `Transport`, dan lainnya.
+- **`useManageMCPConnections.ts`** (`restored-src/src/services/mcp/useManageMCPConnections.ts`): Hook to manage MCP (Model Context Protocol) server connections and updates This hook: 1. Initializes MCP client connections based on config 2. Sets up handlers for connection lifecycle events and sync with app state 3. Manages automatic reconnection for SSE... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `useManageMCPConnections`.
+- **`utils.ts`** (`restored-src/src/services/mcp/utils.ts`): Filters tools by MCP server name @param tools Array of tools to filter @param serverName Name of the MCP server @returns Tools belonging to the specified server. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `filterToolsByServer`, `commandBelongsToServer`, `filterCommandsByServer`, `filterMcpPromptsByServer`, dan lainnya.
+- **`vscodeSdkMcp.ts`** (`restored-src/src/services/mcp/vscodeSdkMcp.ts`): Sends a file_updated notification to the VSCode MCP server. This is used to notify VSCode when files are edited or written by Claude. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `LogEventNotificationSchema`, `notifyVscodeFileUpdated`, `setupVscodeSdkMcp`.
+- **`xaa.ts`** (`restored-src/src/services/mcp/xaa.ts`): Thrown by requestJwtAuthorizationGrant when the IdP token-exchange leg fails. Carries 'shouldClearIdToken' so callers can decide whether to drop the cached id_token based on OAuth error semantics (not substring matching): - 4xx / invalid_grant / invalid_tok... Mengimplementasikan class utama untuk area fitur ini. Export utama: `XaaTokenExchangeError`, `ProtectedResourceMetadata`, `discoverProtectedResource`, `AuthorizationServerMetadata`, dan lainnya.
+- **`xaaIdpLogin.ts`** (`restored-src/src/services/mcp/xaaIdpLogin.ts`): Typed accessor for settings.xaaIdp. The field is env-gated in SettingsSchema so it doesn't surface in SDK types/docs — which means the inferred settings type doesn't have it at compile time. This is the one cast. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `isXaaEnabled`, `XaaIdpSettings`, `getXaaIdpSettings`, `IdpLoginOptions`, dan lainnya.
 
 ## Direktori: `restored-src/src/services/oauth`
 
-- **`auth-code-listener.ts`**: Temporary localhost HTTP server that listens for OAuth authorization code redirects.  When the user authorizes in their browser, the OAuth provider re...
-- **`client.ts`**: Mengekspor: shouldUseClaudeAIAuth, parseScopes, buildAuthUrl.
-- **`crypto.ts`**: Mengekspor: generateCodeVerifier, generateCodeChallenge, generateState.
-- **`getOauthProfile.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`index.ts`**: OAuth service that handles the OAuth 2.0 authorization code flow with PKCE.  Supports two ways to get authorization codes: 1. Automatic: Opens browser...
+- **`auth-code-listener.ts`** (`restored-src/src/services/oauth/auth-code-listener.ts`): Temporary localhost HTTP server that listens for OAuth authorization code redirects. When the user authorizes in their browser, the OAuth provider redirects to: http://localhost:[port]/callback?code=AUTH_CODE&state=STATE This server captures that redirect a... Mengimplementasikan class utama untuk area fitur ini. Export utama: `AuthCodeListener`.
+- **`client.ts`** (`restored-src/src/services/oauth/client.ts`): Check if the user has Claude.ai authentication scope @private Only call this if you're OAuth / auth related code!. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `shouldUseClaudeAIAuth`, `parseScopes`, `buildAuthUrl`, `exchangeCodeForTokens`, dan lainnya.
+- **`crypto.ts`** (`restored-src/src/services/oauth/crypto.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `generateCodeVerifier`, `generateCodeChallenge`, `generateState`.
+- **`getOauthProfile.ts`** (`restored-src/src/services/oauth/getOauthProfile.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getOauthProfileFromApiKey`, `getOauthProfileFromOauthToken`.
+- **`index.ts`** (`restored-src/src/services/oauth/index.ts`): OAuth service that handles the OAuth 2.0 authorization code flow with PKCE. Supports two ways to get authorization codes: 1. Automatic: Opens browser, redirects to localhost where we capture the code 2. Manual: User manually copies and pastes the code (used... Barrel/entry point yang merapikan export modul di folder ini. Mengimplementasikan class utama untuk area fitur ini. Export utama: `OAuthService`.
 
 ## Direktori: `restored-src/src/services/plugins`
 
-- **`PluginInstallationManager.ts`**: Background plugin and marketplace installation manager  This module handles automatic installation of plugins and marketplaces from trusted sources (r...
-- **`pluginCliCommands.ts`**: CLI command wrappers for plugin operations  This module provides thin wrappers around the core plugin operations that handle CLI-specific concerns lik...
-- **`pluginOperations.ts`**: Core plugin operations (install, uninstall, enable, disable, update)  This module provides pure library functions that can be used by both: - CLI comm...
+- **`PluginInstallationManager.ts`** (`restored-src/src/services/plugins/PluginInstallationManager.ts`): Perform background plugin startup checks and installations. This is a thin wrapper around reconcileMarketplaces() that maps onProgress events to AppState updates for the REPL UI. After marketplaces are reconciled: - New installs → auto-refresh plugins (fixe... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `performBackgroundPluginInstallations`.
+- **`pluginCliCommands.ts`** (`restored-src/src/services/plugins/pluginCliCommands.ts`): CLI command: Install a plugin non-interactively @param plugin Plugin identifier (name or plugin@marketplace) @param scope Installation scope: user, project, or local (defaults to 'user'). Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `VALID_INSTALLABLE_SCOPES`, `VALID_UPDATE_SCOPES`, `installPlugin`, `uninstallPlugin`, dan lainnya.
+- **`pluginOperations.ts`** (`restored-src/src/services/plugins/pluginOperations.ts`): Valid installable scopes (excludes 'managed' which can only be installed from managed-settings.json). Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `VALID_INSTALLABLE_SCOPES`, `InstallableScope`, `VALID_UPDATE_SCOPES`, `assertInstallableScope`, dan lainnya.
 
 ## Direktori: `restored-src/src/services/policyLimits`
 
-- **`index.ts`**: Policy Limits Service  Fetches organization-level policy restrictions from the API and uses them to disable CLI features. Follows the same patterns as...
-- **`types.ts`**: Schema for the policy limits API response Only blocked policies are included. If a policy key is absent, it's allowed.
+- **`index.ts`** (`restored-src/src/services/policyLimits/index.ts`): Test-only sync reset. clearPolicyLimitsCache() does file I/O and is too expensive for preload beforeEach; this only clears the module-level singleton so downstream tests in the same shard see a clean slate. Barrel/entry point yang merapikan export modul di folder ini. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `_resetPolicyLimitsForTesting`, `initializePolicyLimitsLoadingPromise`, `isPolicyLimitsEligible`, `waitForPolicyLimitsToLoad`, dan lainnya.
+- **`types.ts`** (`restored-src/src/services/policyLimits/types.ts`): Schema for the policy limits API response Only blocked policies are included. If a policy key is absent, it's allowed. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `PolicyLimitsResponseSchema`, `PolicyLimitsResponse`, `PolicyLimitsFetchResult`.
 
 ## Direktori: `restored-src/src/services/remoteManagedSettings`
 
-- **`index.ts`**: Remote Managed Settings Service  Manages fetching, caching, and validation of remote-managed settings for enterprise customers. Uses checksum-based va...
-- **`securityCheck.tsx`**: Check if new remote managed settings contain dangerous settings that require user approval. Shows a blocking dialog if dangerous settings have changed...
-- **`syncCache.ts`**: Eligibility check for remote managed settings.  The cache state itself lives in syncCacheState.ts (a leaf, no auth import). This file keeps isRemoteMa...
-- **`syncCacheState.ts`**: Leaf state module for the remote-managed-settings sync cache.  Split from syncCache.ts to break the settings.ts → syncCache.ts → auth.ts → settings.ts...
-- **`types.ts`**: Schema for the remotely managed settings response. Note: Uses permissive z.record() instead of SettingsSchema to avoid circular dependency. Full valid...
+- **`index.ts`** (`restored-src/src/services/remoteManagedSettings/index.ts`): Initialize the loading promise for remote managed settings This should be called early (e.g., in init.ts) to allow other systems to await remote settings loading even if loadRemoteManagedSettings() hasn't been called yet. Only creates the promise if the use... Barrel/entry point yang merapikan export modul di folder ini. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `initializeRemoteManagedSettingsLoadingPromise`, `computeChecksumFromSettings`, `isEligibleForRemoteManagedSettings`, `waitForRemoteManagedSettingsToLoad`, dan lainnya.
+- **`securityCheck.tsx`** (`restored-src/src/services/remoteManagedSettings/securityCheck.tsx`): Check if new remote managed settings contain dangerous settings that require user approval. Shows a blocking dialog if dangerous settings have changed or been added. @param cachedSettings The current cached settings (may be null for first run) @param newSet... Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `SecurityCheckResult`, `checkManagedSettingsSecurity`, `handleSecurityCheckResult`.
+- **`syncCache.ts`** (`restored-src/src/services/remoteManagedSettings/syncCache.ts`): Check if the current user is eligible for remote managed settings Eligibility: - Console users (API key): All eligible (must have actual key, not just apiKeyHelper) - OAuth users with known subscriptionType: Only Enterprise/C4E and Team - OAuth users with s... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `resetSyncCache`, `isRemoteManagedSettingsEligible`.
+- **`syncCacheState.ts`** (`restored-src/src/services/remoteManagedSettings/syncCacheState.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `setSessionCache`, `resetSyncCache`, `setEligibility`, `getSettingsPath`, dan lainnya.
+- **`types.ts`** (`restored-src/src/services/remoteManagedSettings/types.ts`): Schema for the remotely managed settings response. Note: Uses permissive z.record() instead of SettingsSchema to avoid circular dependency. Full validation is performed in index.ts after parsing using SettingsSchema.safeParse(). Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `RemoteManagedSettingsResponseSchema`, `RemoteManagedSettingsResponse`, `RemoteManagedSettingsFetchResult`.
 
 ## Direktori: `restored-src/src/services/settingsSync`
 
-- **`index.ts`**: Settings Sync Service  Syncs user settings and memory files across Claude Code environments.  - Interactive CLI: Uploads local settings to remote (inc...
-- **`types.ts`**: Settings Sync Types  Zod schemas and types for the user settings sync API. Based on the backend API contract from anthropic/anthropic#218817.
+- **`index.ts`** (`restored-src/src/services/settingsSync/index.ts`): Upload local settings to remote (interactive CLI only). Called from main.tsx preAction. Runs in background - caller should not await unless needed. Barrel/entry point yang merapikan export modul di folder ini. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `uploadUserSettingsInBackground`, `_resetDownloadPromiseForTesting`, `downloadUserSettings`, `redownloadUserSettings`.
+- **`types.ts`** (`restored-src/src/services/settingsSync/types.ts`): Content portion of user sync data - flat key-value storage. Keys are opaque strings (typically file paths). Values are UTF-8 string content (JSON, Markdown, etc). Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `UserSyncContentSchema`, `UserSyncDataSchema`, `UserSyncData`, `SettingsSyncFetchResult`, dan lainnya.
 
 ## Direktori: `restored-src/src/services/teamMemorySync`
 
-- **`index.ts`**: Team Memory Sync Service  Syncs team memory files between the local filesystem and the server API. Team memory is scoped per-repo (identified by git r...
-- **`secretScanner.ts`**: Client-side secret scanner for team memory (PSR M22174).  Scans content for credentials before upload so secrets never leave the user's machine. Uses ...
-- **`teamMemSecretGuard.ts`**: Check if a file write/edit to a team memory path contains secrets. Returns an error message if secrets are detected, or null if safe.  This is called ...
-- **`types.ts`**: Team Memory Sync Types  Zod schemas and types for the repo-scoped team memory sync API. Based on the backend API contract from anthropic/anthropic#250...
-- **`watcher.ts`**: Team Memory File Watcher  Watches the team memory directory for changes and triggers a debounced push to the server when files are modified. Performs ...
+- **`index.ts`** (`restored-src/src/services/teamMemorySync/index.ts`): Mutable state for the team memory sync service. Created once per session by the watcher and passed to all sync functions. Tests create a fresh instance per test for isolation. Barrel/entry point yang merapikan export modul di folder ini. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `SyncState`, `createSyncState`, `hashContent`, `batchDeltaByBytes`, dan lainnya.
+- **`secretScanner.ts`** (`restored-src/src/services/teamMemorySync/secretScanner.ts`): Scan a string for potential secrets. Returns one match per rule that fired (deduplicated by rule ID). The actual matched text is intentionally NOT returned — we never log or display secret values. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `SecretMatch`, `scanForSecrets`, `getSecretLabel`, `redactSecrets`.
+- **`teamMemSecretGuard.ts`** (`restored-src/src/services/teamMemorySync/teamMemSecretGuard.ts`): Check if a file write/edit to a team memory path contains secrets. Returns an error message if secrets are detected, or null if safe. This is called from FileWriteTool and FileEditTool validateInput to prevent the model from writing secrets into team memory... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `checkTeamMemSecrets`.
+- **`types.ts`** (`restored-src/src/services/teamMemorySync/types.ts`): Content portion of team memory data - flat key-value storage. Keys are file paths relative to the team memory directory (e.g. "MEMORY.md", "patterns.md"). Values are UTF-8 string content (typically Markdown). Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `TeamMemoryContentSchema`, `TeamMemoryDataSchema`, `TeamMemoryTooManyEntriesSchema`, `TeamMemoryData`, dan lainnya.
+- **`watcher.ts`** (`restored-src/src/services/teamMemorySync/watcher.ts`): Permanent = retry without user action will fail the same way. - no_oauth / no_repo: pre-request client checks, no status code - 4xx except 409/429: client error (404 missing repo, 413 too many entries, 403 permission). 409 is a transient conflict — server s... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `isPermanentFailure`, `startTeamMemoryWatcher`, `notifyTeamMemoryWrite`, `stopTeamMemoryWatcher`, dan lainnya.
 
 ## Direktori: `restored-src/src/services/tips`
 
-- **`tipHistory.ts`**: Mengekspor: recordTipShown, getSessionsSinceLastShown.
-- **`tipRegistry.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`tipScheduler.ts`**: Mengekspor: selectTipWithLongestTimeSinceShown, recordShownTip.
+- **`tipHistory.ts`** (`restored-src/src/services/tips/tipHistory.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `recordTipShown`, `getSessionsSinceLastShown`.
+- **`tipRegistry.ts`** (`restored-src/src/services/tips/tipRegistry.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getRelevantTips`.
+- **`tipScheduler.ts`** (`restored-src/src/services/tips/tipScheduler.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `selectTipWithLongestTimeSinceShown`, `getTipToShowOnSpinner`, `recordShownTip`.
 
 ## Direktori: `restored-src/src/services/toolUseSummary`
 
-- **`toolUseSummaryGenerator.ts`**: Tool Use Summary Generator  Generates human-readable summaries of completed tool batches using Haiku. Used by the SDK to provide high-level progress u...
+- **`toolUseSummaryGenerator.ts`** (`restored-src/src/services/toolUseSummary/toolUseSummaryGenerator.ts`): Generates a human-readable summary of completed tools. @param params - Parameters including tools executed and their results @returns A brief summary string, or null if generation fails. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `GenerateToolUseSummaryParams`, `generateToolUseSummary`.
 
 ## Direktori: `restored-src/src/services/tools`
 
-- **`StreamingToolExecutor.ts`**: Mengekspor: StreamingToolExecutor.
-- **`toolExecution.ts`**: Mengekspor: HOOK_TIMING_DISPLAY_THRESHOLD_MS, classifyToolError, MessageUpdateLazy.
-- **`toolHooks.ts`**: Mengekspor: PostToolUseHooksResult.
-- **`toolOrchestration.ts`**: Mengekspor: MessageUpdate.
+- **`StreamingToolExecutor.ts`** (`restored-src/src/services/tools/StreamingToolExecutor.ts`): Executes tools as they stream in with concurrency control. - Concurrent-safe tools can execute in parallel with other concurrent-safe tools - Non-concurrent tools must execute alone (exclusive access) - Results are buffered and emitted in the order tools we... Mengimplementasikan class utama untuk area fitur ini. Export utama: `StreamingToolExecutor`.
+- **`toolExecution.ts`** (`restored-src/src/services/tools/toolExecution.ts`): Minimum total hook duration (ms) to show inline timing summary. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `HOOK_TIMING_DISPLAY_THRESHOLD_MS`, `classifyToolError`, `MessageUpdateLazy`, `McpServerType`, dan lainnya.
+- **`toolHooks.ts`** (`restored-src/src/services/tools/toolHooks.ts`): Resolve a PreToolUse hook's permission result into a final PermissionDecision. Encapsulates the invariant that hook 'allow' does NOT bypass settings.json deny/ask rules — checkRuleBasedPermissions still applies (inc-4788 analog). Also handles the requiresUs... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `PostToolUseHooksResult`, `runPostToolUseHooks`, `runPostToolUseFailureHooks`, `resolveHookPermissionDecision`, dan lainnya.
+- **`toolOrchestration.ts`** (`restored-src/src/services/tools/toolOrchestration.ts`): Partition tool calls into batches where each batch is either: 1. A single non-read-only tool, or 2. Multiple consecutive read-only tools. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `MessageUpdate`, `runTools`.
 
 ## Direktori: `restored-src/src/skills/bundled`
 
-- **`batch.ts`**: Mengekspor: registerBatchSkill.
-- **`claudeApi.ts`**: Mengekspor: registerClaudeApiSkill.
-- **`claudeApiContent.ts`**: Mengekspor: SKILL_MODEL_VARS, SKILL_PROMPT, SKILL_FILES.
-- **`claudeInChrome.ts`**: Mengekspor: registerClaudeInChromeSkill.
-- **`debug.ts`**: Mengekspor: registerDebugSkill.
-- **`index.ts`**: Initialize all bundled skills. Called at startup to register skills that ship with the CLI.  To add a new bundled skill: 1. Create a new file in src/s...
-- **`keybindings.ts`**: Build a markdown table of all contexts.
-- **`loop.ts`**: Mengekspor: registerLoopSkill.
-- **`loremIpsum.ts`**: Mengekspor: registerLoremIpsumSkill.
-- **`remember.ts`**: Mengekspor: registerRememberSkill.
-- **`scheduleRemoteAgents.ts`**: Decode a mcpsrv_ tagged ID to a UUID string. Tagged IDs have format: mcpsrv_01{base58(uuid.int)} where 01 is the version prefix.
-- **`simplify.ts`**: Mengekspor: registerSimplifySkill.
-- **`skillify.ts`**: Mengekspor: registerSkillifySkill.
-- **`stuck.ts`**: Mengekspor: registerStuckSkill.
-- **`updateConfig.ts`**: Generate JSON Schema from the settings Zod schema. This keeps the skill prompt in sync with the actual types.
-- **`verify.ts`**: Mengekspor: registerVerifySkill.
-- **`verifyContent.ts`**: Mengekspor: SKILL_MD, SKILL_FILES.
+- **`batch.ts`** (`restored-src/src/skills/bundled/batch.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `registerBatchSkill`.
+- **`claudeApi.ts`** (`restored-src/src/skills/bundled/claudeApi.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `registerClaudeApiSkill`.
+- **`claudeApiContent.ts`** (`restored-src/src/skills/bundled/claudeApiContent.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `SKILL_MODEL_VARS`, `SKILL_PROMPT`, `SKILL_FILES`.
+- **`claudeInChrome.ts`** (`restored-src/src/skills/bundled/claudeInChrome.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `registerClaudeInChromeSkill`.
+- **`debug.ts`** (`restored-src/src/skills/bundled/debug.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `registerDebugSkill`.
+- **`index.ts`** (`restored-src/src/skills/bundled/index.ts`): Initialize all bundled skills. Called at startup to register skills that ship with the CLI. To add a new bundled skill: 1. Create a new file in src/skills/bundled/ (e.g., myskill.ts) 2. Export a register function that calls registerBundledSkill() 3. Import... Barrel/entry point yang merapikan export modul di folder ini. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `initBundledSkills`.
+- **`keybindings.ts`** (`restored-src/src/skills/bundled/keybindings.ts`): Build a markdown table of all contexts. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `registerKeybindingsSkill`.
+- **`loop.ts`** (`restored-src/src/skills/bundled/loop.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `registerLoopSkill`.
+- **`loremIpsum.ts`** (`restored-src/src/skills/bundled/loremIpsum.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `registerLoremIpsumSkill`.
+- **`remember.ts`** (`restored-src/src/skills/bundled/remember.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `registerRememberSkill`.
+- **`scheduleRemoteAgents.ts`** (`restored-src/src/skills/bundled/scheduleRemoteAgents.ts`): Decode a mcpsrv_ tagged ID to a UUID string. Tagged IDs have format: mcpsrv_01{base58(uuid.int)} where 01 is the version prefix. TODO(public-ship): Before shipping publicly, the /v1/mcp_servers endpoint should return the raw UUID directly so we don't need t... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `registerScheduleRemoteAgentsSkill`.
+- **`simplify.ts`** (`restored-src/src/skills/bundled/simplify.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `registerSimplifySkill`.
+- **`skillify.ts`** (`restored-src/src/skills/bundled/skillify.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `registerSkillifySkill`.
+- **`stuck.ts`** (`restored-src/src/skills/bundled/stuck.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `registerStuckSkill`.
+- **`updateConfig.ts`** (`restored-src/src/skills/bundled/updateConfig.ts`): Generate JSON Schema from the settings Zod schema. This keeps the skill prompt in sync with the actual types. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `registerUpdateConfigSkill`.
+- **`verify.ts`** (`restored-src/src/skills/bundled/verify.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `registerVerifySkill`.
+- **`verifyContent.ts`** (`restored-src/src/skills/bundled/verifyContent.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `SKILL_MD`, `SKILL_FILES`.
 
 ## Direktori: `restored-src/src/skills`
 
-- **`bundledSkills.ts`**: Definition for a bundled skill that ships with the CLI. These are registered programmatically at startup.
-- **`loadSkillsDir.ts`**: Mengekspor: LoadedFrom, getSkillsPath, estimateSkillFrontmatterTokens.
-- **`mcpSkillBuilders.ts`**: Write-once registry for the two loadSkillsDir functions that MCP skill discovery needs. This module is a dependency-graph leaf: it imports nothing but...
+- **`bundledSkills.ts`** (`restored-src/src/skills/bundledSkills.ts`): Definition for a bundled skill that ships with the CLI. These are registered programmatically at startup. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `BundledSkillDefinition`, `registerBundledSkill`, `getBundledSkills`, `clearBundledSkills`, dan lainnya.
+- **`loadSkillsDir.ts`** (`restored-src/src/skills/loadSkillsDir.ts`): Returns a claude config directory path for a given source. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `LoadedFrom`, `getSkillsPath`, `estimateSkillFrontmatterTokens`, `parseSkillFrontmatterFields`, dan lainnya.
+- **`mcpSkillBuilders.ts`** (`restored-src/src/skills/mcpSkillBuilders.ts`): Write-once registry for the two loadSkillsDir functions that MCP skill discovery needs. This module is a dependency-graph leaf: it imports nothing but types, so both mcpSkills.ts and loadSkillsDir.ts can depend on it without forming a cycle (client.ts → mcp... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `MCPSkillBuilders`, `registerMCPSkillBuilders`, `getMCPSkillBuilders`.
 
 ## Direktori: `restored-src/src/state`
 
-- **`AppState.tsx`**: Mengekspor: AppStoreContext, AppStateProvider, useAppState.
-- **`AppStateStore.ts`**: Mengekspor: CompletionBoundary, SpeculationResult, SpeculationState.
-- **`onChangeAppState.ts`**: Mengekspor: externalMetadataToAppState, onChangeAppState.
-- **`selectors.ts`**: Selectors for deriving computed state from AppState. Keep selectors pure and simple - just data extraction, no side effects.
-- **`store.ts`**: Mengekspor: Store, createStore.
-- **`teammateViewHelpers.ts`**: Return the task released back to stub form: retain dropped, messages cleared, evictAfter set if terminal. Shared by exitTeammateView and the switch-aw...
+- **`AppState.tsx`** (`restored-src/src/state/AppState.tsx`): Subscribe to a slice of AppState. Only re-renders when the selected value changes (compared via Object.is). For multiple independent fields, call the hook multiple times: ''' const verbose = useAppState(s => s.verbose) const model = useAppState(s => s.mainL... Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `AppState`, `AppStateStore`, `CompletionBoundary`, `getDefaultAppState`, dan lainnya.
+- **`AppStateStore.ts`** (`restored-src/src/state/AppStateStore.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `CompletionBoundary`, `SpeculationResult`, `SpeculationState`, `IDLE_SPECULATION_STATE`, dan lainnya.
+- **`onChangeAppState.ts`** (`restored-src/src/state/onChangeAppState.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `externalMetadataToAppState`, `onChangeAppState`.
+- **`selectors.ts`** (`restored-src/src/state/selectors.ts`): Get the currently viewed teammate task, if any. Returns undefined if: - No teammate is being viewed (viewingAgentTaskId is undefined) - The task ID doesn't exist in tasks - The task is not an in-process teammate task. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getViewedTeammateTask`, `ActiveAgentForInput`, `getActiveAgentForInput`.
+- **`store.ts`** (`restored-src/src/state/store.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `Store`, `createStore`.
+- **`teammateViewHelpers.ts`** (`restored-src/src/state/teammateViewHelpers.ts`): Transitions the UI to view a teammate's transcript. Sets viewingAgentTaskId and, for local_agent, retain: true (blocks eviction, enables stream-append, triggers disk bootstrap) and clears evictAfter. If switching from another agent, releases the previous on... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `enterTeammateView`, `exitTeammateView`, `stopOrDismissAgent`.
 
 ## Direktori: `restored-src/src/tasks/DreamTask`
 
-- **`DreamTask.ts`**: Paths observed in Edit/Write tool_use blocks via onMessage. This is an
+- **`DreamTask.ts`** (`restored-src/src/tasks/DreamTask/DreamTask.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `DreamTurn`, `DreamPhase`, `DreamTaskState`, `isDreamTask`, dan lainnya.
 
 ## Direktori: `restored-src/src/tasks/InProcessTeammateTask`
 
-- **`InProcessTeammateTask.tsx`**: InProcessTeammateTask - Manages in-process teammate lifecycle  This component implements the Task interface for in-process teammates. Unlike LocalAgen...
-- **`types.ts`**: Teammate identity stored in task state. Same shape as TeammateContext (runtime) but stored as plain data. TeammateContext is for AsyncLocalStorage; th...
+- **`InProcessTeammateTask.tsx`** (`restored-src/src/tasks/InProcessTeammateTask/InProcessTeammateTask.tsx`): InProcessTeammateTask - Handles in-process teammate execution. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `InProcessTeammateTask`, `requestTeammateShutdown`, `appendTeammateMessage`, `injectUserMessageToTeammate`, dan lainnya.
+- **`types.ts`** (`restored-src/src/tasks/InProcessTeammateTask/types.ts`): Teammate identity stored in task state. Same shape as TeammateContext (runtime) but stored as plain data. TeammateContext is for AsyncLocalStorage; this is for AppState persistence. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `TeammateIdentity`, `InProcessTeammateTaskState`, `isInProcessTeammateTask`, `TEAMMATE_MESSAGES_UI_CAP`, dan lainnya.
 
 ## Direktori: `restored-src/src/tasks/LocalAgentTask`
 
-- **`LocalAgentTask.tsx`**: Pre-computed activity description from the tool, e.g. "Reading src/foo.ts"
+- **`LocalAgentTask.tsx`** (`restored-src/src/tasks/LocalAgentTask/LocalAgentTask.tsx`): LocalAgentTask - Handles background agent execution. Replaces the AsyncAgent implementation from src/tools/AgentTool/asyncAgentUtils.ts with a unified Task interface. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `ToolActivity`, `AgentProgress`, `ProgressTracker`, `createProgressTracker`, dan lainnya.
 
 ## Direktori: `restored-src/src/tasks`
 
-- **`LocalMainSessionTask.ts`**: LocalMainSessionTask - Handles backgrounding the main session query.  When user presses Ctrl+B twice during a query, the session is "backgrounded": - ...
-- **`pillLabel.ts`**: Produces the compact footer-pill label for a set of background tasks. Used by both the footer pill and the turn-duration transcript line so the two su...
-- **`stopTask.ts`**: Mengekspor: StopTaskError.
-- **`types.ts`**: Mengekspor: TaskState, BackgroundTaskState, isBackgroundTask.
+- **`LocalMainSessionTask.ts`** (`restored-src/src/tasks/LocalMainSessionTask.ts`): Register a backgrounded main session task. Called when the user backgrounds the current session query. @param description - Description of the task @param setAppState - State setter function @param mainThreadAgentDefinition - Optional agent definition if ru... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `LocalMainSessionTaskState`, `registerMainSessionTask`, `completeMainSessionTask`, `foregroundMainSessionTask`, dan lainnya.
+- **`pillLabel.ts`** (`restored-src/src/tasks/pillLabel.ts`): Produces the compact footer-pill label for a set of background tasks. Used by both the footer pill and the turn-duration transcript line so the two surfaces agree on terminology. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getPillLabel`, `pillNeedsCta`.
+- **`stopTask.ts`** (`restored-src/src/tasks/stopTask.ts`): Look up a task by ID, validate it is running, kill it, and mark it as notified. Throws {@link StopTaskError} when the task cannot be stopped (not found, not running, or unsupported type). Callers can inspect 'error.code' to distinguish the failure reason. Mengimplementasikan class utama untuk area fitur ini. Export utama: `StopTaskError`, `stopTask`.
+- **`types.ts`** (`restored-src/src/tasks/types.ts`): Check if a task should be shown in the background tasks indicator. A task is considered a background task if: 1. It is running or pending 2. It has been explicitly backgrounded (not a foreground task). Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `TaskState`, `BackgroundTaskState`, `isBackgroundTask`.
 
 ## Direktori: `restored-src/src/tasks/LocalShellTask`
 
-- **`LocalShellTask.tsx`**: Prefix that identifies a LocalShellTask summary to the UI collapse transform.
-- **`guards.ts`**: Mengekspor: BashTaskKind, LocalShellTaskState, isLocalShellTask.
-- **`killShellTasks.ts`**: Mengekspor: killTask, killShellTasksForAgent.
+- **`LocalShellTask.tsx`** (`restored-src/src/tasks/LocalShellTask/LocalShellTask.tsx`): Prefix that identifies a LocalShellTask summary to the UI collapse transform. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `BACKGROUND_BASH_SUMMARY_PREFIX`, `looksLikePrompt`, `LocalShellTask`, `spawnShellTask`, dan lainnya.
+- **`guards.ts`** (`restored-src/src/tasks/LocalShellTask/guards.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `BashTaskKind`, `LocalShellTaskState`, `isLocalShellTask`.
+- **`killShellTasks.ts`** (`restored-src/src/tasks/LocalShellTask/killShellTasks.ts`): Kill all running bash tasks spawned by a given agent. Called from runAgent.ts finally block so background processes don't outlive the agent that started them (prevents 10-day fake-logs.sh zombies). Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `killTask`, `killShellTasksForAgent`.
 
 ## Direktori: `restored-src/src/tasks/RemoteAgentTask`
 
-- **`RemoteAgentTask.tsx`**: Task-specific metadata (PR number, repo, etc.).
+- **`RemoteAgentTask.tsx`** (`restored-src/src/tasks/RemoteAgentTask/RemoteAgentTask.tsx`): RemoteAgentTask - Handles remote Claude.ai session execution. Replaces the BackgroundRemoteSession implementation from: - src/utils/background/remote/remoteSession.ts - src/components/tasks/BackgroundTaskStatus.tsx (polling logic). Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `RemoteAgentTaskState`, `RemoteTaskType`, `AutofixPrRemoteTaskMetadata`, `RemoteTaskMetadata`, dan lainnya.
 
 ## Direktori: `restored-src/src/tools/AgentTool`
 
-- **`AgentTool.tsx`**: Mengekspor: inputSchema, outputSchema, RemoteLaunchedOutput.
-- **`UI.tsx`**: Mengekspor: AgentPromptDisplay, AgentResponseDisplay, renderToolResultMessage.
-- **`agentColorManager.ts`**: Mengekspor: AgentColorName, AGENT_COLORS, AGENT_COLOR_TO_THEME_COLOR.
-- **`agentDisplay.ts`**: Shared utilities for displaying agent information. Used by both the CLI `claude agents` handler and the interactive `/agents` command.
-- **`agentMemory.ts`**: Sanitize an agent type name for use as a directory name. Replaces colons (invalid on Windows, used in plugin-namespaced agent types like "my-plugin:my...
-- **`agentMemorySnapshot.ts`**: Returns the path to the snapshot directory for an agent in the current project. e.g., <cwd>/.claude/agent-memory-snapshots/<agentType>/
-- **`agentToolUtils.ts`**: Mengekspor: ResolvedAgentTools, filterToolsForAgent, resolveAgentTools.
-- **`builtInAgents.ts`**: Mengekspor: areExplorePlanAgentsEnabled, getBuiltInAgents.
-- **`constants.ts`**: Mengekspor: AGENT_TOOL_NAME, LEGACY_AGENT_TOOL_NAME, VERIFICATION_AGENT_TYPE.
-- **`forkSubagent.ts`**: Fork subagent feature gate.  When enabled: - `subagent_type` becomes optional on the Agent tool schema - Omitting `subagent_type` triggers an implicit...
-- **`loadAgentsDir.ts`**: Mengekspor: AgentMcpServerSpec, BaseAgentDefinition, BuiltInAgentDefinition.
-- **`prompt.ts`**: Mengekspor: formatAgentLine, shouldInjectAgentListInMessages.
-- **`resumeAgent.ts`**: Mengekspor: ResumeAgentResult.
-- **`runAgent.ts`**: Mengekspor: filterIncompleteToolCalls.
+- **`AgentTool.tsx`** (`restored-src/src/tools/AgentTool/AgentTool.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `inputSchema`, `outputSchema`, `RemoteLaunchedOutput`, `Progress`, dan lainnya.
+- **`UI.tsx`** (`restored-src/src/tools/AgentTool/UI.tsx`): Guard: checks if progress data has a 'message' field (agent_progress or skill_progress). Other progress types (e.g. bash_progress forwarded from sub-agents) lack this field and must be skipped by UI helpers. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `AgentPromptDisplay`, `AgentResponseDisplay`, `renderToolResultMessage`, `renderToolUseMessage`, dan lainnya.
+- **`agentColorManager.ts`** (`restored-src/src/tools/AgentTool/agentColorManager.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `AgentColorName`, `AGENT_COLORS`, `AGENT_COLOR_TO_THEME_COLOR`, `getAgentColor`, dan lainnya.
+- **`agentDisplay.ts`** (`restored-src/src/tools/AgentTool/agentDisplay.ts`): Ordered list of agent source groups for display. Both the CLI and interactive UI should use this to ensure consistent ordering. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `AgentSourceGroup`, `AGENT_SOURCE_GROUPS`, `ResolvedAgent`, `resolveAgentOverrides`, dan lainnya.
+- **`agentMemory.ts`** (`restored-src/src/tools/AgentTool/agentMemory.ts`): Returns the agent memory directory for a given agent type and scope. - 'user' scope: <memoryBase>/agent-memory/<agentType>/ - 'project' scope: <cwd>/.claude/agent-memory/<agentType>/ - 'local' scope: see getLocalAgentMemoryDir(). Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `AgentMemoryScope`, `getAgentMemoryDir`, `isAgentMemoryPath`, `getAgentMemoryEntrypoint`, dan lainnya.
+- **`agentMemorySnapshot.ts`** (`restored-src/src/tools/AgentTool/agentMemorySnapshot.ts`): Returns the path to the snapshot directory for an agent in the current project. e.g., <cwd>/.claude/agent-memory-snapshots/<agentType>/. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getSnapshotDirForAgent`, `checkAgentMemorySnapshot`, `initializeFromSnapshot`, `replaceFromSnapshot`, dan lainnya.
+- **`agentToolUtils.ts`** (`restored-src/src/tools/AgentTool/agentToolUtils.ts`): Resolves and validates agent tools against available tools Handles wildcard expansion and validation in one place. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `ResolvedAgentTools`, `filterToolsForAgent`, `resolveAgentTools`, `agentToolResultSchema`, dan lainnya.
+- **`builtInAgents.ts`** (`restored-src/src/tools/AgentTool/builtInAgents.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `areExplorePlanAgentsEnabled`, `getBuiltInAgents`.
+- **`constants.ts`** (`restored-src/src/tools/AgentTool/constants.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `AGENT_TOOL_NAME`, `LEGACY_AGENT_TOOL_NAME`, `VERIFICATION_AGENT_TYPE`, `ONE_SHOT_BUILTIN_AGENT_TYPES`.
+- **`forkSubagent.ts`** (`restored-src/src/tools/AgentTool/forkSubagent.ts`): Fork subagent feature gate. When enabled: - 'subagent_type' becomes optional on the Agent tool schema - Omitting 'subagent_type' triggers an implicit fork: the child inherits the parent's full conversation context and system prompt - All agent spawns run in... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `isForkSubagentEnabled`, `FORK_SUBAGENT_TYPE`, `FORK_AGENT`, `isInForkChild`, dan lainnya.
+- **`loadAgentsDir.ts`** (`restored-src/src/tools/AgentTool/loadAgentsDir.ts`): Checks if an agent's required MCP servers are available. Returns true if no requirements or all requirements are met. @param agent The agent to check @param availableServers List of available MCP server names (e.g., from mcp.clients). Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `AgentMcpServerSpec`, `BaseAgentDefinition`, `BuiltInAgentDefinition`, `CustomAgentDefinition`, dan lainnya.
+- **`prompt.ts`** (`restored-src/src/tools/AgentTool/prompt.ts`): Format one agent line for the agent_listing_delta attachment message: '- type: whenToUse (Tools: ...)'. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `formatAgentLine`, `shouldInjectAgentListInMessages`, `getPrompt`.
+- **`resumeAgent.ts`** (`restored-src/src/tools/AgentTool/resumeAgent.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `ResumeAgentResult`, `resumeAgentBackground`.
+- **`runAgent.ts`** (`restored-src/src/tools/AgentTool/runAgent.ts`): Filters out assistant messages with incomplete tool calls (tool uses without results). This prevents API errors when sending messages with orphaned tool calls. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `runAgent`, `filterIncompleteToolCalls`.
 
 ## Direktori: `restored-src/src/tools/AgentTool/built-in`
 
-- **`claudeCodeGuideAgent.ts`**: Mengekspor: CLAUDE_CODE_GUIDE_AGENT_TYPE, CLAUDE_CODE_GUIDE_AGENT.
-- **`exploreAgent.ts`**: Mengekspor: EXPLORE_AGENT_MIN_QUERIES, EXPLORE_AGENT.
-- **`generalPurposeAgent.ts`**: Mengekspor: GENERAL_PURPOSE_AGENT.
-- **`planAgent.ts`**: Mengekspor: PLAN_AGENT.
-- **`statuslineSetup.ts`**: Mengekspor: STATUSLINE_SETUP_AGENT.
-- **`verificationAgent.ts`**: Mengekspor: VERIFICATION_AGENT.
+- **`claudeCodeGuideAgent.ts`** (`restored-src/src/tools/AgentTool/built-in/claudeCodeGuideAgent.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `CLAUDE_CODE_GUIDE_AGENT_TYPE`, `CLAUDE_CODE_GUIDE_AGENT`.
+- **`exploreAgent.ts`** (`restored-src/src/tools/AgentTool/built-in/exploreAgent.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `EXPLORE_AGENT_MIN_QUERIES`, `EXPLORE_AGENT`.
+- **`generalPurposeAgent.ts`** (`restored-src/src/tools/AgentTool/built-in/generalPurposeAgent.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `GENERAL_PURPOSE_AGENT`.
+- **`planAgent.ts`** (`restored-src/src/tools/AgentTool/built-in/planAgent.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `PLAN_AGENT`.
+- **`statuslineSetup.ts`** (`restored-src/src/tools/AgentTool/built-in/statuslineSetup.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `STATUSLINE_SETUP_AGENT`.
+- **`verificationAgent.ts`** (`restored-src/src/tools/AgentTool/built-in/verificationAgent.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `VERIFICATION_AGENT`.
 
 ## Direktori: `restored-src/src/tools/AskUserQuestionTool`
 
-- **`AskUserQuestionTool.tsx`**: Mengekspor: _sdkInputSchema, _sdkOutputSchema, Question.
-- **`prompt.ts`**: Mengekspor: ASK_USER_QUESTION_TOOL_NAME, ASK_USER_QUESTION_TOOL_CHIP_WIDTH, DESCRIPTION.
+- **`AskUserQuestionTool.tsx`** (`restored-src/src/tools/AskUserQuestionTool/AskUserQuestionTool.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `_sdkInputSchema`, `_sdkOutputSchema`, `Question`, `QuestionOption`, dan lainnya.
+- **`prompt.ts`** (`restored-src/src/tools/AskUserQuestionTool/prompt.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `ASK_USER_QUESTION_TOOL_NAME`, `ASK_USER_QUESTION_TOOL_CHIP_WIDTH`, `DESCRIPTION`, `PREVIEW_FEATURE_PROMPT`, dan lainnya.
 
 ## Direktori: `restored-src/src/tools/BashTool`
 
-- **`BashTool.tsx`**: Mengekspor: isSearchOrReadBashCommand, BashToolInput, Out.
-- **`BashToolResultMessage.tsx`**: Extracts sandbox violations from stderr if present Returns both the cleaned stderr and the violations content
-- **`UI.tsx`**: Mengekspor: BackgroundHint, renderToolUseMessage, renderToolUseProgressMessage.
-- **`bashCommandHelpers.ts`**: Mengekspor: CommandIdentityCheckers.
-- **`bashPermissions.ts`**: Mengekspor: MAX_SUBCOMMANDS_FOR_SECURITY_CHECK, MAX_SUGGESTED_RULES_FOR_COMPOUND, getSimpleCommandPrefix.
-- **`bashSecurity.ts`**: Mengekspor: stripSafeHeredocSubstitutions, hasSafeHeredocSubstitution, bashCommandIsSafe_DEPRECATED.
-- **`commandSemantics.ts`**: Command semantics configuration for interpreting exit codes in different contexts.  Many commands use exit codes to convey information other than just...
-- **`commentLabel.ts`**: If the first line of a bash command is a `# comment` (not a `#!` shebang), return the comment text stripped of the `#` prefix. Otherwise undefined.  U...
-- **`destructiveCommandWarning.ts`**: Detects potentially destructive bash commands and returns a warning string for display in the permission dialog. This is purely informational — it doe...
-- **`modeValidation.ts`**: Mengekspor: checkPermissionMode, getAutoAllowedCommands.
-- **`pathValidation.ts`**: Mengekspor: PathCommand, PATH_EXTRACTORS, COMMAND_OPERATION_TYPE.
-- **`prompt.ts`**: Mengekspor: getDefaultTimeoutMs, getMaxTimeoutMs, getSimplePrompt.
-- **`readOnlyValidation.ts`**: Mengekspor: isCommandSafeViaFlagParsing, checkReadOnlyConstraints.
-- **`sedEditParser.ts`**: Parser for sed edit commands (-i flag substitutions) Extracts file paths and substitution patterns to enable file-edit-style rendering
-- **`sedValidation.ts`**: Helper: Validate flags against an allowlist Handles both single flags and combined flags (e.g., -nE) @param flags Array of flags to validate @param al...
-- **`shouldUseSandbox.ts`**: Mengekspor: shouldUseSandbox.
-- **`toolName.ts`**: Mengekspor: BASH_TOOL_NAME.
-- **`utils.ts`**: Strips leading and trailing lines that contain only whitespace/newlines. Unlike trim(), this preserves whitespace within content lines and only remove...
+- **`BashTool.tsx`** (`restored-src/src/tools/BashTool/BashTool.tsx`): Checks if a bash command is a search or read operation. Used to determine if the command should be collapsed in the UI. Returns an object indicating whether it's a search or read operation. For pipelines (e.g., 'cat file | bq'), ALL parts must be search/rea... Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `isSearchOrReadBashCommand`, `BashToolInput`, `Out`, `BashProgress`, dan lainnya.
+- **`BashToolResultMessage.tsx`** (`restored-src/src/tools/BashTool/BashToolResultMessage.tsx`): Extracts sandbox violations from stderr if present Returns both the cleaned stderr and the violations content. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `BashToolResultMessage`.
+- **`UI.tsx`** (`restored-src/src/tools/BashTool/UI.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `BackgroundHint`, `renderToolUseMessage`, `renderToolUseProgressMessage`, `renderToolUseQueuedMessage`, dan lainnya.
+- **`bashCommandHelpers.ts`** (`restored-src/src/tools/BashTool/bashCommandHelpers.ts`): Wrapper that resolves an IParsedCommand (from a pre-parsed AST root if available, else via ParsedCommand.parse) and delegates to bashToolCheckCommandOperatorPermissions. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `CommandIdentityCheckers`, `checkCommandOperatorPermissions`.
+- **`bashPermissions.ts`** (`restored-src/src/tools/BashTool/bashPermissions.ts`): Extract a stable command prefix (command + subcommand) from a raw command string. Skips leading env var assignments only if they are in SAFE_ENV_VARS (or ANT_ONLY_SAFE_ENV_VARS for ant users). Returns null if a non-safe env var is encountered (to fall back... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `MAX_SUBCOMMANDS_FOR_SECURITY_CHECK`, `MAX_SUGGESTED_RULES_FOR_COMPOUND`, `getSimpleCommandPrefix`, `getFirstWordPrefix`, dan lainnya.
+- **`bashSecurity.ts`** (`restored-src/src/tools/BashTool/bashSecurity.ts`): Detects well-formed $(cat <<'DELIM'...DELIM) heredoc substitution patterns. Returns the command with matched heredocs stripped, or null if none found. Used by the pre-split gate to strip safe heredocs and re-check the remainder. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `stripSafeHeredocSubstitutions`, `hasSafeHeredocSubstitution`, `bashCommandIsSafe_DEPRECATED`, `bashCommandIsSafeAsync_DEPRECATED`.
+- **`commandSemantics.ts`** (`restored-src/src/tools/BashTool/commandSemantics.ts`): Interpret command result based on semantic rules. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `CommandSemantic`, `interpretCommandResult`.
+- **`commentLabel.ts`** (`restored-src/src/tools/BashTool/commentLabel.ts`): If the first line of a bash command is a '# comment' (not a '#!' shebang), return the comment text stripped of the '#' prefix. Otherwise undefined. Under fullscreen mode this is the non-verbose tool-use label AND the collapse-group ⎿ hint — it's what Claude... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `extractBashCommentLabel`.
+- **`destructiveCommandWarning.ts`** (`restored-src/src/tools/BashTool/destructiveCommandWarning.ts`): Checks if a bash command matches known destructive patterns. Returns a human-readable warning string, or null if no destructive pattern is detected. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getDestructiveCommandWarning`.
+- **`modeValidation.ts`** (`restored-src/src/tools/BashTool/modeValidation.ts`): Checks if commands should be handled differently based on the current permission mode This is the main entry point for mode-based permission logic. Currently handles Accept Edits mode for filesystem commands, but designed to be extended for other modes. @pa... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `checkPermissionMode`, `getAutoAllowedCommands`.
+- **`pathValidation.ts`** (`restored-src/src/tools/BashTool/pathValidation.ts`): Extracts paths from command arguments for different path commands. Each command has specific logic for how it handles paths and flags. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `PathCommand`, `PATH_EXTRACTORS`, `COMMAND_OPERATION_TYPE`, `createPathChecker`, dan lainnya.
+- **`prompt.ts`** (`restored-src/src/tools/BashTool/prompt.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getDefaultTimeoutMs`, `getMaxTimeoutMs`, `getSimplePrompt`.
+- **`readOnlyValidation.ts`** (`restored-src/src/tools/BashTool/readOnlyValidation.ts`): Unified command validation function that replaces individual validator functions. Uses declarative configuration from COMMAND_ALLOWLIST to validate commands and their flags. Handles combined flags, argument validation, and shell quoting bypass detection. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `isCommandSafeViaFlagParsing`, `checkReadOnlyConstraints`.
+- **`sedEditParser.ts`** (`restored-src/src/tools/BashTool/sedEditParser.ts`): Check if a command is a sed in-place edit command Returns true only for simple sed -i 's/pattern/replacement/flags' file commands. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `SedEditInfo`, `isSedInPlaceEdit`, `parseSedEditCommand`, `applySedSubstitution`.
+- **`sedValidation.ts`** (`restored-src/src/tools/BashTool/sedValidation.ts`): Pattern 1: Check if this is a line printing command with -n flag Allows: sed -n 'N' | sed -n 'N,M' with optional -E, -r, -z flags Allows semicolon-separated print commands like: sed -n '1p;2p;3p' File arguments are ALLOWED for this pattern @internal Exporte... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `isLinePrintingCommand`, `isPrintCommand`, `sedCommandIsAllowedByAllowlist`, `hasFileArgs`, dan lainnya.
+- **`shouldUseSandbox.ts`** (`restored-src/src/tools/BashTool/shouldUseSandbox.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `shouldUseSandbox`.
+- **`toolName.ts`** (`restored-src/src/tools/BashTool/toolName.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `BASH_TOOL_NAME`.
+- **`utils.ts`** (`restored-src/src/tools/BashTool/utils.ts`): Strips leading and trailing lines that contain only whitespace/newlines. Unlike trim(), this preserves whitespace within content lines and only removes completely empty lines from the beginning and end. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `stripEmptyLines`, `isImageOutput`, `parseDataUri`, `buildImageToolResult`, dan lainnya.
 
 ## Direktori: `restored-src/src/tools/BriefTool`
 
-- **`BriefTool.ts`**: Mengekspor: Output, isBriefEntitled, isBriefEnabled.
-- **`UI.tsx`**: Mengekspor: renderToolUseMessage, renderToolResultMessage, AttachmentList.
-- **`attachments.ts`**: Shared attachment validation + resolution for SendUserMessage and SendUserFile. Lives in BriefTool/ so the dynamic `./upload.js` import inside the fea...
-- **`prompt.ts`**: Mengekspor: BRIEF_TOOL_NAME, LEGACY_BRIEF_TOOL_NAME, DESCRIPTION.
-- **`upload.ts`**: Upload BriefTool attachments to private_api so web viewers can preview them.  When the repl bridge is active, attachment paths are meaningless to a we...
+- **`BriefTool.ts`** (`restored-src/src/tools/BriefTool/BriefTool.ts`): Entitlement check — is the user ALLOWED to use Brief? Combines build-time flags with runtime GB gate + assistant-mode passthrough. No opt-in check here — this decides whether opt-in should be HONORED, not whether the user has opted in. Build-time OR-gated o... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `Output`, `isBriefEntitled`, `isBriefEnabled`, `BriefTool`.
+- **`UI.tsx`** (`restored-src/src/tools/BriefTool/UI.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `renderToolUseMessage`, `renderToolResultMessage`, `AttachmentList`.
+- **`attachments.ts`** (`restored-src/src/tools/BriefTool/attachments.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `ResolvedAttachment`, `validateAttachmentPaths`, `resolveAttachments`.
+- **`prompt.ts`** (`restored-src/src/tools/BriefTool/prompt.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `BRIEF_TOOL_NAME`, `LEGACY_BRIEF_TOOL_NAME`, `DESCRIPTION`, `BRIEF_TOOL_PROMPT`, dan lainnya.
+- **`upload.ts`** (`restored-src/src/tools/BriefTool/upload.ts`): Upload a single attachment. Returns file_uuid on success, undefined otherwise. Every early-return is intentional graceful degradation. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `BriefUploadContext`, `uploadBriefAttachment`.
 
 ## Direktori: `restored-src/src/tools/ConfigTool`
 
-- **`ConfigTool.ts`**: Mengekspor: Input, Output, ConfigTool.
-- **`UI.tsx`**: Mengekspor: renderToolUseMessage, renderToolResultMessage, renderToolUseRejectedMessage.
-- **`constants.ts`**: Mengekspor: CONFIG_TOOL_NAME.
-- **`prompt.ts`**: Generate the prompt documentation from the registry
-- **`supportedSettings.ts`**: AppState keys that can be synced for immediate UI effect
+- **`ConfigTool.ts`** (`restored-src/src/tools/ConfigTool/ConfigTool.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `Input`, `Output`, `ConfigTool`.
+- **`UI.tsx`** (`restored-src/src/tools/ConfigTool/UI.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `renderToolUseMessage`, `renderToolResultMessage`, `renderToolUseRejectedMessage`.
+- **`constants.ts`** (`restored-src/src/tools/ConfigTool/constants.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `CONFIG_TOOL_NAME`.
+- **`prompt.ts`** (`restored-src/src/tools/ConfigTool/prompt.ts`): Generate the prompt documentation from the registry. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `DESCRIPTION`, `generatePrompt`.
+- **`supportedSettings.ts`** (`restored-src/src/tools/ConfigTool/supportedSettings.ts`): AppState keys that can be synced for immediate UI effect. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `SUPPORTED_SETTINGS`, `isSupported`, `getConfig`, `getAllKeys`, dan lainnya.
 
 ## Direktori: `restored-src/src/tools/EnterPlanModeTool`
 
-- **`EnterPlanModeTool.ts`**: Mengekspor: Output, EnterPlanModeTool.
-- **`UI.tsx`**: Mengekspor: renderToolUseMessage, renderToolResultMessage, renderToolUseRejectedMessage.
-- **`constants.ts`**: Mengekspor: ENTER_PLAN_MODE_TOOL_NAME.
-- **`prompt.ts`**: Mengekspor: getEnterPlanModeToolPrompt.
+- **`EnterPlanModeTool.ts`** (`restored-src/src/tools/EnterPlanModeTool/EnterPlanModeTool.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `Output`, `EnterPlanModeTool`.
+- **`UI.tsx`** (`restored-src/src/tools/EnterPlanModeTool/UI.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `renderToolUseMessage`, `renderToolResultMessage`, `renderToolUseRejectedMessage`.
+- **`constants.ts`** (`restored-src/src/tools/EnterPlanModeTool/constants.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `ENTER_PLAN_MODE_TOOL_NAME`.
+- **`prompt.ts`** (`restored-src/src/tools/EnterPlanModeTool/prompt.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getEnterPlanModeToolPrompt`.
 
 ## Direktori: `restored-src/src/tools/EnterWorktreeTool`
 
-- **`EnterWorktreeTool.ts`**: Mengekspor: Output, EnterWorktreeTool.
-- **`UI.tsx`**: Mengekspor: renderToolUseMessage, renderToolResultMessage.
-- **`constants.ts`**: Mengekspor: ENTER_WORKTREE_TOOL_NAME.
-- **`prompt.ts`**: Mengekspor: getEnterWorktreeToolPrompt.
+- **`EnterWorktreeTool.ts`** (`restored-src/src/tools/EnterWorktreeTool/EnterWorktreeTool.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `Output`, `EnterWorktreeTool`.
+- **`UI.tsx`** (`restored-src/src/tools/EnterWorktreeTool/UI.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `renderToolUseMessage`, `renderToolResultMessage`.
+- **`constants.ts`** (`restored-src/src/tools/EnterWorktreeTool/constants.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `ENTER_WORKTREE_TOOL_NAME`.
+- **`prompt.ts`** (`restored-src/src/tools/EnterWorktreeTool/prompt.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getEnterWorktreeToolPrompt`.
 
 ## Direktori: `restored-src/src/tools/ExitPlanModeTool`
 
-- **`ExitPlanModeV2Tool.ts`**: Mengekspor: AllowedPrompt, _sdkInputSchema, outputSchema.
-- **`UI.tsx`**: Mengekspor: renderToolUseMessage, renderToolResultMessage, renderToolUseRejectedMessage.
-- **`constants.ts`**: Mengekspor: EXIT_PLAN_MODE_TOOL_NAME, EXIT_PLAN_MODE_V2_TOOL_NAME.
-- **`prompt.ts`**: Mengekspor: EXIT_PLAN_MODE_V2_TOOL_PROMPT.
+- **`ExitPlanModeV2Tool.ts`** (`restored-src/src/tools/ExitPlanModeTool/ExitPlanModeV2Tool.ts`): SDK-facing input schema - includes fields injected by normalizeToolInput. The internal inputSchema doesn't have these fields because plan is read from disk, but the SDK/hooks see the normalized version with plan and file path included. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `AllowedPrompt`, `_sdkInputSchema`, `outputSchema`, `Output`, dan lainnya.
+- **`UI.tsx`** (`restored-src/src/tools/ExitPlanModeTool/UI.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `renderToolUseMessage`, `renderToolResultMessage`, `renderToolUseRejectedMessage`.
+- **`constants.ts`** (`restored-src/src/tools/ExitPlanModeTool/constants.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `EXIT_PLAN_MODE_TOOL_NAME`, `EXIT_PLAN_MODE_V2_TOOL_NAME`.
+- **`prompt.ts`** (`restored-src/src/tools/ExitPlanModeTool/prompt.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `EXIT_PLAN_MODE_V2_TOOL_PROMPT`.
 
 ## Direktori: `restored-src/src/tools/ExitWorktreeTool`
 
-- **`ExitWorktreeTool.ts`**: Mengekspor: Output, ExitWorktreeTool.
-- **`UI.tsx`**: Mengekspor: renderToolUseMessage, renderToolResultMessage.
-- **`constants.ts`**: Mengekspor: EXIT_WORKTREE_TOOL_NAME.
-- **`prompt.ts`**: Mengekspor: getExitWorktreeToolPrompt.
+- **`ExitWorktreeTool.ts`** (`restored-src/src/tools/ExitWorktreeTool/ExitWorktreeTool.ts`): Returns null when state cannot be reliably determined — callers that use this as a safety gate must treat null as "unknown, assume unsafe" (fail-closed). A silent 0/0 would let cleanupWorktree destroy real work. Null is returned when: - git status or rev-li... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `Output`, `ExitWorktreeTool`.
+- **`UI.tsx`** (`restored-src/src/tools/ExitWorktreeTool/UI.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `renderToolUseMessage`, `renderToolResultMessage`.
+- **`constants.ts`** (`restored-src/src/tools/ExitWorktreeTool/constants.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `EXIT_WORKTREE_TOOL_NAME`.
+- **`prompt.ts`** (`restored-src/src/tools/ExitWorktreeTool/prompt.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getExitWorktreeToolPrompt`.
 
 ## Direktori: `restored-src/src/tools/FileEditTool`
 
-- **`FileEditTool.ts`**: Mengekspor: FileEditTool.
-- **`UI.tsx`**: Mengekspor: userFacingName, getToolUseSummary, renderToolUseMessage.
-- **`constants.ts`**: Mengekspor: FILE_EDIT_TOOL_NAME, CLAUDE_FOLDER_PERMISSION_PATTERN, GLOBAL_CLAUDE_FOLDER_PERMISSION_PATTERN.
-- **`prompt.ts`**: Mengekspor: getEditToolDescription.
-- **`types.ts`**: Mengekspor: FileEditInput, EditInput, FileEdit.
-- **`utils.ts`**: Normalizes quotes in a string by converting curly quotes to straight quotes @param str The string to normalize @returns The string with all curly quot...
+- **`FileEditTool.ts`** (`restored-src/src/tools/FileEditTool/FileEditTool.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `FileEditTool`.
+- **`UI.tsx`** (`restored-src/src/tools/FileEditTool/UI.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `userFacingName`, `getToolUseSummary`, `renderToolUseMessage`, `renderToolResultMessage`, dan lainnya.
+- **`constants.ts`** (`restored-src/src/tools/FileEditTool/constants.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `FILE_EDIT_TOOL_NAME`, `CLAUDE_FOLDER_PERMISSION_PATTERN`, `GLOBAL_CLAUDE_FOLDER_PERMISSION_PATTERN`, `FILE_UNEXPECTEDLY_MODIFIED_ERROR`.
+- **`prompt.ts`** (`restored-src/src/tools/FileEditTool/prompt.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getEditToolDescription`.
+- **`types.ts`** (`restored-src/src/tools/FileEditTool/types.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `FileEditInput`, `EditInput`, `FileEdit`, `hunkSchema`, dan lainnya.
+- **`utils.ts`** (`restored-src/src/tools/FileEditTool/utils.ts`): Normalizes quotes in a string by converting curly quotes to straight quotes @param str The string to normalize @returns The string with all curly quotes replaced by straight quotes. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `LEFT_SINGLE_CURLY_QUOTE`, `RIGHT_SINGLE_CURLY_QUOTE`, `LEFT_DOUBLE_CURLY_QUOTE`, `RIGHT_DOUBLE_CURLY_QUOTE`, dan lainnya.
 
 ## Direktori: `restored-src/src/tools/FileReadTool`
 
-- **`FileReadTool.ts`**: Mengekspor: registerFileReadListener, MaxFileReadTokenExceededError, Input.
-- **`UI.tsx`**: Check if a file path is an agent output file and extract the task ID. Agent output files follow the pattern: {projectTempDir}/tasks/{taskId}.output
-- **`imageProcessor.ts`**: Mengekspor: SharpInstance, SharpFunction.
-- **`limits.ts`**: Read tool output limits.  Two caps apply to text reads:  | limit         | default | checks                    | cost          | on overflow     | |--...
-- **`prompt.ts`**: Renders the Read tool prompt template.  The caller (FileReadTool) supplies the runtime-computed parts.
+- **`FileReadTool.ts`** (`restored-src/src/tools/FileReadTool/FileReadTool.ts`): Reads an image file and applies token-based compression if needed. Reads the file ONCE, then applies standard resize. If the result exceeds the token limit, applies aggressive compression from the same buffer. @param filePath - Path to the image file @param... Mengimplementasikan class utama untuk area fitur ini. Export utama: `registerFileReadListener`, `MaxFileReadTokenExceededError`, `Input`, `Output`, dan lainnya.
+- **`UI.tsx`** (`restored-src/src/tools/FileReadTool/UI.tsx`): Check if a file path is an agent output file and extract the task ID. Agent output files follow the pattern: {projectTempDir}/tasks/{taskId}.output. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `renderToolUseMessage`, `renderToolUseTag`, `renderToolResultMessage`, `renderToolUseErrorMessage`, dan lainnya.
+- **`imageProcessor.ts`** (`restored-src/src/tools/FileReadTool/imageProcessor.ts`): Get image creator for generating new images from scratch. Note: image-processor-napi doesn't support image creation, so this always uses sharp directly. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `SharpInstance`, `SharpFunction`, `getImageProcessor`, `getImageCreator`.
+- **`limits.ts`** (`restored-src/src/tools/FileReadTool/limits.ts`): Default limits for Read tool when the ToolUseContext doesn't supply an override. Memoized so the GrowthBook value is fixed at first call — avoids the cap changing mid-session as the flag refreshes in the background. Precedence for maxTokens: env var > Growt... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `DEFAULT_MAX_OUTPUT_TOKENS`, `FileReadingLimits`, `getDefaultFileReadingLimits`.
+- **`prompt.ts`** (`restored-src/src/tools/FileReadTool/prompt.ts`): Renders the Read tool prompt template. The caller (FileReadTool) supplies the runtime-computed parts. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `FILE_READ_TOOL_NAME`, `FILE_UNCHANGED_STUB`, `MAX_LINES_TO_READ`, `DESCRIPTION`, dan lainnya.
 
 ## Direktori: `restored-src/src/tools/FileWriteTool`
 
-- **`FileWriteTool.ts`**: Mengekspor: Output, FileWriteToolInput, FileWriteTool.
-- **`UI.tsx`**: Mengekspor: countLines, userFacingName, isResultTruncated.
-- **`prompt.ts`**: Mengekspor: FILE_WRITE_TOOL_NAME, DESCRIPTION, getWriteToolDescription.
+- **`FileWriteTool.ts`** (`restored-src/src/tools/FileWriteTool/FileWriteTool.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `Output`, `FileWriteToolInput`, `FileWriteTool`.
+- **`UI.tsx`** (`restored-src/src/tools/FileWriteTool/UI.tsx`): Count visible lines in file content. A trailing newline is treated as a line terminator (not a new empty line), matching editor line numbering. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `countLines`, `userFacingName`, `isResultTruncated`, `getToolUseSummary`, dan lainnya.
+- **`prompt.ts`** (`restored-src/src/tools/FileWriteTool/prompt.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `FILE_WRITE_TOOL_NAME`, `DESCRIPTION`, `getWriteToolDescription`.
 
 ## Direktori: `restored-src/src/tools/GlobTool`
 
-- **`GlobTool.ts`**: Mengekspor: Output, GlobTool.
-- **`UI.tsx`**: Mengekspor: userFacingName, renderToolUseMessage, renderToolUseErrorMessage.
-- **`prompt.ts`**: Mengekspor: GLOB_TOOL_NAME, DESCRIPTION.
+- **`GlobTool.ts`** (`restored-src/src/tools/GlobTool/GlobTool.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `Output`, `GlobTool`.
+- **`UI.tsx`** (`restored-src/src/tools/GlobTool/UI.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `userFacingName`, `renderToolUseMessage`, `renderToolUseErrorMessage`, `renderToolResultMessage`, dan lainnya.
+- **`prompt.ts`** (`restored-src/src/tools/GlobTool/prompt.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `GLOB_TOOL_NAME`, `DESCRIPTION`.
 
 ## Direktori: `restored-src/src/tools/GrepTool`
 
-- **`GrepTool.ts`**: Mengekspor: GrepTool.
-- **`UI.tsx`**: Mengekspor: renderToolUseMessage, renderToolUseErrorMessage, renderToolResultMessage.
-- **`prompt.ts`**: Mengekspor: GREP_TOOL_NAME, getDescription.
+- **`GrepTool.ts`** (`restored-src/src/tools/GrepTool/GrepTool.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `GrepTool`.
+- **`UI.tsx`** (`restored-src/src/tools/GrepTool/UI.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `renderToolUseMessage`, `renderToolUseErrorMessage`, `renderToolResultMessage`, `getToolUseSummary`.
+- **`prompt.ts`** (`restored-src/src/tools/GrepTool/prompt.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `GREP_TOOL_NAME`, `getDescription`.
 
 ## Direktori: `restored-src/src/tools/LSPTool`
 
-- **`LSPTool.ts`**: Mengekspor: Output, Input, LSPTool.
-- **`UI.tsx`**: Mengekspor: userFacingName, renderToolUseMessage, renderToolUseErrorMessage.
-- **`formatters.ts`**: Formats a URI by converting it to a relative path if possible. Handles URI decoding and gracefully falls back to un-decoded path if malformed. Only us...
-- **`prompt.ts`**: Mengekspor: LSP_TOOL_NAME, DESCRIPTION.
-- **`schemas.ts`**: Discriminated union of all LSP operations Uses 'operation' as the discriminator field
-- **`symbolContext.ts`**: Extracts the symbol/word at a specific position in a file. Used to show context in tool use messages.  @param filePath - The file path (absolute or re...
+- **`LSPTool.ts`** (`restored-src/src/tools/LSPTool/LSPTool.ts`): Tool-compatible input schema (regular ZodObject instead of discriminated union) We validate against the discriminated union in validateInput for better error messages. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `Output`, `Input`, `LSPTool`.
+- **`UI.tsx`** (`restored-src/src/tools/LSPTool/UI.tsx`): Reusable component for LSP result summaries with collapsed/expanded views. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `userFacingName`, `renderToolUseMessage`, `renderToolUseErrorMessage`, `renderToolResultMessage`.
+- **`formatters.ts`** (`restored-src/src/tools/LSPTool/formatters.ts`): Formats goToDefinition result Can return Location, LocationLink, or arrays of either. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `formatGoToDefinitionResult`, `formatFindReferencesResult`, `formatHoverResult`, `formatDocumentSymbolResult`, dan lainnya.
+- **`prompt.ts`** (`restored-src/src/tools/LSPTool/prompt.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `LSP_TOOL_NAME`, `DESCRIPTION`.
+- **`schemas.ts`** (`restored-src/src/tools/LSPTool/schemas.ts`): Discriminated union of all LSP operations Uses 'operation' as the discriminator field. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `lspToolInputSchema`, `LSPToolInput`, `isValidLSPOperation`.
+- **`symbolContext.ts`** (`restored-src/src/tools/LSPTool/symbolContext.ts`): Extracts the symbol/word at a specific position in a file. Used to show context in tool use messages. @param filePath - The file path (absolute or relative) @param line - 0-indexed line number @param character - 0-indexed character position on the line Note... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getSymbolAtPosition`.
 
 ## Direktori: `restored-src/src/tools/ListMcpResourcesTool`
 
-- **`ListMcpResourcesTool.ts`**: Mengekspor: Output, ListMcpResourcesTool.
-- **`UI.tsx`**: Mengekspor: renderToolUseMessage, renderToolResultMessage.
-- **`prompt.ts`**: Mengekspor: LIST_MCP_RESOURCES_TOOL_NAME, DESCRIPTION, PROMPT.
+- **`ListMcpResourcesTool.ts`** (`restored-src/src/tools/ListMcpResourcesTool/ListMcpResourcesTool.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `Output`, `ListMcpResourcesTool`.
+- **`UI.tsx`** (`restored-src/src/tools/ListMcpResourcesTool/UI.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `renderToolUseMessage`, `renderToolResultMessage`.
+- **`prompt.ts`** (`restored-src/src/tools/ListMcpResourcesTool/prompt.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `LIST_MCP_RESOURCES_TOOL_NAME`, `DESCRIPTION`, `PROMPT`.
 
 ## Direktori: `restored-src/src/tools/MCPTool`
 
-- **`MCPTool.ts`**: Mengekspor: inputSchema, outputSchema, Output.
-- **`UI.tsx`**: Mengekspor: renderToolUseMessage, renderToolUseProgressMessage, renderToolResultMessage.
-- **`classifyForCollapse.ts`**: Classify an MCP tool as a search/read operation for UI collapsing. Returns { isSearch: false, isRead: false } for tools that should not collapse (e.g....
-- **`prompt.ts`**: Mengekspor: PROMPT, DESCRIPTION.
+- **`MCPTool.ts`** (`restored-src/src/tools/MCPTool/MCPTool.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `inputSchema`, `outputSchema`, `Output`, `MCPProgress`, dan lainnya.
+- **`UI.tsx`** (`restored-src/src/tools/MCPTool/UI.tsx`): If content parses as a JSON object where every value is a scalar or a small nested object, flatten it to [key, displayValue] pairs. Nested objects get one-line JSON. Returns null if content doesn't qualify. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `renderToolUseMessage`, `renderToolUseProgressMessage`, `renderToolResultMessage`, `tryFlattenJson`, dan lainnya.
+- **`classifyForCollapse.ts`** (`restored-src/src/tools/MCPTool/classifyForCollapse.ts`): Classify an MCP tool as a search/read operation for UI collapsing. Returns { isSearch: false, isRead: false } for tools that should not collapse (e.g., send_message, create_*, update_*). Uses explicit per-tool allowlists for the most common MCP servers. Too... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `classifyMcpToolForCollapse`.
+- **`prompt.ts`** (`restored-src/src/tools/MCPTool/prompt.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `PROMPT`, `DESCRIPTION`.
 
 ## Direktori: `restored-src/src/tools/McpAuthTool`
 
-- **`McpAuthTool.ts`**: Mengekspor: McpAuthOutput, createMcpAuthTool.
+- **`McpAuthTool.ts`** (`restored-src/src/tools/McpAuthTool/McpAuthTool.ts`): Creates a pseudo-tool for an MCP server that is installed but not authenticated. Surfaced in place of the server's real tools so the model knows the server exists and can start the OAuth flow on the user's behalf. When called, starts performMCPOAuthFlow wit... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `McpAuthOutput`, `createMcpAuthTool`.
 
 ## Direktori: `restored-src/src/tools/NotebookEditTool`
 
-- **`NotebookEditTool.ts`**: Mengekspor: inputSchema, outputSchema, Output.
-- **`UI.tsx`**: Mengekspor: getToolUseSummary, renderToolUseMessage, renderToolUseRejectedMessage.
-- **`constants.ts`**: Mengekspor: NOTEBOOK_EDIT_TOOL_NAME.
-- **`prompt.ts`**: Mengekspor: DESCRIPTION, PROMPT.
+- **`NotebookEditTool.ts`** (`restored-src/src/tools/NotebookEditTool/NotebookEditTool.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `inputSchema`, `outputSchema`, `Output`, `NotebookEditTool`.
+- **`UI.tsx`** (`restored-src/src/tools/NotebookEditTool/UI.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `getToolUseSummary`, `renderToolUseMessage`, `renderToolUseRejectedMessage`, `renderToolUseErrorMessage`, dan lainnya.
+- **`constants.ts`** (`restored-src/src/tools/NotebookEditTool/constants.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `NOTEBOOK_EDIT_TOOL_NAME`.
+- **`prompt.ts`** (`restored-src/src/tools/NotebookEditTool/prompt.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `DESCRIPTION`, `PROMPT`.
 
 ## Direktori: `restored-src/src/tools/PowerShellTool`
 
-- **`PowerShellTool.tsx`**: Mengekspor: detectBlockedSleepPattern, PowerShellToolInput, Out.
-- **`UI.tsx`**: Mengekspor: renderToolUseMessage, renderToolUseProgressMessage, renderToolUseQueuedMessage.
-- **`clmTypes.ts`**: PowerShell Constrained Language Mode allowed types.  Microsoft's CLM restricts .NET type usage to this allowlist when PS runs under AppLocker/WDAC sys...
-- **`commandSemantics.ts`**: Command semantics configuration for interpreting exit codes in PowerShell.  PowerShell-native cmdlets do NOT need exit-code semantics: - Select-String...
-- **`commonParameters.ts`**: PowerShell Common Parameters (available on all cmdlets via [CmdletBinding()]). Source: about_CommonParameters (PowerShell docs) + Get-Command output. ...
-- **`destructiveCommandWarning.ts`**: Detects potentially destructive PowerShell commands and returns a warning string for display in the permission dialog. This is purely informational --...
-- **`gitSafety.ts`**: Git can be weaponized for sandbox escape via two vectors: 1. Bare-repo attack: if cwd contains HEAD + objects/ + refs/ but no valid .git/HEAD, Git tre...
-- **`modeValidation.ts`**: PowerShell permission mode validation.  Checks if commands should be auto-allowed based on the current permission mode. In acceptEdits mode, filesyste...
-- **`pathValidation.ts`**: PowerShell-specific path validation for command arguments.  Extracts file paths from PowerShell commands using the AST parser and validates they stay ...
-- **`powershellPermissions.ts`**: PowerShell-specific permission checking, adapted from bashPermissions.ts for case-insensitive cmdlet matching.
-- **`powershellSecurity.ts`**: PowerShell-specific security analysis for command validation.  Detects dangerous patterns: code injection, download cradles, privilege escalation, dyn...
-- **`prompt.ts`**: Mengekspor: getDefaultTimeoutMs, getMaxTimeoutMs.
-- **`readOnlyValidation.ts`**: PowerShell read-only command validation.  Cmdlets are case-insensitive; all matching is done in lowercase.
-- **`toolName.ts`**: Mengekspor: POWERSHELL_TOOL_NAME.
+- **`PowerShellTool.tsx`** (`restored-src/src/tools/PowerShellTool/PowerShellTool.tsx`): PS-flavored port of BashTool's detectBlockedSleepPattern. Catches 'Start-Sleep N', 'Start-Sleep -Seconds N', 'sleep N' (built-in alias) as the first statement. Does NOT block 'Start-Sleep -Milliseconds' (sub-second pacing is fine) or float seconds (legit ra... Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `detectBlockedSleepPattern`, `PowerShellToolInput`, `Out`, `PowerShellProgress`, dan lainnya.
+- **`UI.tsx`** (`restored-src/src/tools/PowerShellTool/UI.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `renderToolUseMessage`, `renderToolUseProgressMessage`, `renderToolUseQueuedMessage`, `renderToolResultMessage`, dan lainnya.
+- **`clmTypes.ts`** (`restored-src/src/tools/PowerShellTool/clmTypes.ts`): PowerShell Constrained Language Mode allowed types. Microsoft's CLM restricts .NET type usage to this allowlist when PS runs under AppLocker/WDAC system lockdown. Any type NOT in this set is considered unsafe for untrusted code execution. We invert this: ty... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `CLM_ALLOWED_TYPES`, `normalizeTypeName`, `isClmAllowedType`.
+- **`commandSemantics.ts`** (`restored-src/src/tools/PowerShellTool/commandSemantics.ts`): Command semantics configuration for interpreting exit codes in PowerShell. PowerShell-native cmdlets do NOT need exit-code semantics: - Select-String (grep equivalent) exits 0 on no-match (returns $null) - Compare-Object (diff equivalent) exits 0 regardless... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `CommandSemantic`, `interpretCommandResult`.
+- **`commonParameters.ts`** (`restored-src/src/tools/PowerShellTool/commonParameters.ts`): PowerShell Common Parameters (available on all cmdlets via [CmdletBinding()]). Source: about_CommonParameters (PowerShell docs) + Get-Command output. Shared between pathValidation.ts (merges into per-cmdlet known-param sets) and readOnlyValidation.ts (merge... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `COMMON_SWITCHES`, `COMMON_VALUE_PARAMS`, `COMMON_PARAMETERS`.
+- **`destructiveCommandWarning.ts`** (`restored-src/src/tools/PowerShellTool/destructiveCommandWarning.ts`): Checks if a PowerShell command matches known destructive patterns. Returns a human-readable warning string, or null if no destructive pattern is detected. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getDestructiveCommandWarning`.
+- **`gitSafety.ts`** (`restored-src/src/tools/PowerShellTool/gitSafety.ts`): True if arg (raw PS arg text) resolves to a git-internal path in cwd. Covers both bare-repo paths (hooks/, refs/) and standard-repo paths (.git/hooks/, .git/config). Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `isGitInternalPathPS`, `isDotGitPathPS`.
+- **`modeValidation.ts`** (`restored-src/src/tools/PowerShellTool/modeValidation.ts`): Detects New-Item creating a filesystem link (-ItemType SymbolicLink / Junction / HardLink, or the -Type alias). Links poison subsequent path resolution the same way Set-Location/New-PSDrive do: a relative path through the link resolves to the link target, n... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `isSymlinkCreatingCommand`, `checkPermissionMode`.
+- **`pathValidation.ts`** (`restored-src/src/tools/PowerShellTool/pathValidation.ts`): Checks the raw user-provided path (pre-realpath) for dangerous removal targets. safeResolvePath/realpathSync canonicalizes in ways that defeat isDangerousRemovalPath: on Windows '/' → 'C:\' (fails the === '/' check); on macOS homedir() may be under /var whi... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `isDangerousRemovalRawPath`, `dangerousRemovalDeny`, `checkPathConstraints`.
+- **`powershellPermissions.ts`** (`restored-src/src/tools/PowerShellTool/powershellPermissions.ts`): Parse a permission rule string into a structured rule object. Delegates to shared parsePermissionRule. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `powershellPermissionRule`, `powershellToolCheckExactMatchPermission`, `powershellToolCheckPermission`, `powershellToolHasPermission`.
+- **`powershellSecurity.ts`** (`restored-src/src/tools/PowerShellTool/powershellSecurity.ts`): Main entry point for PowerShell security validation. Checks a PowerShell command against known dangerous patterns. All checks are AST-based. If the AST parse failed (parsed.valid === false), none of the individual checks will match and we return 'ask' as a... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `powershellCommandIsSafe`.
+- **`prompt.ts`** (`restored-src/src/tools/PowerShellTool/prompt.ts`): Version-specific syntax guidance. The model's training data covers both editions but it can't tell which one it's targeting, so it either emits pwsh-7 syntax on 5.1 (parser error → exit 1) or needlessly avoids && on 7. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getDefaultTimeoutMs`, `getMaxTimeoutMs`, `getPrompt`.
+- **`readOnlyValidation.ts`** (`restored-src/src/tools/PowerShellTool/readOnlyValidation.ts`): Shared callback for cmdlets that print or coerce their args to stdout/ stderr. 'Write-Output $env:SECRET' prints it directly; 'Start-Sleep $env:SECRET' leaks via type-coerce error ("Cannot convert value 'sk-...' to System.Double"). Bash's echo regex WHITELI... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `argLeaksValue`, `CMDLET_ALLOWLIST`, `resolveToCanonical`, `isCwdChangingCmdlet`, dan lainnya.
+- **`toolName.ts`** (`restored-src/src/tools/PowerShellTool/toolName.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `POWERSHELL_TOOL_NAME`.
 
 ## Direktori: `restored-src/src/tools/REPLTool`
 
-- **`constants.ts`**: REPL mode is default-on for ants in the interactive CLI (opt out with CLAUDE_CODE_REPL=0). The legacy CLAUDE_REPL_MODE=1 also forces it on.  SDK entry...
-- **`primitiveTools.ts`**: Primitive tools hidden from direct model use when REPL mode is on (REPL_ONLY_TOOLS) but still accessible inside the REPL VM context. Exported so displ...
+- **`constants.ts`** (`restored-src/src/tools/REPLTool/constants.ts`): REPL mode is default-on for ants in the interactive CLI (opt out with CLAUDE_CODE_REPL=0). The legacy CLAUDE_REPL_MODE=1 also forces it on. SDK entrypoints (sdk-ts, sdk-py, sdk-cli) are NOT defaulted on — SDK consumers script direct tool calls (Bash, Read,... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `REPL_TOOL_NAME`, `isReplModeEnabled`, `REPL_ONLY_TOOLS`.
+- **`primitiveTools.ts`** (`restored-src/src/tools/REPLTool/primitiveTools.ts`): Primitive tools hidden from direct model use when REPL mode is on (REPL_ONLY_TOOLS) but still accessible inside the REPL VM context. Exported so display-side code (collapseReadSearch, renderers) can classify/render virtual messages for these tools even when... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getReplPrimitiveTools`.
 
 ## Direktori: `restored-src/src/tools/ReadMcpResourceTool`
 
-- **`ReadMcpResourceTool.ts`**: Mengekspor: inputSchema, outputSchema, Output.
-- **`UI.tsx`**: Mengekspor: renderToolUseMessage, userFacingName, renderToolResultMessage.
-- **`prompt.ts`**: Mengekspor: DESCRIPTION, PROMPT.
+- **`ReadMcpResourceTool.ts`** (`restored-src/src/tools/ReadMcpResourceTool/ReadMcpResourceTool.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `inputSchema`, `outputSchema`, `Output`, `ReadMcpResourceTool`.
+- **`UI.tsx`** (`restored-src/src/tools/ReadMcpResourceTool/UI.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `renderToolUseMessage`, `userFacingName`, `renderToolResultMessage`.
+- **`prompt.ts`** (`restored-src/src/tools/ReadMcpResourceTool/prompt.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `DESCRIPTION`, `PROMPT`.
 
 ## Direktori: `restored-src/src/tools/RemoteTriggerTool`
 
-- **`RemoteTriggerTool.ts`**: Mengekspor: Input, Output, RemoteTriggerTool.
-- **`UI.tsx`**: Mengekspor: renderToolUseMessage, renderToolResultMessage.
-- **`prompt.ts`**: Mengekspor: REMOTE_TRIGGER_TOOL_NAME, DESCRIPTION, PROMPT.
+- **`RemoteTriggerTool.ts`** (`restored-src/src/tools/RemoteTriggerTool/RemoteTriggerTool.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `Input`, `Output`, `RemoteTriggerTool`.
+- **`UI.tsx`** (`restored-src/src/tools/RemoteTriggerTool/UI.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `renderToolUseMessage`, `renderToolResultMessage`.
+- **`prompt.ts`** (`restored-src/src/tools/RemoteTriggerTool/prompt.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `REMOTE_TRIGGER_TOOL_NAME`, `DESCRIPTION`, `PROMPT`.
 
 ## Direktori: `restored-src/src/tools/ScheduleCronTool`
 
-- **`CronCreateTool.ts`**: Mengekspor: CreateOutput, CronCreateTool.
-- **`CronDeleteTool.ts`**: Mengekspor: DeleteOutput, CronDeleteTool.
-- **`CronListTool.ts`**: Mengekspor: ListOutput, CronListTool.
-- **`UI.tsx`**: Mengekspor: renderCreateToolUseMessage, renderCreateResultMessage, renderDeleteToolUseMessage.
-- **`prompt.ts`**: Unified gate for the cron scheduling system. Combines the build-time `feature('AGENT_TRIGGERS')` flag (dead code elimination) with the runtime `tengu_...
+- **`CronCreateTool.ts`** (`restored-src/src/tools/ScheduleCronTool/CronCreateTool.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `CreateOutput`, `CronCreateTool`.
+- **`CronDeleteTool.ts`** (`restored-src/src/tools/ScheduleCronTool/CronDeleteTool.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `DeleteOutput`, `CronDeleteTool`.
+- **`CronListTool.ts`** (`restored-src/src/tools/ScheduleCronTool/CronListTool.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `ListOutput`, `CronListTool`.
+- **`UI.tsx`** (`restored-src/src/tools/ScheduleCronTool/UI.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `renderCreateToolUseMessage`, `renderCreateResultMessage`, `renderDeleteToolUseMessage`, `renderDeleteResultMessage`, dan lainnya.
+- **`prompt.ts`** (`restored-src/src/tools/ScheduleCronTool/prompt.ts`): Unified gate for the cron scheduling system. Combines the build-time 'feature('AGENT_TRIGGERS')' flag (dead code elimination) with the runtime 'tengu_kairos_cron' GrowthBook gate on a 5-minute refresh window. AGENT_TRIGGERS is independently shippable from K... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `DEFAULT_MAX_AGE_DAYS`, `isKairosCronEnabled`, `isDurableCronEnabled`, `CRON_CREATE_TOOL_NAME`, dan lainnya.
 
 ## Direktori: `restored-src/src/tools/SendMessageTool`
 
-- **`SendMessageTool.ts`**: Mengekspor: Input, MessageRouting, MessageOutput.
-- **`UI.tsx`**: Mengekspor: renderToolUseMessage, renderToolResultMessage.
-- **`constants.ts`**: Mengekspor: SEND_MESSAGE_TOOL_NAME.
-- **`prompt.ts`**: Mengekspor: DESCRIPTION, getPrompt.
+- **`SendMessageTool.ts`** (`restored-src/src/tools/SendMessageTool/SendMessageTool.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `Input`, `MessageRouting`, `MessageOutput`, `BroadcastOutput`, dan lainnya.
+- **`UI.tsx`** (`restored-src/src/tools/SendMessageTool/UI.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `renderToolUseMessage`, `renderToolResultMessage`.
+- **`constants.ts`** (`restored-src/src/tools/SendMessageTool/constants.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `SEND_MESSAGE_TOOL_NAME`.
+- **`prompt.ts`** (`restored-src/src/tools/SendMessageTool/prompt.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `DESCRIPTION`, `getPrompt`.
 
 ## Direktori: `restored-src/src/tools/SkillTool`
 
-- **`SkillTool.ts`**: Mengekspor: inputSchema, outputSchema, Output.
-- **`UI.tsx`**: Mengekspor: renderToolResultMessage, renderToolUseMessage, renderToolUseProgressMessage.
-- **`constants.ts`**: Mengekspor: SKILL_TOOL_NAME.
-- **`prompt.ts`**: Mengekspor: SKILL_BUDGET_CONTEXT_PERCENT, CHARS_PER_TOKEN, DEFAULT_CHAR_BUDGET.
+- **`SkillTool.ts`** (`restored-src/src/tools/SkillTool/SkillTool.ts`): Gets all commands including MCP skills/prompts from AppState. SkillTool needs this because getCommands() only returns local/bundled skills. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `Progress`, `inputSchema`, `outputSchema`, `Output`, dan lainnya.
+- **`UI.tsx`** (`restored-src/src/tools/SkillTool/UI.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `renderToolResultMessage`, `renderToolUseMessage`, `renderToolUseProgressMessage`, `renderToolUseRejectedMessage`, dan lainnya.
+- **`constants.ts`** (`restored-src/src/tools/SkillTool/constants.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `SKILL_TOOL_NAME`.
+- **`prompt.ts`** (`restored-src/src/tools/SkillTool/prompt.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `SKILL_BUDGET_CONTEXT_PERCENT`, `CHARS_PER_TOKEN`, `DEFAULT_CHAR_BUDGET`, `MAX_LISTING_DESC_CHARS`, dan lainnya.
 
 ## Direktori: `restored-src/src/tools/SleepTool`
 
-- **`prompt.ts`**: Mengekspor: SLEEP_TOOL_NAME, DESCRIPTION, SLEEP_TOOL_PROMPT.
+- **`prompt.ts`** (`restored-src/src/tools/SleepTool/prompt.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `SLEEP_TOOL_NAME`, `DESCRIPTION`, `SLEEP_TOOL_PROMPT`.
 
 ## Direktori: `restored-src/src/tools/SyntheticOutputTool`
 
-- **`SyntheticOutputTool.ts`**: Mengekspor: Output, SYNTHETIC_OUTPUT_TOOL_NAME, isSyntheticOutputToolEnabled.
+- **`SyntheticOutputTool.ts`** (`restored-src/src/tools/SyntheticOutputTool/SyntheticOutputTool.ts`): Create a SyntheticOutputTool configured with the given JSON schema. Returns {tool} on success or {error} with Ajv's diagnostic message (e.g. "data/properties/bugs should be object") on invalid schema. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `Output`, `SYNTHETIC_OUTPUT_TOOL_NAME`, `isSyntheticOutputToolEnabled`, `SyntheticOutputTool`, dan lainnya.
 
 ## Direktori: `restored-src/src/tools/TaskCreateTool`
 
-- **`TaskCreateTool.ts`**: Mengekspor: Output, TaskCreateTool.
-- **`constants.ts`**: Mengekspor: TASK_CREATE_TOOL_NAME.
-- **`prompt.ts`**: Mengekspor: DESCRIPTION, getPrompt.
+- **`TaskCreateTool.ts`** (`restored-src/src/tools/TaskCreateTool/TaskCreateTool.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `Output`, `TaskCreateTool`.
+- **`constants.ts`** (`restored-src/src/tools/TaskCreateTool/constants.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `TASK_CREATE_TOOL_NAME`.
+- **`prompt.ts`** (`restored-src/src/tools/TaskCreateTool/prompt.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `DESCRIPTION`, `getPrompt`.
 
 ## Direktori: `restored-src/src/tools/TaskGetTool`
 
-- **`TaskGetTool.ts`**: Mengekspor: Output, TaskGetTool.
-- **`constants.ts`**: Mengekspor: TASK_GET_TOOL_NAME.
-- **`prompt.ts`**: Mengekspor: DESCRIPTION, PROMPT.
+- **`TaskGetTool.ts`** (`restored-src/src/tools/TaskGetTool/TaskGetTool.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `Output`, `TaskGetTool`.
+- **`constants.ts`** (`restored-src/src/tools/TaskGetTool/constants.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `TASK_GET_TOOL_NAME`.
+- **`prompt.ts`** (`restored-src/src/tools/TaskGetTool/prompt.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `DESCRIPTION`, `PROMPT`.
 
 ## Direktori: `restored-src/src/tools/TaskListTool`
 
-- **`TaskListTool.ts`**: Mengekspor: Output, TaskListTool.
-- **`constants.ts`**: Mengekspor: TASK_LIST_TOOL_NAME.
-- **`prompt.ts`**: Mengekspor: DESCRIPTION, getPrompt.
+- **`TaskListTool.ts`** (`restored-src/src/tools/TaskListTool/TaskListTool.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `Output`, `TaskListTool`.
+- **`constants.ts`** (`restored-src/src/tools/TaskListTool/constants.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `TASK_LIST_TOOL_NAME`.
+- **`prompt.ts`** (`restored-src/src/tools/TaskListTool/prompt.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `DESCRIPTION`, `getPrompt`.
 
 ## Direktori: `restored-src/src/tools/TaskOutputTool`
 
-- **`TaskOutputTool.tsx`**: Mengekspor: TaskOutputTool.
-- **`constants.ts`**: Mengekspor: TASK_OUTPUT_TOOL_NAME.
+- **`TaskOutputTool.tsx`** (`restored-src/src/tools/TaskOutputTool/TaskOutputTool.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `Progress`, `TaskOutputTool`.
+- **`constants.ts`** (`restored-src/src/tools/TaskOutputTool/constants.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `TASK_OUTPUT_TOOL_NAME`.
 
 ## Direktori: `restored-src/src/tools/TaskStopTool`
 
-- **`TaskStopTool.ts`**: Mengekspor: Output, TaskStopTool.
-- **`UI.tsx`**: Mengekspor: renderToolUseMessage, renderToolResultMessage.
-- **`prompt.ts`**: Mengekspor: TASK_STOP_TOOL_NAME, DESCRIPTION.
+- **`TaskStopTool.ts`** (`restored-src/src/tools/TaskStopTool/TaskStopTool.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `Output`, `TaskStopTool`.
+- **`UI.tsx`** (`restored-src/src/tools/TaskStopTool/UI.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `renderToolUseMessage`, `renderToolResultMessage`.
+- **`prompt.ts`** (`restored-src/src/tools/TaskStopTool/prompt.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `TASK_STOP_TOOL_NAME`, `DESCRIPTION`.
 
 ## Direktori: `restored-src/src/tools/TaskUpdateTool`
 
-- **`TaskUpdateTool.ts`**: Mengekspor: Output, TaskUpdateTool.
-- **`constants.ts`**: Mengekspor: TASK_UPDATE_TOOL_NAME.
-- **`prompt.ts`**: Mengekspor: DESCRIPTION, PROMPT.
+- **`TaskUpdateTool.ts`** (`restored-src/src/tools/TaskUpdateTool/TaskUpdateTool.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `Output`, `TaskUpdateTool`.
+- **`constants.ts`** (`restored-src/src/tools/TaskUpdateTool/constants.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `TASK_UPDATE_TOOL_NAME`.
+- **`prompt.ts`** (`restored-src/src/tools/TaskUpdateTool/prompt.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `DESCRIPTION`, `PROMPT`.
 
 ## Direktori: `restored-src/src/tools/TeamCreateTool`
 
-- **`TeamCreateTool.ts`**: Mengekspor: Output, Input, TeamCreateTool.
-- **`UI.tsx`**: Mengekspor: renderToolUseMessage.
-- **`constants.ts`**: Mengekspor: TEAM_CREATE_TOOL_NAME.
-- **`prompt.ts`**: Mengekspor: getPrompt.
+- **`TeamCreateTool.ts`** (`restored-src/src/tools/TeamCreateTool/TeamCreateTool.ts`): Generates a unique team name by checking if the provided name already exists. If the name already exists, generates a new word slug. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `Output`, `Input`, `TeamCreateTool`.
+- **`UI.tsx`** (`restored-src/src/tools/TeamCreateTool/UI.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `renderToolUseMessage`.
+- **`constants.ts`** (`restored-src/src/tools/TeamCreateTool/constants.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `TEAM_CREATE_TOOL_NAME`.
+- **`prompt.ts`** (`restored-src/src/tools/TeamCreateTool/prompt.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getPrompt`.
 
 ## Direktori: `restored-src/src/tools/TeamDeleteTool`
 
-- **`TeamDeleteTool.ts`**: Mengekspor: Output, Input, TeamDeleteTool.
-- **`UI.tsx`**: Mengekspor: renderToolUseMessage, renderToolResultMessage.
-- **`constants.ts`**: Mengekspor: TEAM_DELETE_TOOL_NAME.
-- **`prompt.ts`**: Mengekspor: getPrompt.
+- **`TeamDeleteTool.ts`** (`restored-src/src/tools/TeamDeleteTool/TeamDeleteTool.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `Output`, `Input`, `TeamDeleteTool`.
+- **`UI.tsx`** (`restored-src/src/tools/TeamDeleteTool/UI.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `renderToolUseMessage`, `renderToolResultMessage`.
+- **`constants.ts`** (`restored-src/src/tools/TeamDeleteTool/constants.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `TEAM_DELETE_TOOL_NAME`.
+- **`prompt.ts`** (`restored-src/src/tools/TeamDeleteTool/prompt.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getPrompt`.
 
 ## Direktori: `restored-src/src/tools/TodoWriteTool`
 
-- **`TodoWriteTool.ts`**: Mengekspor: Output, TodoWriteTool.
-- **`constants.ts`**: Mengekspor: TODO_WRITE_TOOL_NAME.
-- **`prompt.ts`**: Mengekspor: PROMPT, DESCRIPTION.
+- **`TodoWriteTool.ts`** (`restored-src/src/tools/TodoWriteTool/TodoWriteTool.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `Output`, `TodoWriteTool`.
+- **`constants.ts`** (`restored-src/src/tools/TodoWriteTool/constants.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `TODO_WRITE_TOOL_NAME`.
+- **`prompt.ts`** (`restored-src/src/tools/TodoWriteTool/prompt.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `PROMPT`, `DESCRIPTION`.
 
 ## Direktori: `restored-src/src/tools/ToolSearchTool`
 
-- **`ToolSearchTool.ts`**: Mengekspor: inputSchema, outputSchema, Output.
-- **`constants.ts`**: Mengekspor: TOOL_SEARCH_TOOL_NAME.
-- **`prompt.ts`**: Mengekspor: isDeferredTool, formatDeferredToolLine, getPrompt.
+- **`ToolSearchTool.ts`** (`restored-src/src/tools/ToolSearchTool/ToolSearchTool.ts`): Get a cache key representing the current set of deferred tools. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `inputSchema`, `outputSchema`, `Output`, `clearToolSearchDescriptionCache`, dan lainnya.
+- **`constants.ts`** (`restored-src/src/tools/ToolSearchTool/constants.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `TOOL_SEARCH_TOOL_NAME`.
+- **`prompt.ts`** (`restored-src/src/tools/ToolSearchTool/prompt.ts`): Check if a tool should be deferred (requires ToolSearch to load). A tool is deferred if: - It's an MCP tool (always deferred - workflow-specific) - It has shouldDefer: true A tool is NEVER deferred if it has alwaysLoad: true (MCP tools set this via _meta['a... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `TOOL_SEARCH_TOOL_NAME`, `isDeferredTool`, `formatDeferredToolLine`, `getPrompt`.
 
 ## Direktori: `restored-src/src/tools/WebFetchTool`
 
-- **`UI.tsx`**: Mengekspor: renderToolUseMessage, renderToolUseProgressMessage, renderToolResultMessage.
-- **`WebFetchTool.ts`**: Mengekspor: Output, WebFetchTool.
-- **`preapproved.ts`**: Mengekspor: PREAPPROVED_HOSTS, isPreapprovedHost.
-- **`prompt.ts`**: Mengekspor: WEB_FETCH_TOOL_NAME, DESCRIPTION, makeSecondaryModelPrompt.
-- **`utils.ts`**: Mengekspor: clearWebFetchCache, MAX_MARKDOWN_LENGTH, isPreapprovedUrl.
+- **`UI.tsx`** (`restored-src/src/tools/WebFetchTool/UI.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `renderToolUseMessage`, `renderToolUseProgressMessage`, `renderToolResultMessage`, `getToolUseSummary`.
+- **`WebFetchTool.ts`** (`restored-src/src/tools/WebFetchTool/WebFetchTool.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `Output`, `WebFetchTool`.
+- **`preapproved.ts`** (`restored-src/src/tools/WebFetchTool/preapproved.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `PREAPPROVED_HOSTS`, `isPreapprovedHost`.
+- **`prompt.ts`** (`restored-src/src/tools/WebFetchTool/prompt.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `WEB_FETCH_TOOL_NAME`, `DESCRIPTION`, `makeSecondaryModelPrompt`.
+- **`utils.ts`** (`restored-src/src/tools/WebFetchTool/utils.ts`): Check if a redirect is safe to follow Allows redirects that: - Add or remove "www." in the hostname - Keep the origin the same but change path/query params - Or both of the above. Mengimplementasikan class utama untuk area fitur ini. Export utama: `clearWebFetchCache`, `MAX_MARKDOWN_LENGTH`, `isPreapprovedUrl`, `validateURL`, dan lainnya.
 
 ## Direktori: `restored-src/src/tools/WebSearchTool`
 
-- **`UI.tsx`**: Mengekspor: renderToolUseMessage, renderToolUseProgressMessage, renderToolResultMessage.
-- **`WebSearchTool.ts`**: Mengekspor: SearchResult, Output, WebSearchTool.
-- **`prompt.ts`**: Mengekspor: WEB_SEARCH_TOOL_NAME, getWebSearchPrompt.
+- **`UI.tsx`** (`restored-src/src/tools/WebSearchTool/UI.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `renderToolUseMessage`, `renderToolUseProgressMessage`, `renderToolResultMessage`, `getToolUseSummary`.
+- **`WebSearchTool.ts`** (`restored-src/src/tools/WebSearchTool/WebSearchTool.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `SearchResult`, `Output`, `WebSearchProgress`, `WebSearchTool`.
+- **`prompt.ts`** (`restored-src/src/tools/WebSearchTool/prompt.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `WEB_SEARCH_TOOL_NAME`, `getWebSearchPrompt`.
 
 ## Direktori: `restored-src/src/tools/shared`
 
-- **`gitOperationTracking.ts`**: Shell-agnostic git operation tracking for usage metrics.  Detects `git commit`, `git push`, `gh pr create`, `glab mr create`, and curl-based PR creati...
-- **`spawnMultiAgent.ts`**: Shared spawn module for teammate creation. Extracted from TeammateTool to allow reuse by AgentTool.
+- **`gitOperationTracking.ts`** (`restored-src/src/tools/shared/gitOperationTracking.ts`): Scan bash command + output for git operations worth surfacing in the collapsed tool-use summary ("committed a1b2c3, created PR #42, ran 3 bash commands"). Checks the command to avoid matching SHAs/URLs that merely appear in unrelated output (e.g. 'git log')... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `CommitKind`, `BranchAction`, `PrAction`, `parseGitCommitId`, dan lainnya.
+- **`spawnMultiAgent.ts`** (`restored-src/src/tools/shared/spawnMultiAgent.ts`): Resolve a teammate model value. Handles the 'inherit' alias (from agent frontmatter) by substituting the leader's model. gh-31069: 'inherit' was passed literally to --model, producing "It may not exist or you may not have access". If leader model is null (n... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `resolveTeammateModel`, `SpawnOutput`, `SpawnTeammateConfig`, `generateUniqueTeammateName`, dan lainnya.
 
 ## Direktori: `restored-src/src/tools/testing`
 
-- **`TestingPermissionTool.tsx`**: This testing-only tool will always pop up a permission dialog when called by the model.
+- **`TestingPermissionTool.tsx`** (`restored-src/src/tools/testing/TestingPermissionTool.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `TestingPermissionTool`.
 
 ## Direktori: `restored-src/src/tools`
 
-- **`utils.ts`**: Tags user messages with a sourceToolUseID so they stay transient until the tool resolves. This prevents the "is running" message from being duplicated...
+- **`utils.ts`** (`restored-src/src/tools/utils.ts`): Tags user messages with a sourceToolUseID so they stay transient until the tool resolves. This prevents the "is running" message from being duplicated in the UI. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `tagMessagesWithToolUseID`, `getToolUseIDFromParentMessage`.
 
 ## Direktori: `restored-src/src/types`
 
-- **`command.ts`**: Mengekspor: LocalCommandResult, PromptCommand, LocalCommandCall.
-- **`hooks.ts`**: Mengekspor: isHookEvent, promptRequestSchema, PromptRequest.
-- **`ids.ts`**: Branded types for session and agent IDs. These prevent accidentally mixing up session IDs and agent IDs at compile time.
-- **`logs.ts`**: Mengekspor: SerializedMessage, LogOption, SummaryMessage.
-- **`permissions.ts`**: Pure permission type definitions extracted to break import cycles.  This file contains only type definitions and constants with no runtime dependencie...
-- **`plugin.ts`**: Definition for a built-in plugin that ships with the CLI. Built-in plugins appear in the /plugin UI and can be enabled/disabled by users (persisted to...
-- **`textInputTypes.ts`**: Inline ghost text for mid-input command autocomplete
+- **`command.ts`** (`restored-src/src/types/command.ts`): The call signature for a local command implementation. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `LocalCommandResult`, `PromptCommand`, `LocalCommandCall`, `LocalCommandModule`, dan lainnya.
+- **`hooks.ts`** (`restored-src/src/types/hooks.ts`): Context passed to callback hooks for state access. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `isHookEvent`, `promptRequestSchema`, `PromptRequest`, `PromptResponse`, dan lainnya.
+- **`ids.ts`** (`restored-src/src/types/ids.ts`): Branded types for session and agent IDs. These prevent accidentally mixing up session IDs and agent IDs at compile time. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `SessionId`, `AgentId`, `asSessionId`, `asAgentId`, dan lainnya.
+- **`logs.ts`** (`restored-src/src/types/logs.ts`): AI-generated session title. Distinct from CustomTitleMessage so that: - User renames (custom-title) always win over AI titles in read preference - reAppendSessionMetadata never re-appends AI titles (they're ephemeral/ regeneratable; re-appending would clobb... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `SerializedMessage`, `LogOption`, `SummaryMessage`, `CustomTitleMessage`, dan lainnya.
+- **`permissions.ts`** (`restored-src/src/types/permissions.ts`): Where a permission rule originated from. Includes all SettingSource values plus additional rule-specific sources. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `EXTERNAL_PERMISSION_MODES`, `ExternalPermissionMode`, `InternalPermissionMode`, `PermissionMode`, dan lainnya.
+- **`plugin.ts`** (`restored-src/src/types/plugin.ts`): Definition for a built-in plugin that ships with the CLI. Built-in plugins appear in the /plugin UI and can be enabled/disabled by users (persisted to user settings). Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `PluginAuthor`, `PluginManifest`, `CommandMetadata`, `BuiltinPluginDefinition`, dan lainnya.
+- **`textInputTypes.ts`** (`restored-src/src/types/textInputTypes.ts`): Inline ghost text for mid-input command autocomplete. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `InlineGhostText`, `BaseTextInputProps`, `VimTextInputProps`, `VimMode`, dan lainnya.
 
 ## Direktori: `restored-src/src/types/generated/events_mono/claude_code/v1`
 
-- **`claude_code_internal_event.ts`**: Mengekspor: GitHubActionsMetadata, EnvironmentMetadata, SlackContext.
+- **`claude_code_internal_event.ts`** (`restored-src/src/types/generated/events_mono/claude_code/v1/claude_code_internal_event.ts`): GitHubActionsMetadata contains GitHub Actions-specific environment information. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `GitHubActionsMetadata`, `EnvironmentMetadata`, `SlackContext`, `ClaudeCodeInternalEvent`.
 
 ## Direktori: `restored-src/src/types/generated/events_mono/common/v1`
 
-- **`auth.ts`**: Mengekspor: PublicApiAuth, PublicApiAuth.
+- **`auth.ts`** (`restored-src/src/types/generated/events_mono/common/v1/auth.ts`): PublicApiAuth contains authentication context automatically injected by the API. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `PublicApiAuth`.
 
 ## Direktori: `restored-src/src/types/generated/events_mono/growthbook/v1`
 
-- **`growthbook_experiment_event.ts`**: Mengekspor: GrowthbookExperimentEvent, GrowthbookExperimentEvent.
+- **`growthbook_experiment_event.ts`** (`restored-src/src/types/generated/events_mono/growthbook/v1/growthbook_experiment_event.ts`): GrowthBook experiment assignment event This event tracks when a user is exposed to an experiment variant See: https://docs.growthbook.io/guide/bigquery. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `GrowthbookExperimentEvent`.
 
 ## Direktori: `restored-src/src/types/generated/google/protobuf`
 
-- **`timestamp.ts`**: Mengekspor: Timestamp, Timestamp.
+- **`timestamp.ts`** (`restored-src/src/types/generated/google/protobuf/timestamp.ts`): A Timestamp represents a point in time independent of any time zone or local calendar, encoded as a count of seconds and fractions of seconds at nanosecond resolution. The count is relative to an epoch at UTC midnight on January 1, 1970, in the proleptic Gr... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `Timestamp`.
 
 ## Direktori: `restored-src/src/upstreamproxy`
 
-- **`relay.ts`**: Mengekspor: encodeChunk, decodeChunk, UpstreamProxyRelay.
-- **`upstreamproxy.ts`**: CCR upstreamproxy — container-side wiring.  When running inside a CCR session container with upstreamproxy configured, this module: 1. Reads the sessi...
+- **`relay.ts`** (`restored-src/src/upstreamproxy/relay.ts`): Encode an UpstreamProxyChunk protobuf message by hand. For 'message UpstreamProxyChunk { bytes data = 1; }' the wire format is: tag = (field_number << 3) | wire_type = (1 << 3) | 2 = 0x0a followed by varint length, followed by the bytes. protobufjs would be... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `encodeChunk`, `decodeChunk`, `UpstreamProxyRelay`, `startUpstreamProxyRelay`, dan lainnya.
+- **`upstreamproxy.ts`** (`restored-src/src/upstreamproxy/upstreamproxy.ts`): Initialize upstreamproxy. Called once from init.ts. Safe to call when the feature is off or the token file is absent — returns {enabled: false}. Overridable paths are for tests; production uses the defaults. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `SESSION_TOKEN_PATH`, `initUpstreamProxy`, `getUpstreamProxyEnv`, `resetUpstreamProxyForTests`.
 
 ## Direktori: `restored-src/src/utils`
 
-- **`CircularBuffer.ts`**: A fixed-size circular buffer that automatically evicts the oldest items when the buffer is full. Useful for maintaining a rolling window of data.
-- **`Cursor.ts`**: Kill ring for storing killed (cut) text that can be yanked (pasted) with Ctrl+Y. This is global state that shares one kill ring across all input field...
-- **`QueryGuard.ts`**: Synchronous state machine for the query lifecycle, compatible with React's `useSyncExternalStore`.  Three states: idle        → no query, safe to dequ...
-- **`Shell.ts`**: Mengekspor: ShellConfig, getShellConfig, getPsProvider.
-- **`ShellCommand.ts`**: Set when assistant-mode auto-backgrounded a long-running blocking command.
-- **`abortController.ts`**: Default max listeners for standard operations
-- **`activityManager.ts`**: ActivityManager handles generic activity tracking for both user and CLI operations. It automatically deduplicates overlapping activities and provides ...
-- **`advisor.ts`**: Mengekspor: AdvisorServerToolUseBlock, AdvisorToolResultBlock, AdvisorBlock.
-- **`agentContext.ts`**: Agent context for analytics attribution using AsyncLocalStorage.  This module provides a way to track agent identity across async operations without p...
-- **`agentId.ts`**: Deterministic Agent ID System  This module provides helper functions for formatting and parsing deterministic agent IDs used in the swarm/teammate sys...
-- **`agentSwarmsEnabled.ts`**: Check if --agent-teams flag is provided via CLI. Checks process.argv directly to avoid import cycles with bootstrap/state. Note: The flag is only show...
-- **`agenticSessionSearch.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`analyzeContext.ts`**: Mengekspor: TOOL_TOKEN_COUNT_OVERHEAD, DeferredBuiltinTool, SystemToolDetail.
-- **`ansiToPng.ts`**: Render ANSI-escaped terminal text directly to a PNG image.  Replaces the previous ansiToSvg → @resvg/resvg-wasm pipeline. The SVG was just a lossy int...
-- **`ansiToSvg.ts`**: Converts ANSI-escaped terminal text to SVG format Supports basic ANSI color codes (foreground colors)
-- **`api.ts`**: Mengekspor: CacheScope, SystemPromptBlock, logAPIPrefix.
-- **`apiPreconnect.ts`**: Preconnect to the Anthropic API to overlap TCP+TLS handshake with startup.  The TCP+TLS handshake is ~100-200ms that normally blocks inside the first ...
-- **`appleTerminalBackup.ts`**: Mengekspor: markTerminalSetupInProgress, markTerminalSetupComplete, getTerminalPlistPath.
-- **`argumentSubstitution.ts`**: Utility for substituting $ARGUMENTS placeholders in skill/command prompts.  Supports: - $ARGUMENTS - replaced with the full arguments string - $ARGUME...
-- **`array.ts`**: Mengekspor: intersperse, count, uniq.
-- **`asciicast.ts`**: Get the asciicast recording file path. For ants with CLAUDE_CODE_TERMINAL_RECORDING=1: returns a path. Otherwise: returns null. The path is computed o...
-- **`attachments.ts`**: Mengekspor: TODO_REMINDER_CONFIG, PLAN_MODE_ATTACHMENT_CONFIG, AUTO_MODE_ATTACHMENT_CONFIG.
-- **`attribution.ts`**: Mengekspor: AttributionTexts, getAttributionTexts, countUserPromptsInMessages.
-- **`auth.ts`**: Mengekspor: isAnthropicAuthEnabled, getAuthTokenSource, ApiKeySource.
-- **`authFileDescriptor.ts`**: Well-known token file locations in CCR. The Go environment-manager creates /home/claude/.claude/remote/ and will (eventually) write these files too. U...
-- **`authPortable.ts`**: Mengekspor: normalizeApiKeyForConfig.
-- **`autoModeDenials.ts`**: Tracks commands recently denied by the auto mode classifier. Populated from useCanUseTool.ts, read from RecentDenialsTab.tsx in /permissions.
-- **`autoRunIssue.tsx`**: Component that shows a notification about running /issue command with the ability to cancel via ESC key
-- **`autoUpdater.ts`**: Mengekspor: InstallStatus, AutoUpdaterResult, MaxVersionConfig.
-- **`aws.ts`**: AWS short-term credentials format.
-- **`awsAuthStatusManager.ts`**: Singleton manager for cloud-provider authentication status (AWS Bedrock, GCP Vertex). Communicates auth refresh state between auth utilities and React...
-- **`backgroundHousekeeping.ts`**: Mengekspor: startBackgroundHousekeeping.
-- **`betas.ts`**: Mengekspor: filterAllowedSdkBetas, modelSupportsISP, modelSupportsContextManagement.
-- **`billing.ts`**: Mengekspor: hasConsoleBillingAccess, setMockBillingAccessOverride, hasClaudeAiBillingAccess.
-- **`binaryCheck.ts`**: Check if a binary/command is installed and available on the system. Uses 'which' on Unix systems (macOS, Linux, WSL) and 'where' on Windows.  @param c...
-- **`browser.ts`**: Open a file or folder path using the system's default handler. Uses `open` on macOS, `explorer` on Windows, `xdg-open` on Linux.
-- **`bufferedWriter.ts`**: Mengekspor: BufferedWriter, createBufferedWriter.
-- **`bundledMode.ts`**: Detects if the current runtime is Bun. Returns true when: - Running a JS file via the `bun` command - Running a Bun-compiled standalone executable
-- **`caCerts.ts`**: Load CA certificates for TLS connections.  Since setting `ca` on an HTTPS agent replaces the default certificate store, we must always include base CA...
-- **`caCertsConfig.ts`**: Config/settings-backed NODE_EXTRA_CA_CERTS population for `caCerts.ts`.  Split from `caCerts.ts` because `config.ts` → `file.ts` → `permissions/filesy...
-- **`cachePaths.ts`**: Mengekspor: CACHE_PATHS.
-- **`classifierApprovals.ts`**: Tracks which tool uses were auto-approved by classifiers. Populated from useCanUseTool.ts and permissions.ts, read from UserToolSuccessMessage.tsx.
-- **`classifierApprovalsHook.ts`**: React hook for classifierApprovals store. Split from classifierApprovals.ts so pure-state importers (permissions.ts, toolExecution.ts, postCompactClea...
-- **`claudeCodeHints.ts`**: Claude Code hints protocol.  CLIs and SDKs running under Claude Code can emit a self-closing `<claude-code-hint />` tag to stderr (merged into stdout ...
-- **`claudeDesktop.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`claudemd.ts`**: Files are loaded in the following order:  1. Managed memory (eg. /etc/claude-code/CLAUDE.md) - Global instructions for all users 2. User memory (~/.cl...
-- **`cleanup.ts`**: Mengekspor: CleanupResult, addCleanupResults, convertFileNameToDate.
-- **`cleanupRegistry.ts`**: Global registry for cleanup functions that should run during graceful shutdown. This module is separate from gracefulShutdown.ts to avoid circular dep...
-- **`cliArgs.ts`**: Parse a CLI flag value early, before Commander.js processes arguments. Supports both space-separated (--flag value) and equals-separated (--flag=value...
-- **`cliHighlight.ts`**: Mengekspor: CliHighlight, getCliHighlightPromise.
-- **`codeIndexing.ts`**: Utility functions for detecting code indexing tool usage.  Tracks usage of common code indexing solutions like Sourcegraph, Cody, etc. both via CLI co...
-- **`collapseBackgroundBashNotifications.ts`**: Mengekspor: collapseBackgroundBashNotifications.
-- **`collapseHookSummaries.ts`**: Collapses consecutive hook summary messages with the same hookLabel (e.g. PostToolUse) into a single summary. This happens when parallel tool calls ea...
-- **`collapseReadSearch.ts`**: Mengekspor: SearchOrReadResult, getToolSearchOrReadInfo, getSearchOrReadFromContent.
-- **`collapseTeammateShutdowns.ts`**: Collapses consecutive in-process teammate shutdown task_status attachments into a single `teammate_shutdown_batch` attachment with a count.
-- **`combinedAbortSignal.ts`**: Creates a combined AbortSignal that aborts when the input signal aborts, an optional second signal aborts, or an optional timeout elapses. Returns bot...
-- **`commandLifecycle.ts`**: Mengekspor: setCommandLifecycleListener, notifyCommandLifecycle.
-- **`commitAttribution.ts`**: List of repos where internal model names are allowed in trailers. Includes both SSH and HTTPS URL formats.  NOTE: This is intentionally a repo allowli...
-- **`completionCache.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`concurrentSessions.ts`**: Kind override from env. Set by the spawner (`claude --bg`, daemon supervisor) so the child can register without the parent having to write the file fo...
-- **`config.ts`**: Mengekspor: PastedContent, SerializedStructuredHistoryEntry, HistoryEntry.
-- **`configConstants.ts`**: Mengekspor: NOTIFICATION_CHANNELS, EDITOR_MODES, TEAMMATE_MODES.
-- **`contentArray.ts`**: Utility for inserting a block into a content array relative to tool_result blocks. Used by the API layer to position supplementary content (e.g., cach...
-- **`context.ts`**: Check if 1M context is disabled via environment variable. Used by C4E admins to disable 1M context for HIPAA compliance.
-- **`contextAnalysis.ts`**: Mengekspor: analyzeContext, tokenStatsToStatsigMetrics.
-- **`contextSuggestions.ts`**: Estimated tokens that could be saved
-- **`controlMessageCompat.ts`**: Normalize camelCase `requestId` → snake_case `request_id` on incoming control messages (control_request, control_response).  Older iOS app builds send...
-- **`conversationRecovery.ts`**: Mengekspor: TeleportRemoteResponse, TurnInterruptionState, DeserializeResult.
-- **`cron.ts`**: Mengekspor: CronFields, parseCronExpression, computeNextCronRun.
-- **`cronJitterConfig.ts`**: Mengekspor: getCronJitterConfig.
-- **`cronScheduler.ts`**: Mengekspor: isRecurringTaskAged, CronScheduler, createCronScheduler.
-- **`cronTasks.ts`**: Mengekspor: CronTask, getCronFilePath, hasCronTasksSync.
-- **`cronTasksLock.ts`**: Mengekspor: SchedulerLockOptions.
-- **`crossProjectResume.ts`**: Check if a log is from a different project directory and determine whether it's a related worktree or a completely different project.  For same-repo w...
-- **`crypto.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`cwd.ts`**: Run a function with an overridden working directory for the current async context. All calls to pwd()/getCwd() within the function (and its async desc...
-- **`debug.ts`**: Minimum log level to include in debug output. Defaults to 'debug', which filters out 'verbose' messages. Set CLAUDE_CODE_DEBUG_LOG_LEVEL=verbose to
-- **`debugFilter.ts`**: Parse debug filter string into a filter configuration Examples: - "api,hooks" -> include only api and hooks categories - "!1p,!file" -> exclude loggin...
-- **`desktopDeepLink.ts`**: Mengekspor: DesktopInstallStatus.
-- **`detectRepository.ts`**: Like detectCurrentRepository, but also returns the host (e.g. "github.com" or a GHE hostname). Callers that need to construct URLs against a specific ...
-- **`diagLogs.ts`**: Logs diagnostic information to a logfile. This information is sent via the environment manager to session-ingress to monitor issues from within the co...
-- **`diff.ts`**: Shifts hunk line numbers by offset. Use when getPatchForDisplay received a slice of the file (e.g. readEditContext) rather than the whole file — calle...
-- **`directMemberMessage.ts`**: Parse `@agent-name message` syntax for direct team member messaging.
-- **`displayTags.ts`**: Matches any XML-like `<tag>…</tag>` block (lowercase tag names, optional attributes, multi-line content). Used to strip system-injected wrapper tags f...
-- **`doctorContextWarnings.ts`**: Mengekspor: ContextWarning, ContextWarnings.
-- **`doctorDiagnostic.ts`**: Mengekspor: InstallationType, DiagnosticInfo, getInvokedBinary.
-- **`earlyInput.ts`**: Early Input Capture  This module captures terminal input that is typed before the REPL is fully initialized. Users often type `claude` and immediately...
-- **`editor.ts`**: Mengekspor: classifyGuiEditor, openFileInExternalEditor, getExternalEditor.
-- **`effort.ts`**: Mengekspor: EFFORT_LEVELS, EffortValue, modelSupportsEffort.
-- **`embeddedTools.ts`**: Whether this build has bfs/ugrep embedded in the bun binary (ant-native only).  When true: - `find` and `grep` in Claude's Bash shell are shadowed by ...
-- **`env.ts`**: Mengekspor: getGlobalClaudeFile, JETBRAINS_IDES, detectDeploymentEnvironment.
-- **`envDynamic.ts`**: Mengekspor: getTerminalWithJetBrainsDetection, envDynamic.
-- **`envUtils.ts`**: Check if NODE_OPTIONS contains a specific flag. Splits on whitespace and checks for exact match to avoid false positives.
-- **`envValidation.ts`**: Mengekspor: EnvVarValidationResult, validateBoundedIntEnvVar.
-- **`errorLogSink.ts`**: Error log sink implementation  This module contains the heavy implementation for error logging and should be initialized during app startup. It handle...
-- **`errors.ts`**: True iff `e` is any of the abort-shaped errors the codebase encounters: our AbortError class, a DOMException from AbortController.abort() (.name === '...
-- **`exampleCommands.ts`**: Mengekspor: countAndSortItems, pickDiverseCoreFiles, getExampleCommandFromCache.
-- **`execFileNoThrow.ts`**: Mengekspor: execFileNoThrow, execFileNoThrowWithCwd.
-- **`execFileNoThrowPortable.ts`**: @deprecated Use `execa` directly with `{ shell: true, reject: false }` for non-blocking execution. Sync exec calls block the event loop and cause perf...
-- **`execSyncWrapper.ts`**: @deprecated Use async alternatives when possible. Sync exec calls block the event loop.  Wrapped execSync with slow operation logging. Use this instea...
-- **`exportRenderer.tsx`**: Minimal keybinding provider for static/headless renders. Provides keybinding context without the ChordInterceptor (which uses useInput and would hang ...
-- **`extraUsage.ts`**: Mengekspor: isBilledAsExtraUsage.
-- **`fastMode.ts`**: Mengekspor: isFastModeEnabled, isFastModeAvailable, getFastModeUnavailableReason.
-- **`file.ts`**: Mengekspor: File, MAX_OUTPUT_SIZE, readFileSafe.
-- **`fileHistory.ts`**: Mengekspor: FileHistoryBackup, FileHistorySnapshot, FileHistoryState.
-- **`fileOperationAnalytics.ts`**: Creates a truncated SHA256 hash (16 chars) for file paths Used for privacy-preserving analytics on file operations
-- **`fileRead.ts`**: Sync file-read path, extracted from file.ts.  file.ts sits in the settings SCC via log.ts → types/logs.ts → types/message.ts → Tool.ts → commands.ts →...
-- **`fileReadCache.ts`**: A simple in-memory cache for file contents with automatic invalidation based on modification time. This eliminates redundant file reads in FileEditToo...
-- **`fileStateCache.ts`**: A file state cache that normalizes all path keys before access. This ensures consistent cache hits regardless of whether callers pass relative vs abso...
-- **`findExecutable.ts`**: Find an executable by searching PATH, similar to `which`. Replaces spawn-rx's findActualExecutable to avoid pulling in rxjs (~313 KB).  Returns { cmd,...
-- **`fingerprint.ts`**: Hardcoded salt from backend validation. Must match exactly for fingerprint validation to pass.
-- **`forkedAgent.ts`**: Helper for running forked agent query loops with usage tracking.  This utility ensures forked agents: 1. Share identical cache-critical params with th...
-- **`format.ts`**: Formats a byte count to a human-readable string (KB, MB, GB). @example formatFileSize(1536) → "1.5KB"
-- **`formatBriefTimestamp.ts`**: Format an ISO timestamp for the brief/chat message label line.  Display scales with age (like a messaging app): - same day:      "1:30 PM" or "13:30" ...
-- **`fpsTracker.ts`**: Mengekspor: FpsMetrics, FpsTracker.
-- **`frontmatterParser.ts`**: Frontmatter parser for markdown files Extracts and parses YAML frontmatter between --- delimiters
-- **`fsOperations.ts`**: Simplified filesystem operations interface based on Node.js fs module. Provides a subset of commonly used sync operations with type safety. Allows abs...
-- **`fullscreen.ts`**: Cached result from `tmux display-message -p '#{client_control_mode}'`. undefined = not yet queried (or probe failed) — env heuristic stays authoritati...
-- **`generatedFiles.ts`**: File patterns that should be excluded from attribution. Based on GitHub Linguist vendored patterns and common generated file patterns.
-- **`generators.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`genericProcessUtils.ts`**: Check if a process with the given PID is running (signal 0 probe).  PID ≤ 1 returns false (0 is current process group, 1 is init).  Note: `process.kil...
-- **`getWorktreePaths.ts`**: Returns the paths of all worktrees for the current git repository. If git is not available, not in a git repo, or only has one worktree, returns an em...
-- **`getWorktreePathsPortable.ts`**: Portable worktree detection using only child_process — no analytics, no bootstrap deps, no execa. Used by listSessionsImpl.ts (SDK) and anywhere that ...
-- **`ghPrStatus.ts`**: Derive review state from GitHub API values. Draft PRs always show as 'draft' regardless of reviewDecision. reviewDecision can be: APPROVED, CHANGES_RE...
-- **`git.ts`**: Mengekspor: findGitRoot, findCanonicalGitRoot, gitExe.
-- **`gitDiff.ts`**: Mengekspor: GitDiffStats, PerFileStats, GitDiffResult.
-- **`gitSettings.ts`**: Mengekspor: shouldIncludeGitInstructions.
-- **`githubRepoPathMapping.ts`**: Updates the GitHub repository path mapping in global config. Called at startup (fire-and-forget) to track known local paths for repos. This is non-blo...
-- **`glob.ts`**: Extracts the static base directory from a glob pattern. The base directory is everything before the first glob special character ( ? [ {). Returns the...
-- **`gracefulShutdown.ts`**: Mengekspor: setupGracefulShutdown, gracefulShutdownSync, isShuttingDown.
-- **`groupToolUses.ts`**: Mengekspor: MessageWithoutProgress, GroupingResult, applyGrouping.
-- **`handlePromptSubmit.ts`**: Mengekspor: PromptInputHelpers, HandlePromptSubmitParams.
-- **`hash.ts`**: djb2 string hash — fast non-cryptographic hash returning a signed 32-bit int. Deterministic across runtimes (unlike Bun.hash which uses wyhash). Use a...
-- **`headlessProfiler.ts`**: Headless mode profiling utility for measuring per-turn latency in -p (print) mode.  Tracks key timing phases per turn: - Time to system message output...
-- **`heapDumpService.ts`**: Service for heap dump capture. Used by the /heapdump command.
-- **`heatmap.ts`**: Pre-calculates percentiles from activity data for use in intensity calculations
-- **`highlightMatch.tsx`**: Inverse-highlight every occurrence of `query` in `text` (case-insensitive). Used by search dialogs to show where the query matched in result rows and ...
-- **`hooks.ts`**: Hooks are user-defined shell commands that can be executed at various points in Claude Code's lifecycle.
-- **`horizontalScroll.ts`**: Calculate the visible window of items that fit within available width, ensuring the selected item is always visible. Uses edge-based scrolling: the wi...
-- **`http.ts`**: HTTP utility constants and helpers
-- **`hyperlink.ts`**: Create a clickable hyperlink using OSC 8 escape sequences. Falls back to plain text if the terminal doesn't support hyperlinks.  @param url - The URL ...
-- **`iTermBackup.ts`**: Mengekspor: markITerm2SetupComplete.
-- **`ide.ts`**: Mengekspor: DetectedIDEInfo, IdeType, isVSCodeIde.
-- **`idePathConversion.ts`**: Path conversion utilities for IDE communication Handles conversions between Claude's environment and the IDE's environment
-- **`idleTimeout.ts`**: Creates an idle timeout manager for SDK mode. Automatically exits the process after the specified idle duration.  @param isIdle Function that returns ...
-- **`imagePaste.ts`**: Mengekspor: PASTE_THRESHOLD, ImageWithDimensions, IMAGE_EXTENSION_REGEX.
-- **`imageResizer.ts`**: Mengekspor: ImageResizeError, ImageDimensions, ResizeResult.
-- **`imageStore.ts`**: Get the image store directory for the current session.
-- **`imageValidation.ts`**: Information about an oversized image.
-- **`immediateCommand.ts`**: Whether inference-config commands (/model, /fast, /effort) should execute immediately (during a running query) rather than waiting for the current tur...
-- **`inProcessTeammateHelpers.ts`**: In-Process Teammate Helpers  Helper functions for in-process teammate integration. Provides utilities to: - Find task ID by agent name - Handle plan a...
-- **`ink.ts`**: Convert a color string to Ink's TextProps['color'] format. Colors are typically AgentColorName values like 'blue', 'green', etc. This converts them to...
-- **`intl.ts`**: Shared Intl object instances with lazy initialization.  Intl constructors are expensive (~0.05-0.1ms each), so we cache instances for reuse across the...
-- **`jetbrains.ts`**: Mengekspor: isJetBrainsPluginInstalledCachedSync.
-- **`json.ts`**: Mengekspor: safeParseJSON, safeParseJSONC, parseJSONL.
-- **`jsonRead.ts`**: Leaf stripBOM — extracted from json.ts to break settings → json → log → types/logs → … → settings. json.ts imports this for its memoized+logging safeP...
-- **`keyboardShortcuts.ts`**: Mengekspor: MACOS_OPTION_SPECIAL_CHARS, isMacosOptionChar.
-- **`lazySchema.ts`**: Returns a memoized factory function that constructs the value on first call. Used to defer Zod schema construction from module init time to first acce...
-- **`listSessionsImpl.ts`**: Standalone implementation of listSessions for the Agent SDK.  Dependencies are kept minimal and portable — no bootstrap/state.ts, no analytics, no bun...
-- **`localInstaller.ts`**: Utilities for handling local installation
-- **`lockfile.ts`**: Lazy accessor for proper-lockfile.  proper-lockfile depends on graceful-fs, which monkey-patches every fs method on first require (~8ms). Static impor...
-- **`log.ts`**: Gets the display title for a log/session with fallback logic. Skips firstPrompt if it starts with a tick/goal tag (autonomous mode auto-prompt). Strip...
-- **`logoV2Utils.ts`**: Mengekspor: LayoutMode, LayoutDimensions, getLayoutMode.
-- **`mailbox.ts`**: Mengekspor: MessageSource, Message, Mailbox.
-- **`managedEnv.ts`**: `claude ssh` remote: ANTHROPIC_UNIX_SOCKET routes auth through a -R forwarded socket to a local proxy, and the launcher sets a handful of placeholder ...
-- **`managedEnvConstants.ts`**: Environment variables that control inference routing: which provider to use, which endpoint to hit, and which model IDs to send.  When CLAUDE_CODE_PRO...
-- **`markdown.ts`**: Mengekspor: configureMarked, applyMarkdown, formatToken.
-- **`markdownConfigLoader.ts`**: Mengekspor: CLAUDE_CONFIG_DIRECTORIES, ClaudeConfigDirectory, MarkdownFile.
-- **`mcpInstructionsDelta.ts`**: Server names — for stateless-scan reconstruction.
-- **`mcpOutputStorage.ts`**: Generates a format description string based on the MCP result type and schema.
-- **`mcpValidation.ts`**: Resolve the MCP output token cap. Precedence: 1. MAX_MCP_OUTPUT_TOKENS env var (explicit user override) 2. tengu_satin_quoll GrowthBook flag's `mcp_to...
-- **`mcpWebSocketTransport.ts`**: Mengekspor: WebSocketTransport.
-- **`memoize.ts`**: Creates a memoized function that returns cached values while refreshing in parallel.
-- **`memoryFileDetection.ts`**: Mengekspor: detectSessionFileType, detectSessionPatternType, isAutoMemFile.
-- **`messagePredicates.ts`**: Mengekspor: isHumanTurn.
-- **`messageQueueManager.ts`**: Mengekspor: SetAppState, subscribeToCommandQueue, getCommandQueueSnapshot.
-- **`messages.ts`**: Mengekspor: withMemoryCorrectionHint, deriveShortMessageId, INTERRUPT_MESSAGE.
-- **`modelCost.ts`**: Mengekspor: ModelCosts, COST_TIER_3_15, COST_TIER_15_75.
-- **`modifiers.ts`**: Pre-warm the native module by loading it in advance. Call this early to avoid delay on first use.
-- **`mtls.ts`**: Get mTLS configuration from environment variables
-- **`notebook.ts`**: Mengekspor: mapNotebookCellsToToolResult, parseCellId.
-- **`objectGroupBy.ts`**: https:tc39.es/ecma262/multipage/fundamental-objects.html#sec-object.groupby
-- **`pasteStore.ts`**: Get the paste store directory (persistent across sessions).
-- **`path.ts`**: Expands a path that may contain tilde notation (~) to an absolute path.  On Windows, POSIX-style paths (e.g., `/c/Users/...`) are automatically conver...
-- **`pdf.ts`**: Read a PDF file and return it as base64-encoded data.
-- **`pdfUtils.ts`**: Parse a page range string into firstPage/lastPage numbers. Supported formats: - "5" → { firstPage: 5, lastPage: 5 } - "1-10" → { firstPage: 1, lastPag...
-- **`peerAddress.ts`**: Peer address parsing — kept separate from peerRegistry.ts so that SendMessageTool can import parseAddress without transitively loading the bridge (axi...
-- **`planModeV2.ts`**: Mengekspor: getPlanModeV2AgentCount, getPlanModeV2ExploreAgentCount, isPlanModeInterviewPhaseEnabled.
-- **`plans.ts`**: Get or generate a word slug for the current session's plan. The slug is generated lazily on first access and cached for the session. If a plan file wi...
-- **`platform.ts`**: Mengekspor: Platform, SUPPORTED_PLATFORMS, getPlatform.
-- **`preflightChecks.tsx`**: Mengekspor: PreflightCheckResult, PreflightStep.
-- **`privacyLevel.ts`**: Privacy level controls how much nonessential network traffic and telemetry Claude Code generates.  Levels are ordered by restrictiveness: default < no...
-- **`process.ts`**: Mengekspor: registerProcessOutputErrorHandlers, writeToStdout, writeToStderr.
-- **`profilerBase.ts`**: Shared infrastructure for profiler modules (startupProfiler, queryProfiler, headlessProfiler). All three use the same perf_hooks timeline and the same...
-- **`promptCategory.ts`**: Determines the prompt category for agent usage. Used for analytics to track different agent patterns.  @param agentType - The type/name of the agent @...
-- **`promptEditor.ts`**: Mengekspor: EditorResult, editFileInEditor, editPromptInEditor.
-- **`promptShellExecution.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`proxy.ts`**: Mengekspor: disableKeepAlive, _resetKeepAliveForTesting, getAddressFamily.
-- **`queryContext.ts`**: Shared helpers for building the API cache-key prefix (systemPrompt, userContext, systemContext) for query() calls.  Lives in its own file because it i...
-- **`queryHelpers.ts`**: Mengekspor: PermissionPromptTool, isResultSuccessful, extractReadFilesFromMessages.
-- **`queryProfiler.ts`**: Query profiling utility for measuring and reporting time spent in the query pipeline from user input to first token arrival. Enable by setting CLAUDE_...
-- **`queueProcessor.ts`**: Check if a queued command is a slash command (value starts with '/').
-- **`readEditContext.ts`**: Slice of the file: contextLines before/after the match, on line boundaries.
-- **`readFileInRange.ts`**: Mengekspor: ReadFileRangeResult, FileTooLargeError.
-- **`releaseNotes.ts`**: We fetch the changelog from GitHub instead of bundling it with the build.  This is necessary because Ink's static rendering makes it difficult to dyna...
-- **`renderOptions.ts`**: Gets a ReadStream for /dev/tty when stdin is piped. This allows interactive Ink rendering even when stdin is a pipe. Result is cached for the lifetime...
-- **`ripgrep.ts`**: Mengekspor: ripgrepCommand, RipgrepTimeoutError, countFilesRoundedRg.
-- **`sanitization.ts`**: Unicode Sanitization for Hidden Character Attack Mitigation  This module implements security measures against Unicode-based hidden character attacks, ...
-- **`screenshotClipboard.ts`**: Copies an image (from ANSI text) to the system clipboard. Supports macOS, Linux (with xclip/xsel), and Windows.  Pure-TS pipeline: ANSI text → bitmap-...
-- **`sdkEventQueue.ts`**: Mengekspor: SdkEvent, enqueueSdkEvent, drainSdkEvents.
-- **`semanticBoolean.ts`**: Boolean that also accepts the string literals "true"/"false".  Tool inputs arrive as model-generated JSON. The model occasionally quotes booleans — `"...
-- **`semanticNumber.ts`**: Number that also accepts numeric string literals like "30", "-5", "3.14".  Tool inputs arrive as model-generated JSON. The model occasionally quotes n...
-- **`semver.ts`**: Semver comparison utilities that use Bun.semver when available and fall back to the npm `semver` package in Node.js environments.  Bun.semver.order() ...
-- **`sequential.ts`**: Creates a sequential execution wrapper for async functions to prevent race conditions. Ensures that concurrent calls to the wrapped function are execu...
-- **`sessionActivity.ts`**: Session activity tracking with refcount-based heartbeat timer.  The transport registers its keep-alive sender via registerSessionActivityCallback(). C...
-- **`sessionEnvVars.ts`**: Session-scoped environment variables set via /env. Applied only to spawned child processes (via bash provider env overrides), not to the REPL process ...
-- **`sessionEnvironment.ts`**: Mengekspor: invalidateSessionEnvCache.
-- **`sessionFileAccessHooks.ts`**: Session file access analytics hooks. Tracks access to session memory and transcript files via Read, Grep, Glob tools. Also tracks memdir file access v...
-- **`sessionIngressAuth.ts`**: Read token via file descriptor, falling back to well-known file. Uses global state to cache the result since file descriptors can only be read once....
-- **`sessionRestore.ts`**: Mengekspor: restoreSessionStateFromLog, computeRestoredAttributionState, computeStandaloneAgentContext.
-- **`sessionStart.ts`**: Mengekspor: takeInitialUserMessage.
-- **`sessionState.ts`**: Context carried with requires_action transitions so downstream surfaces (CCR sidebar, push notifications) can show what the session is blocked on, not...
-- **`sessionStorage.ts`**: Mengekspor: isTranscriptMessage, isChainParticipant, isEphemeralToolProgress.
-- **`sessionStoragePortable.ts`**: Portable session storage utilities.  Pure Node.js — no internal dependencies on logging, experiments, or feature flags. Shared between the CLI (src/ut...
-- **`sessionTitle.ts`**: Session title generation via Haiku.  Standalone module with minimal dependencies so it can be imported from print.ts (SDK control request handler) wit...
-- **`sessionUrl.ts`**: Parses a session resume identifier which can be either: - A URL containing session ID (e.g., https:api.example.com/v1/session_ingress/session/550e8400...
-- **`set.ts`**: Note: this code is hot, so is optimized for speed.
-- **`shellConfig.ts`**: Utilities for managing shell configuration files (like .bashrc, .zshrc) Used for managing claude aliases and PATH entries
-- **`sideQuery.ts`**: Model to use for the query
-- **`sideQuestion.ts`**: Side Question ("/btw") feature - allows asking quick questions without interrupting the main agent context.  Uses runForkedAgent to leverage prompt ca...
-- **`signal.ts`**: Tiny listener-set primitive for pure event signals (no stored state).  Collapses the ~8-line `const listeners = new Set(); function subscribe(){…}; fu...
-- **`sinks.ts`**: Attach error log and analytics sinks, draining any events queued before attachment. Both inits are idempotent. Called from setup() for the default com...
-- **`slashCommandParsing.ts`**: Centralized utilities for parsing slash commands
-- **`sleep.ts`**: Abort-responsive sleep. Resolves after `ms` milliseconds, or immediately when `signal` aborts (so backoff loops don't block shutdown).  By default, ab...
-- **`sliceAnsi.ts`**: Slice a string containing ANSI escape codes.  Unlike the slice-ansi package, this properly handles OSC 8 hyperlink sequences because @alcalzone/ansi-t...
-- **`slowOperations.ts`**: Threshold in milliseconds for logging slow JSON/clone operations. Operations taking longer than this will be logged for debugging. - Override: set CLA...
-- **`standaloneAgent.ts`**: Standalone agent utilities for sessions with custom names/colors  These helpers provide access to standalone agent context (name and color) for sessio...
-- **`startupProfiler.ts`**: Startup profiling utility for measuring and reporting time spent in various initialization phases.  Two modes: 1. Sampled logging: 100% of ant users, ...
-- **`staticRender.tsx`**: Wrapper component that exits after rendering. Uses useLayoutEffect to ensure we wait for React's commit phase to complete before exiting. This is more...
-- **`stats.ts`**: Mengekspor: DailyActivity, DailyModelTokens, StreakInfo.
-- **`statsCache.ts`**: Simple in-memory lock to prevent concurrent cache operations.
-- **`status.tsx`**: Mengekspor: Property, Diagnostic, buildSandboxProperties.
-- **`statusNoticeDefinitions.tsx`**: Mengekspor: StatusNoticeType, StatusNoticeContext, StatusNoticeDefinition.
-- **`statusNoticeHelpers.ts`**: Calculate cumulative token estimate for agent descriptions
-- **`stream.ts`**: Mengekspor: Stream.
-- **`streamJsonStdoutGuard.ts`**: Sentinel written to stderr ahead of any diverted non-JSON line, so that log scrapers and tests can grep for guard activity.
-- **`streamlinedTransform.ts`**: Transforms SDK messages for streamlined output mode.  Streamlined mode is a "distillation-resistant" output format that: - Keeps text messages intact ...
-- **`stringUtils.ts`**: General string utility functions and classes for safe string accumulation
-- **`subprocessEnv.ts`**: Env vars to strip from subprocess environments when running inside GitHub Actions. This prevents prompt-injection attacks from exfiltrating secrets vi...
-- **`systemDirectories.ts`**: Get cross-platform system directories Handles differences between Windows, macOS, Linux, and WSL @param options Optional overrides for testing (env, h...
-- **`systemPrompt.ts`**: Mengekspor: buildEffectiveSystemPrompt.
-- **`systemPromptType.ts`**: Branded type for system prompt arrays.  This module is intentionally dependency-free so it can be imported from anywhere without risking circular init...
-- **`systemTheme.ts`**: Terminal dark/light mode detection for the 'auto' theme setting.  Detection is based on the terminal's actual background color (queried via OSC 11 by ...
-- **`taggedId.ts`**: Tagged ID encoding compatible with the API's tagged_id.py format.  Produces IDs like "user_01PaGUP2rbg1XDh7Z9W1CEpd" from a UUID string. The format is...
-- **`tasks.ts`**: Team name set by the leader when creating a team. Used by getTaskListId() so the leader's tasks are stored under the team name (matching where tmux/iT...
-- **`teamDiscovery.ts`**: Team Discovery - Utilities for discovering teams and teammate status  Scans ~/.claude/teams/ to find teams where the current session is the leader. Us...
-- **`teamMemoryOps.ts`**: Check if a search tool use targets team memory files by examining its path.
-- **`teammate.ts`**: Teammate utilities for agent swarm coordination  These helpers identify whether this Claude Code instance is running as a spawned teammate in a swarm....
-- **`teammateContext.ts`**: TeammateContext - Runtime context for in-process teammates  This module provides AsyncLocalStorage-based context for in-process teammates, enabling co...
-- **`teammateMailbox.ts`**: Teammate Mailbox - File-based messaging system for agent swarms  Each teammate has an inbox file at .claude/teams/{team_name}/inboxes/{agent_name}.jso...
-- **`telemetryAttributes.ts`**: Mengekspor: getTelemetryAttributes.
-- **`teleport.tsx`**: Mengekspor: TeleportResult, TeleportProgressStep, TeleportProgressCallback.
-- **`tempfile.ts`**: Generate a temporary file path.  @param prefix Optional prefix for the temp file name @param extension Optional file extension (defaults to '.md') @pa...
-- **`terminal.ts`**: Inserts newlines in a string to wrap it at the specified width. Uses ANSI-aware slicing to avoid splitting escape sequences. @param text The text to w...
-- **`terminalPanel.ts`**: Built-in terminal panel toggled with Meta+J.  Uses tmux for shell persistence: a separate tmux server with a per-instance socket (e.g., "claude-panel-...
-- **`textHighlighting.ts`**: Mengekspor: TextHighlight, TextSegment, segmentTextByHighlights.
-- **`theme.ts`**: Mengekspor: Theme, THEME_NAMES, ThemeName.
-- **`thinking.ts`**: Build-time gate (feature) + runtime gate (GrowthBook). The build flag controls code inclusion in external builds; the GB flag controls rollout.
-- **`timeouts.ts`**: Get the default timeout for bash operations in milliseconds Checks BASH_DEFAULT_TIMEOUT_MS environment variable or returns 2 minutes default @param en...
-- **`tmuxSocket.ts`**: TMUX SOCKET ISOLATION ===================== This module manages an isolated tmux socket for Claude's operations.  WHY THIS EXISTS: Without isolation, ...
-- **`tokenBudget.ts`**: Mengekspor: parseTokenBudget, findTokenBudgetPositions, getBudgetContinuationMessage.
-- **`tokens.ts`**: Get the API response id for an assistant message with real (non-synthetic) usage. Used to identify split assistant records that came from the same API...
-- **`toolErrors.ts`**: Mengekspor: formatError, getErrorParts, formatZodValidationError.
-- **`toolPool.ts`**: Mengekspor: isPrActivitySubscriptionTool, applyCoordinatorToolFilter, mergeAndFilterTools.
-- **`toolResultStorage.ts`**: Utility for persisting large tool results to disk instead of truncating them.
-- **`toolSchemaCache.ts`**: Mengekspor: getToolSchemaCache, clearToolSchemaCache.
-- **`toolSearch.ts`**: Tool Search utilities for dynamically discovering deferred tools.  When enabled, deferred tools (MCP and shouldDefer tools) are sent with defer_loadin...
-- **`transcriptSearch.ts`**: Flatten a RenderableMessage to lowercased searchable text. WeakMap- cached — messages are append-only and immutable so a hit is always valid. Lowercas...
-- **`treeify.ts`**: Mengekspor: TreeNode, TreeifyOptions, treeify.
-- **`truncate.ts`**: Truncates a file path in the middle to preserve both directory context and filename. Width-aware: uses stringWidth() for correct CJK/emoji measurement...
-- **`unaryLogging.ts`**: Mengekspor: CompletionType.
-- **`undercover.ts`**: Undercover mode — safety utilities for contributing to public/open-source repos.  When active, Claude Code adds safety instructions to commit/PR promp...
-- **`user.ts`**: GitHub Actions metadata when running in CI
-- **`userAgent.ts`**: User-Agent string helpers.  Kept dependency-free so SDK-bundled code (bridge, cli/transports) can import without pulling in auth.ts and its transitive...
-- **`userPromptKeywords.ts`**: Checks if input matches negative keyword patterns
-- **`uuid.ts`**: Validate uuid @param maybeUUID The value to be checked if it is a uuid @returns string as UUID or null if it is not valid
-- **`warningHandler.ts`**: Mengekspor: MAX_WARNING_KEYS, resetWarningHandler, initializeWarningHandler.
-- **`which.ts`**: Mengekspor: which, whichSync.
-- **`windowsPaths.ts`**: Check if a file or directory exists on Windows using the dir command @param path - The path to check @returns true if the path exists, false otherwise...
-- **`withResolvers.ts`**: Polyfill for Promise.withResolvers() (ES2024, Node 22+). package.json declares "engines": { "node": ">=18.0.0" } so we can't use the native one.
-- **`words.ts`**: Random word slug generator for plan IDs Inspired by https:github.com/nas5w/random-word-slugs with Claude-flavored words
-- **`workloadContext.ts`**: Turn-scoped workload tag via AsyncLocalStorage.  WHY a separate module from bootstrap/state.ts: bootstrap is transitively imported by src/entrypoints/...
-- **`worktree.ts`**: Mengekspor: validateWorktreeSlug, WorktreeSession, getCurrentWorktreeSession.
-- **`worktreeModeEnabled.ts`**: Worktree mode is now unconditionally enabled for all users.  Previously gated by GrowthBook flag 'tengu_worktree_mode', but the CACHED_MAY_BE_STALE pa...
-- **`xdg.ts`**: XDG Base Directory utilities for Claude CLI Native Installer  Implements the XDG Base Directory specification for organizing native installer componen...
-- **`xml.ts`**: Escape XML/HTML special characters for safe interpolation into element text content (between tags). Use when untrusted strings (process stdout, user i...
-- **`yaml.ts`**: YAML parsing wrapper.  Uses Bun.YAML (built-in, zero-cost) when running under Bun, otherwise falls back to the `yaml` npm package. The package is lazy...
-- **`zodToJsonSchema.ts`**: Converts Zod v4 schemas to JSON Schema using native toJSONSchema.
+- **`CircularBuffer.ts`** (`restored-src/src/utils/CircularBuffer.ts`): A fixed-size circular buffer that automatically evicts the oldest items when the buffer is full. Useful for maintaining a rolling window of data. Mengimplementasikan class utama untuk area fitur ini. Export utama: `CircularBuffer`.
+- **`Cursor.ts`** (`restored-src/src/utils/Cursor.ts`): Text Processing Flow for Unicode Normalization: User Input (raw text, potentially mixed NFD/NFC) ↓ MeasuredText (normalizes to NFC + builds grapheme info) ↓ All cursor operations use normalized text/offsets ↓ Display uses normalized text from wrappedLines T... Mengimplementasikan class utama untuk area fitur ini. Export utama: `pushToKillRing`, `getLastKill`, `getKillRingItem`, `getKillRingSize`, dan lainnya.
+- **`QueryGuard.ts`** (`restored-src/src/utils/QueryGuard.ts`): Mengimplementasikan class utama untuk area fitur ini. Export utama: `QueryGuard`.
+- **`Shell.ts`** (`restored-src/src/utils/Shell.ts`): Determines the best available shell to use. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `ExecResult`, `ShellConfig`, `findSuitableShell`, `getShellConfig`, dan lainnya.
+- **`ShellCommand.ts`** (`restored-src/src/utils/ShellCommand.ts`): Wraps a child process to enable flexible handling of shell command execution. Mengimplementasikan class utama untuk area fitur ini. Export utama: `ExecResult`, `ShellCommand`, `wrapSpawn`, `createAbortedCommand`, dan lainnya.
+- **`abortController.ts`** (`restored-src/src/utils/abortController.ts`): Creates an AbortController with proper event listener limits set. This prevents MaxListenersExceededWarning when multiple listeners are attached to the abort signal. @param maxListeners - Maximum number of listeners (default: 50) @returns AbortController wi... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `createAbortController`, `createChildAbortController`.
+- **`activityManager.ts`** (`restored-src/src/utils/activityManager.ts`): ActivityManager handles generic activity tracking for both user and CLI operations. It automatically deduplicates overlapping activities and provides separate metrics for user vs CLI active time. Mengimplementasikan class utama untuk area fitur ini. Export utama: `ActivityManager`, `activityManager`.
+- **`advisor.ts`** (`restored-src/src/utils/advisor.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `AdvisorServerToolUseBlock`, `AdvisorToolResultBlock`, `AdvisorBlock`, `isAdvisorBlock`, dan lainnya.
+- **`agentContext.ts`** (`restored-src/src/utils/agentContext.ts`): Discriminated union for agent context. Use agentType to distinguish between subagent and teammate contexts. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `SubagentContext`, `TeammateAgentContext`, `AgentContext`, `getAgentContext`, dan lainnya.
+- **`agentId.ts`** (`restored-src/src/utils/agentId.ts`): Deterministic Agent ID System This module provides helper functions for formatting and parsing deterministic agent IDs used in the swarm/teammate system. ## ID Formats **Agent IDs**: 'agentName@teamName' - Example: 'team-lead@my-project', 'researcher@my-pro... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `formatAgentId`, `parseAgentId`, `generateRequestId`, `parseRequestId`.
+- **`agentSwarmsEnabled.ts`** (`restored-src/src/utils/agentSwarmsEnabled.ts`): Centralized runtime check for agent teams/teammate features. This is the single gate that should be checked everywhere teammates are referenced (prompts, code, tools isEnabled, UI, etc.). Ant builds: always enabled. External builds require both: 1. Opt-in v... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `isAgentSwarmsEnabled`.
+- **`agenticSessionSearch.ts`** (`restored-src/src/utils/agenticSessionSearch.ts`): Performs an agentic search using Claude to find relevant sessions based on semantic understanding of the query. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `agenticSessionSearch`.
+- **`analyzeContext.ts`** (`restored-src/src/utils/analyzeContext.ts`): Fixed token overhead added by the API when tools are present. The API adds a tool prompt preamble (~500 tokens) once per API call when tools are present. When we count tools individually via the token counting API, each call includes this overhead, leading... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `TOOL_TOKEN_COUNT_OVERHEAD`, `DeferredBuiltinTool`, `SystemToolDetail`, `SystemPromptSectionDetail`, dan lainnya.
+- **`ansiToPng.ts`** (`restored-src/src/utils/ansiToPng.ts`): Render ANSI-escaped text directly to a PNG buffer. Returns a Buffer containing a valid PNG (RGBA, 8-bit). Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `AnsiToPngOptions`, `ansiToPng`.
+- **`ansiToSvg.ts`** (`restored-src/src/utils/ansiToSvg.ts`): Convert ANSI text to SVG Uses <tspan> elements within a single <text> per line so the renderer handles character spacing natively (no manual charWidth calculation). Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `AnsiColor`, `DEFAULT_FG`, `DEFAULT_BG`, `TextSpan`, dan lainnya.
+- **`api.ts`** (`restored-src/src/utils/api.ts`): Log stats about first block for analyzing prefix matching config (see https://console.statsig.com/4aF3Ewatb6xPVpCwxb5nA3/dynamic_configs/claude_cli_system_prompt_prefixes). Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `CacheScope`, `SystemPromptBlock`, `toolToAPISchema`, `logAPIPrefix`, dan lainnya.
+- **`apiPreconnect.ts`** (`restored-src/src/utils/apiPreconnect.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `preconnectAnthropicApi`.
+- **`appleTerminalBackup.ts`** (`restored-src/src/utils/appleTerminalBackup.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `markTerminalSetupInProgress`, `markTerminalSetupComplete`, `getTerminalPlistPath`, `backupTerminalPreferences`, dan lainnya.
+- **`argumentSubstitution.ts`** (`restored-src/src/utils/argumentSubstitution.ts`): Parse an arguments string into an array of individual arguments. Uses shell-quote for proper shell argument parsing including quoted strings. Examples: - "foo bar baz" => ["foo", "bar", "baz"] - 'foo "hello world" baz' => ["foo", "hello world", "baz"] - "fo... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `parseArguments`, `parseArgumentNames`, `generateProgressiveArgumentHint`, `substituteArguments`.
+- **`array.ts`** (`restored-src/src/utils/array.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `intersperse`, `count`, `uniq`.
+- **`asciicast.ts`** (`restored-src/src/utils/asciicast.ts`): Get the asciicast recording file path. For ants with CLAUDE_CODE_TERMINAL_RECORDING=1: returns a path. Otherwise: returns null. The path is computed once and cached in recordingState. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getRecordFilePath`, `_resetRecordingStateForTesting`, `getSessionRecordingPaths`, `renameRecordingForSession`, dan lainnya.
+- **`attachments.ts`** (`restored-src/src/utils/attachments.ts`): This is janky TODO: Generate attachments when we create messages. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `TODO_REMINDER_CONFIG`, `PLAN_MODE_ATTACHMENT_CONFIG`, `AUTO_MODE_ATTACHMENT_CONFIG`, `RELEVANT_MEMORIES_CONFIG`, dan lainnya.
+- **`attribution.ts`** (`restored-src/src/utils/attribution.ts`): Returns attribution text for commits and PRs based on user settings. Handles: - Dynamic model name via getPublicModelName() - Custom attribution settings (settings.attribution.commit/pr) - Backward compatibility with deprecated includeCoAuthoredBy setting -... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `AttributionTexts`, `getAttributionTexts`, `countUserPromptsInMessages`, `getEnhancedPRAttribution`.
+- **`auth.ts`** (`restored-src/src/utils/auth.ts`): Whether we are supporting direct 1P auth. Mengimplementasikan class utama untuk area fitur ini. Export utama: `isAnthropicAuthEnabled`, `getAuthTokenSource`, `ApiKeySource`, `getAnthropicApiKey`, dan lainnya.
+- **`authFileDescriptor.ts`** (`restored-src/src/utils/authFileDescriptor.ts`): Best-effort write of the token to a well-known location for subprocess access. CCR-gated: outside CCR there's no /home/claude/ and no reason to put a token on disk that the FD was meant to keep off disk. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `CCR_OAUTH_TOKEN_PATH`, `CCR_API_KEY_PATH`, `CCR_SESSION_INGRESS_TOKEN_PATH`, `maybePersistTokenForSubprocesses`, dan lainnya.
+- **`authPortable.ts`** (`restored-src/src/utils/authPortable.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `maybeRemoveApiKeyFromMacOSKeychainThrows`, `normalizeApiKeyForConfig`.
+- **`autoModeDenials.ts`** (`restored-src/src/utils/autoModeDenials.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `AutoModeDenial`, `recordAutoModeDenial`, `getAutoModeDenials`.
+- **`autoRunIssue.tsx`** (`restored-src/src/utils/autoRunIssue.tsx`): Component that shows a notification about running /issue command with the ability to cancel via ESC key. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `AutoRunIssueNotification`, `AutoRunIssueReason`, `shouldAutoRunIssue`, `getAutoRunCommand`, dan lainnya.
+- **`autoUpdater.ts`** (`restored-src/src/utils/autoUpdater.ts`): Checks if the current version meets the minimum required version from Statsig config Terminates the process with an error message if the version is too old NOTE ON SHA-BASED VERSIONING: We use SemVer-compliant versioning with build metadata format (X.X.X+SH... Mengimplementasikan class utama untuk area fitur ini. Export utama: `InstallStatus`, `AutoUpdaterResult`, `MaxVersionConfig`, `assertMinVersion`, dan lainnya.
+- **`aws.ts`** (`restored-src/src/utils/aws.ts`): AWS short-term credentials format. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `AwsCredentials`, `AwsStsOutput`, `isAwsCredentialsProviderError`, `isValidAwsStsOutput`, dan lainnya.
+- **`awsAuthStatusManager.ts`** (`restored-src/src/utils/awsAuthStatusManager.ts`): Mengimplementasikan class utama untuk area fitur ini. Export utama: `AwsAuthStatus`, `AwsAuthStatusManager`.
+- **`backgroundHousekeeping.ts`** (`restored-src/src/utils/backgroundHousekeeping.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `startBackgroundHousekeeping`.
+- **`betas.ts`** (`restored-src/src/utils/betas.ts`): Filter SDK betas to only include allowed ones. Warns about disallowed betas and subscriber restrictions. Returns undefined if no valid betas remain or if user is a subscriber. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `filterAllowedSdkBetas`, `modelSupportsISP`, `modelSupportsContextManagement`, `modelSupportsStructuredOutputs`, dan lainnya.
+- **`billing.ts`** (`restored-src/src/utils/billing.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `hasConsoleBillingAccess`, `setMockBillingAccessOverride`, `hasClaudeAiBillingAccess`.
+- **`binaryCheck.ts`** (`restored-src/src/utils/binaryCheck.ts`): Check if a binary/command is installed and available on the system. Uses 'which' on Unix systems (macOS, Linux, WSL) and 'where' on Windows. @param command - The command name to check (e.g., 'gopls', 'rust-analyzer') @returns Promise<boolean> - true if the... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `isBinaryInstalled`, `clearBinaryCache`.
+- **`browser.ts`** (`restored-src/src/utils/browser.ts`): Open a file or folder path using the system's default handler. Uses 'open' on macOS, 'explorer' on Windows, 'xdg-open' on Linux. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `openPath`, `openBrowser`.
+- **`bufferedWriter.ts`** (`restored-src/src/utils/bufferedWriter.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `BufferedWriter`, `createBufferedWriter`.
+- **`bundledMode.ts`** (`restored-src/src/utils/bundledMode.ts`): Detects if the current runtime is Bun. Returns true when: - Running a JS file via the 'bun' command - Running a Bun-compiled standalone executable. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `isRunningWithBun`, `isInBundledMode`.
+- **`caCerts.ts`** (`restored-src/src/utils/caCerts.ts`): Load CA certificates for TLS connections. Since setting 'ca' on an HTTPS agent replaces the default certificate store, we must always include base CAs (either system or bundled Mozilla) when returning. Returns undefined when no custom CA configuration is ne... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getCACertificates`, `clearCACertsCache`.
+- **`caCertsConfig.ts`** (`restored-src/src/utils/caCertsConfig.ts`): Apply NODE_EXTRA_CA_CERTS from settings.json to process.env early in init, BEFORE any TLS connections are made. Bun caches the TLS certificate store at process boot via BoringSSL. If NODE_EXTRA_CA_CERTS isn't set in the environment at boot, Bun won't includ... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `applyExtraCACertsFromConfig`.
+- **`cachePaths.ts`** (`restored-src/src/utils/cachePaths.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `CACHE_PATHS`.
+- **`classifierApprovals.ts`** (`restored-src/src/utils/classifierApprovals.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `setClassifierApproval`, `getClassifierApproval`, `setYoloClassifierApproval`, `getYoloClassifierApproval`, dan lainnya.
+- **`classifierApprovalsHook.ts`** (`restored-src/src/utils/classifierApprovalsHook.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `useIsClassifierChecking`.
+- **`claudeCodeHints.ts`** (`restored-src/src/utils/claudeCodeHints.ts`): Scan shell tool output for hint tags, returning the parsed hints and the output with hint lines removed. The stripped output is what the model sees — hints are a harness-only side channel. @param output - Raw command output (stdout with stderr interleaved).... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `ClaudeCodeHintType`, `ClaudeCodeHint`, `extractClaudeCodeHints`, `setPendingHint`, dan lainnya.
+- **`claudeDesktop.ts`** (`restored-src/src/utils/claudeDesktop.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getClaudeDesktopConfigPath`, `readClaudeDesktopMcpServers`.
+- **`claudemd.ts`** (`restored-src/src/utils/claudemd.ts`): Strip block-level HTML comments (<!-- ... -->) from markdown content. Uses the marked lexer to identify comments at the block level only, so comments inside inline code spans and fenced code blocks are preserved. Inline HTML comments inside a paragraph are... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `MAX_MEMORY_CHARACTER_COUNT`, `MemoryFileInfo`, `stripHtmlComments`, `processMemoryFile`, dan lainnya.
+- **`cleanup.ts`** (`restored-src/src/utils/cleanup.ts`): Cleans up old debug log files from ~/.claude/debug/ Preserves the 'latest' symlink which points to the current session's log. Debug logs can grow very large (especially with the infinite logging loop bug) and accumulate indefinitely without this cleanup. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `CleanupResult`, `addCleanupResults`, `convertFileNameToDate`, `cleanupOldMessageFiles`, dan lainnya.
+- **`cleanupRegistry.ts`** (`restored-src/src/utils/cleanupRegistry.ts`): Register a cleanup function to run during graceful shutdown. @param cleanupFn - Function to run during cleanup (can be sync or async) @returns Unregister function that removes the cleanup handler. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `registerCleanup`, `runCleanupFunctions`.
+- **`cliArgs.ts`** (`restored-src/src/utils/cliArgs.ts`): Parse a CLI flag value early, before Commander.js processes arguments. Supports both space-separated (--flag value) and equals-separated (--flag=value) syntax. This function is intended for flags that must be parsed before init() runs, such as --settings wh... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `eagerParseCliFlag`, `extractArgsAfterDoubleDash`.
+- **`cliHighlight.ts`** (`restored-src/src/utils/cliHighlight.ts`): eg. "foo/bar.ts" → "TypeScript". Awaits the shared cli-highlight load, then reads highlight.js's language registry. All callers are telemetry (OTel counter attributes, permission-dialog unary events) — none block on this, they fire-and-forget or the consume... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `CliHighlight`, `getCliHighlightPromise`, `getLanguageName`.
+- **`codeIndexing.ts`** (`restored-src/src/utils/codeIndexing.ts`): Utility functions for detecting code indexing tool usage. Tracks usage of common code indexing solutions like Sourcegraph, Cody, etc. both via CLI commands and MCP server integrations. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `CodeIndexingTool`, `detectCodeIndexingFromCommand`, `detectCodeIndexingFromMcpTool`, `detectCodeIndexingFromMcpServerName`.
+- **`collapseBackgroundBashNotifications.ts`** (`restored-src/src/utils/collapseBackgroundBashNotifications.ts`): Collapses consecutive completed-background-bash task-notifications into a single synthetic "N background commands completed" notification. Failed/killed tasks and agent/workflow notifications are left alone. Monitor stream events (enqueueStreamEvent) have n... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `collapseBackgroundBashNotifications`.
+- **`collapseHookSummaries.ts`** (`restored-src/src/utils/collapseHookSummaries.ts`): Collapses consecutive hook summary messages with the same hookLabel (e.g. PostToolUse) into a single summary. This happens when parallel tool calls each emit their own hook summary. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `collapseHookSummaries`.
+- **`collapseReadSearch.ts`** (`restored-src/src/utils/collapseReadSearch.ts`): Result of checking if a tool use is a search or read operation. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `SearchOrReadResult`, `getToolSearchOrReadInfo`, `getSearchOrReadFromContent`, `getToolUseIdsFromCollapsedGroup`, dan lainnya.
+- **`collapseTeammateShutdowns.ts`** (`restored-src/src/utils/collapseTeammateShutdowns.ts`): Collapses consecutive in-process teammate shutdown task_status attachments into a single 'teammate_shutdown_batch' attachment with a count. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `collapseTeammateShutdowns`.
+- **`combinedAbortSignal.ts`** (`restored-src/src/utils/combinedAbortSignal.ts`): Creates a combined AbortSignal that aborts when the input signal aborts, an optional second signal aborts, or an optional timeout elapses. Returns both the signal and a cleanup function that removes event listeners and clears the internal timeout timer. Use... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `createCombinedAbortSignal`.
+- **`commandLifecycle.ts`** (`restored-src/src/utils/commandLifecycle.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `setCommandLifecycleListener`, `notifyCommandLifecycle`.
+- **`commitAttribution.ts`** (`restored-src/src/utils/commitAttribution.ts`): Get the repo root for attribution operations. Uses getCwd() which respects agent worktree overrides (AsyncLocalStorage), then resolves to git root to handle 'cd subdir' case. Falls back to getOriginalCwd() if git root can't be determined. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getAttributionRepoRoot`, `getRepoClassCached`, `isInternalModelRepoCached`, `isInternalModelRepo`, dan lainnya.
+- **`completionCache.ts`** (`restored-src/src/utils/completionCache.ts`): Generate and cache the completion script, then add a source line to the shell's rc file. Returns a user-facing status message. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `setupShellCompletion`, `regenerateCompletionCache`.
+- **`concurrentSessions.ts`** (`restored-src/src/utils/concurrentSessions.ts`): True when this REPL is running inside a 'claude --bg' tmux session. Exit paths (/exit, ctrl+c, ctrl+d) should detach the attached client instead of killing the process. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `SessionKind`, `SessionStatus`, `isBgSession`, `registerSession`, dan lainnya.
+- **`config.ts`** (`restored-src/src/utils/config.ts`): Check trust for an arbitrary directory (not the session cwd). Walks up from 'dir', returning true if any ancestor has trust persisted. Unlike checkHasTrustDialogAccepted, this does NOT consult session trust or the memoized project path — use when the target... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `PastedContent`, `SerializedStructuredHistoryEntry`, `HistoryEntry`, `ReleaseChannel`, dan lainnya.
+- **`configConstants.ts`** (`restored-src/src/utils/configConstants.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `NOTIFICATION_CHANNELS`, `EDITOR_MODES`, `TEAMMATE_MODES`.
+- **`contentArray.ts`** (`restored-src/src/utils/contentArray.ts`): Utility for inserting a block into a content array relative to tool_result blocks. Used by the API layer to position supplementary content (e.g., cache editing directives) correctly within user messages. Placement rules: - If tool_result blocks exist: inser... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `insertBlockAfterToolResults`.
+- **`context.ts`** (`restored-src/src/utils/context.ts`): Check if 1M context is disabled via environment variable. Used by C4E admins to disable 1M context for HIPAA compliance. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `MODEL_CONTEXT_WINDOW_DEFAULT`, `COMPACT_MAX_OUTPUT_TOKENS`, `CAPPED_DEFAULT_MAX_TOKENS`, `ESCALATED_MAX_TOKENS`, dan lainnya.
+- **`contextAnalysis.ts`** (`restored-src/src/utils/contextAnalysis.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `analyzeContext`, `tokenStatsToStatsigMetrics`.
+- **`contextSuggestions.ts`** (`restored-src/src/utils/contextSuggestions.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `SuggestionSeverity`, `ContextSuggestion`, `generateContextSuggestions`.
+- **`controlMessageCompat.ts`** (`restored-src/src/utils/controlMessageCompat.ts`): Normalize camelCase 'requestId' → snake_case 'request_id' on incoming control messages (control_request, control_response). Older iOS app builds send 'requestId' due to a missing Swift CodingKeys mapping. Without this shim, 'isSDKControlRequest' in replBrid... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `normalizeControlMessageKeys`.
+- **`conversationRecovery.ts`** (`restored-src/src/utils/conversationRecovery.ts`): Deserializes messages from a log file into the format expected by the REPL. Filters unresolved tool uses, orphaned thinking messages, and appends a synthetic assistant sentinel when the last message is from the user. @internal Exported for testing - use loa... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `TeleportRemoteResponse`, `TurnInterruptionState`, `DeserializeResult`, `deserializeMessages`, dan lainnya.
+- **`cron.ts`** (`restored-src/src/utils/cron.ts`): Parse a 5-field cron expression into expanded number arrays. Returns null if invalid or unsupported syntax. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `CronFields`, `parseCronExpression`, `computeNextCronRun`, `cronToHuman`.
+- **`cronJitterConfig.ts`** (`restored-src/src/utils/cronJitterConfig.ts`): Read 'tengu_kairos_cron_config' from GrowthBook, validate, fall back to defaults on absent/malformed/out-of-bounds config. Called from check() every tick via the 'getJitterConfig' callback — cheap (synchronous cache hit). Refresh window: JITTER_CONFIG_REFRE... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getCronJitterConfig`.
+- **`cronScheduler.ts`** (`restored-src/src/utils/cronScheduler.ts`): True when a recurring task was created more than 'maxAgeMs' ago and should be deleted on its next fire. Permanent tasks never age. 'maxAgeMs === 0' means unlimited (never ages out). Sourced from {@link CronJitterConfig.recurringMaxAgeMs} at call time. Extra... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `isRecurringTaskAged`, `CronScheduler`, `createCronScheduler`, `buildMissedTaskNotification`.
+- **`cronTasks.ts`** (`restored-src/src/utils/cronTasks.ts`): Path to the cron file. 'dir' defaults to getProjectRoot() — pass it explicitly from contexts that don't run through main.tsx (e.g. the Agent SDK daemon, which has no bootstrap state). Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `CronTask`, `getCronFilePath`, `readCronTasks`, `hasCronTasksSync`, dan lainnya.
+- **`cronTasksLock.ts`** (`restored-src/src/utils/cronTasksLock.ts`): Options for out-of-REPL callers (Agent SDK daemon) that don't have bootstrap state. When omitted, falls back to getProjectRoot() + getSessionId() as before. lockIdentity should be stable for the lifetime of one daemon process (e.g. a randomUUID() captured a... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `SchedulerLockOptions`, `tryAcquireSchedulerLock`, `releaseSchedulerLock`.
+- **`crossProjectResume.ts`** (`restored-src/src/utils/crossProjectResume.ts`): Check if a log is from a different project directory and determine whether it's a related worktree or a completely different project. For same-repo worktrees, we can resume directly without requiring cd. For different projects, we generate the cd command. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `CrossProjectResumeResult`, `checkCrossProjectResume`.
+- **`crypto.ts`** (`restored-src/src/utils/crypto.ts`): Export utama: `randomUUID`.
+- **`cwd.ts`** (`restored-src/src/utils/cwd.ts`): Run a function with an overridden working directory for the current async context. All calls to pwd()/getCwd() within the function (and its async descendants) will return the overridden cwd instead of the global one. This enables concurrent agents to each s... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `runWithCwdOverride`, `pwd`, `getCwd`.
+- **`debug.ts`** (`restored-src/src/utils/debug.ts`): Minimum log level to include in debug output. Defaults to 'debug', which filters out 'verbose' messages. Set CLAUDE_CODE_DEBUG_LOG_LEVEL=verbose to include high-volume diagnostics (e.g. full statusLine command, shell, cwd, stdout/stderr) that would otherwis... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `DebugLogLevel`, `getMinDebugLogLevel`, `isDebugMode`, `enableDebugLogging`, dan lainnya.
+- **`debugFilter.ts`** (`restored-src/src/utils/debugFilter.ts`): Parse debug filter string into a filter configuration Examples: - "api,hooks" -> include only api and hooks categories - "!1p,!file" -> exclude logging and file categories - undefined/empty -> no filtering (show all). Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `DebugFilter`, `parseDebugFilter`, `extractDebugCategories`, `shouldShowDebugCategories`, dan lainnya.
+- **`desktopDeepLink.ts`** (`restored-src/src/utils/desktopDeepLink.ts`): Check Desktop install status including version compatibility. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `DesktopInstallStatus`, `getDesktopInstallStatus`, `openCurrentSessionInDesktop`.
+- **`detectRepository.ts`** (`restored-src/src/utils/detectRepository.ts`): Like detectCurrentRepository, but also returns the host (e.g. "github.com" or a GHE hostname). Callers that need to construct URLs against a specific GitHub host should use this variant. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `ParsedRepository`, `clearRepositoryCaches`, `detectCurrentRepository`, `detectCurrentRepositoryWithHost`, dan lainnya.
+- **`diagLogs.ts`** (`restored-src/src/utils/diagLogs.ts`): Logs diagnostic information to a logfile. This information is sent via the environment manager to session-ingress to monitor issues from within the container. *Important* - this function MUST NOT be called with any PII, including file paths, project names,... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `logForDiagnosticsNoPII`, `withDiagnosticsTiming`.
+- **`diff.ts`** (`restored-src/src/utils/diff.ts`): Shifts hunk line numbers by offset. Use when getPatchForDisplay received a slice of the file (e.g. readEditContext) rather than the whole file — callers pass 'ctx.lineOffset - 1' to convert slice-relative to file-relative. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `CONTEXT_LINES`, `DIFF_TIMEOUT_MS`, `adjustHunkLineNumbers`, `countLinesChanged`, dan lainnya.
+- **`directMemberMessage.ts`** (`restored-src/src/utils/directMemberMessage.ts`): Parse '@agent-name message' syntax for direct team member messaging. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `parseDirectMemberMessage`, `DirectMessageResult`, `sendDirectMemberMessage`.
+- **`displayTags.ts`** (`restored-src/src/utils/displayTags.ts`): Strip XML-like tag blocks from text for use in UI titles (/rewind, /resume, bridge session titles). System-injected context — IDE metadata, hook output, task notifications — arrives wrapped in tags and should never surface as a title. If stripping would res... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `stripDisplayTags`, `stripDisplayTagsAllowEmpty`, `stripIdeContextTags`.
+- **`doctorContextWarnings.ts`** (`restored-src/src/utils/doctorContextWarnings.ts`): Check all context warnings for the doctor command. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `ContextWarning`, `ContextWarnings`, `checkContextWarnings`.
+- **`doctorDiagnostic.ts`** (`restored-src/src/utils/doctorDiagnostic.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `InstallationType`, `DiagnosticInfo`, `getCurrentInstallationType`, `getInvokedBinary`, dan lainnya.
+- **`earlyInput.ts`** (`restored-src/src/utils/earlyInput.ts`): Start capturing stdin data early, before the REPL is initialized. Should be called as early as possible in the startup sequence. Only captures if stdin is a TTY (interactive terminal). Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `startCapturingEarlyInput`, `stopCapturingEarlyInput`, `consumeEarlyInput`, `hasEarlyInput`, dan lainnya.
+- **`editor.ts`** (`restored-src/src/utils/editor.ts`): Classify the editor as GUI or not. Returns the matched GUI family name for goto-line argv selection, or undefined for terminal editors. Note: this is classification only — spawn the user's actual binary, not this return value, so 'code-insiders' / absolute... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `classifyGuiEditor`, `openFileInExternalEditor`, `getExternalEditor`.
+- **`effort.ts`** (`restored-src/src/utils/effort.ts`): Numeric values are model-default only and not persisted. 'max' is session-scoped for external users (ants can persist it). Write sites call this before saving to settings so the Zod schema (which only accepts string levels) never rejects a write. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `EffortLevel`, `EFFORT_LEVELS`, `EffortValue`, `modelSupportsEffort`, dan lainnya.
+- **`embeddedTools.ts`** (`restored-src/src/utils/embeddedTools.ts`): Whether this build has bfs/ugrep embedded in the bun binary (ant-native only). When true: - 'find' and 'grep' in Claude's Bash shell are shadowed by shell functions that invoke the bun binary with argv0='bfs' / argv0='ugrep' (same trick as embedded ripgrep)... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `hasEmbeddedSearchTools`, `embeddedSearchToolsBinaryPath`.
+- **`env.ts`** (`restored-src/src/utils/env.ts`): Detects the deployment environment/platform based on environment variables @returns The deployment platform name, or 'unknown' if not detected. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getGlobalClaudeFile`, `JETBRAINS_IDES`, `detectDeploymentEnvironment`, `env`, dan lainnya.
+- **`envDynamic.ts`** (`restored-src/src/utils/envDynamic.ts`): Initialize JetBrains IDE detection asynchronously. Call this early in app initialization to populate the cache. After this resolves, getTerminalWithJetBrainsDetection() will return accurate results. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getTerminalWithJetBrainsDetectionAsync`, `getTerminalWithJetBrainsDetection`, `initJetBrainsDetection`, `envDynamic`.
+- **`envUtils.ts`** (`restored-src/src/utils/envUtils.ts`): Check if NODE_OPTIONS contains a specific flag. Splits on whitespace and checks for exact match to avoid false positives. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getClaudeConfigHomeDir`, `getTeamsDir`, `hasNodeOption`, `isEnvTruthy`, dan lainnya.
+- **`envValidation.ts`** (`restored-src/src/utils/envValidation.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `EnvVarValidationResult`, `validateBoundedIntEnvVar`.
+- **`errorLogSink.ts`** (`restored-src/src/utils/errorLogSink.ts`): Gets the path to the errors log file. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getErrorsPath`, `getMCPLogsPath`, `_flushLogWritersForTesting`, `_clearLogWritersForTesting`, dan lainnya.
+- **`errors.ts`** (`restored-src/src/utils/errors.ts`): True iff 'e' is any of the abort-shaped errors the codebase encounters: our AbortError class, a DOMException from AbortController.abort() (.name === 'AbortError'), or the SDK's APIUserAbortError. The SDK class is checked via instanceof because minified buil... Mengimplementasikan class utama untuk area fitur ini. Export utama: `ClaudeError`, `MalformedCommandError`, `AbortError`, `isAbortError`, dan lainnya.
+- **`exampleCommands.ts`** (`restored-src/src/utils/exampleCommands.ts`): Counts occurrences of items in an array and returns the top N items sorted by count in descending order, formatted as a string. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `countAndSortItems`, `pickDiverseCoreFiles`, `getExampleCommandFromCache`, `refreshExampleCommands`.
+- **`execFileNoThrow.ts`** (`restored-src/src/utils/execFileNoThrow.ts`): execFile, but always resolves (never throws). Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `execSyncWithDefaults_DEPRECATED`, `execFileNoThrow`, `execFileNoThrowWithCwd`.
+- **`execFileNoThrowPortable.ts`** (`restored-src/src/utils/execFileNoThrowPortable.ts`): @deprecated Use 'execa' directly with '{ shell: true, reject: false }' for non-blocking execution. Sync exec calls block the event loop and cause performance issues. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `execSyncWithDefaults_DEPRECATED`.
+- **`execSyncWrapper.ts`** (`restored-src/src/utils/execSyncWrapper.ts`): @deprecated Use async alternatives when possible. Sync exec calls block the event loop. Wrapped execSync with slow operation logging. Use this instead of child_process execSync directly to detect performance issues. @example import { execSync_DEPRECATED } f... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `execSync_DEPRECATED`.
+- **`exportRenderer.tsx`** (`restored-src/src/utils/exportRenderer.tsx`): Streams rendered messages in chunks, ANSI codes preserved. Each chunk is a fresh renderToAnsiString — yoga layout tree + Ink's screen buffer are sized to the tallest CHUNK instead of the full session. Measured (Mar 2026, 538-msg session): −55% plateau RSS v... Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `streamRenderedMessages`, `renderMessagesToPlainText`.
+- **`extraUsage.ts`** (`restored-src/src/utils/extraUsage.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `isBilledAsExtraUsage`.
+- **`fastMode.ts`** (`restored-src/src/utils/fastMode.ts`): Called when the API rejects a fast mode request (e.g., 400 "Fast mode is not enabled for your organization"). Permanently disables fast mode using the same flow as when the prefetch discovers the org has it disabled. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `isFastModeEnabled`, `isFastModeAvailable`, `getFastModeUnavailableReason`, `FAST_MODE_MODEL_DISPLAY`, dan lainnya.
+- **`file.ts`** (`restored-src/src/utils/file.ts`): Check if a path exists asynchronously. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `File`, `pathExists`, `MAX_OUTPUT_SIZE`, `readFileSafe`, dan lainnya.
+- **`fileHistory.ts`** (`restored-src/src/utils/fileHistory.ts`): Tracks a file edit (and add) by creating a backup of its current contents (if necessary). This must be called before the file is actually added or edited, so we can save its contents before the edit. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `FileHistoryBackup`, `FileHistorySnapshot`, `FileHistoryState`, `DiffStats`, dan lainnya.
+- **`fileOperationAnalytics.ts`** (`restored-src/src/utils/fileOperationAnalytics.ts`): Logs file operation analytics to Statsig. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `logFileOperation`.
+- **`fileRead.ts`** (`restored-src/src/utils/fileRead.ts`): Like readFileSync but also returns the detected encoding and original line ending style in one filesystem pass. Callers writing the file back (e.g. FileEditTool) can reuse these instead of calling detectFileEncoding / detectLineEndings separately, which wou... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `LineEndingType`, `detectEncodingForResolvedPath`, `detectLineEndingsForString`, `readFileSyncWithMetadata`, dan lainnya.
+- **`fileReadCache.ts`** (`restored-src/src/utils/fileReadCache.ts`): A simple in-memory cache for file contents with automatic invalidation based on modification time. This eliminates redundant file reads in FileEditTool operations. Mengimplementasikan class utama untuk area fitur ini. Export utama: `fileReadCache`.
+- **`fileStateCache.ts`** (`restored-src/src/utils/fileStateCache.ts`): A file state cache that normalizes all path keys before access. This ensures consistent cache hits regardless of whether callers pass relative vs absolute paths with redundant segments (e.g. /foo/../bar) or mixed path separators on Windows (/ vs \). Mengimplementasikan class utama untuk area fitur ini. Export utama: `FileState`, `READ_FILE_STATE_CACHE_SIZE`, `FileStateCache`, `createFileStateCacheWithSizeLimit`, dan lainnya.
+- **`findExecutable.ts`** (`restored-src/src/utils/findExecutable.ts`): Find an executable by searching PATH, similar to 'which'. Replaces spawn-rx's findActualExecutable to avoid pulling in rxjs (~313 KB). Returns { cmd, args } to match the spawn-rx API shape. 'cmd' is the resolved path if found, or the original name if not. '... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `findExecutable`.
+- **`fingerprint.ts`** (`restored-src/src/utils/fingerprint.ts`): Hardcoded salt from backend validation. Must match exactly for fingerprint validation to pass. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `FINGERPRINT_SALT`, `extractFirstMessageText`, `computeFingerprint`, `computeFingerprintFromMessages`.
+- **`forkedAgent.ts`** (`restored-src/src/utils/forkedAgent.ts`): Parameters that must be identical between the fork and parent API requests to share the parent's prompt cache. The Anthropic API cache key is composed of: system prompt, tools, model, messages (prefix), and thinking config. CacheSafeParams carries the first... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `CacheSafeParams`, `saveCacheSafeParams`, `getLastCacheSafeParams`, `ForkedAgentParams`, dan lainnya.
+- **`format.ts`** (`restored-src/src/utils/format.ts`): Formats a byte count to a human-readable string (KB, MB, GB). @example formatFileSize(1536) → "1.5KB". Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `formatFileSize`, `formatSecondsShort`, `formatDuration`, `formatNumber`, dan lainnya.
+- **`formatBriefTimestamp.ts`** (`restored-src/src/utils/formatBriefTimestamp.ts`): Format an ISO timestamp for the brief/chat message label line. Display scales with age (like a messaging app): - same day: "1:30 PM" or "13:30" (locale-dependent) - within 6 days: "Sunday, 4:15 PM" (locale-dependent) - older: "Sunday, Feb 20, 4:30 PM" (loca... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `formatBriefTimestamp`.
+- **`fpsTracker.ts`** (`restored-src/src/utils/fpsTracker.ts`): Mengimplementasikan class utama untuk area fitur ini. Export utama: `FpsMetrics`, `FpsTracker`.
+- **`frontmatterParser.ts`** (`restored-src/src/utils/frontmatterParser.ts`): Parses markdown content to extract frontmatter and content @param markdown The raw markdown content @returns Object containing parsed frontmatter and content without frontmatter. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `FrontmatterData`, `ParsedMarkdown`, `FRONTMATTER_REGEX`, `parseFrontmatter`, dan lainnya.
+- **`fsOperations.ts`** (`restored-src/src/utils/fsOperations.ts`): Simplified filesystem operations interface based on Node.js fs module. Provides a subset of commonly used sync operations with type safety. Allows abstraction for alternative implementations (e.g., mock, virtual). Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `FsOperations`, `safeResolvePath`, `isDuplicatePath`, `resolveDeepestExistingAncestorSync`, dan lainnya.
+- **`fullscreen.ts`** (`restored-src/src/utils/fullscreen.ts`): True when running under 'tmux -CC' (iTerm2 integration mode). The alt-screen / mouse-tracking path in fullscreen mode is unrecoverable in -CC mode (double-click corrupts terminal state; mouse wheel is dead), so callers auto-disable fullscreen. Lazily probes... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `isTmuxControlMode`, `_resetTmuxControlModeProbeForTesting`, `isFullscreenEnvEnabled`, `isMouseTrackingEnabled`, dan lainnya.
+- **`generatedFiles.ts`** (`restored-src/src/utils/generatedFiles.ts`): Check if a file should be excluded from attribution based on Linguist-style rules. @param filePath - Relative file path from repository root @returns true if the file should be excluded from attribution. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `isGeneratedFile`, `filterGeneratedFiles`.
+- **`generators.ts`** (`restored-src/src/utils/generators.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `lastX`, `returnValue`, `all`, `toArray`, dan lainnya.
+- **`genericProcessUtils.ts`** (`restored-src/src/utils/genericProcessUtils.ts`): Check if a process with the given PID is running (signal 0 probe). PID ≤ 1 returns false (0 is current process group, 1 is init). Note: 'process.kill(pid, 0)' throws EPERM when the process exists but is owned by another user. This reports such processes as... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `isProcessRunning`, `getAncestorPidsAsync`, `getProcessCommand`, `getAncestorCommandsAsync`, dan lainnya.
+- **`getWorktreePaths.ts`** (`restored-src/src/utils/getWorktreePaths.ts`): Returns the paths of all worktrees for the current git repository. If git is not available, not in a git repo, or only has one worktree, returns an empty array. This version includes analytics tracking and uses the CLI's gitExe() resolver. For a portable ve... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getWorktreePaths`.
+- **`getWorktreePathsPortable.ts`** (`restored-src/src/utils/getWorktreePathsPortable.ts`): Portable worktree detection using only child_process — no analytics, no bootstrap deps, no execa. Used by listSessionsImpl.ts (SDK) and anywhere that needs worktree paths without pulling in the CLI dependency chain (execa → cross-spawn → which). Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getWorktreePathsPortable`.
+- **`ghPrStatus.ts`** (`restored-src/src/utils/ghPrStatus.ts`): Derive review state from GitHub API values. Draft PRs always show as 'draft' regardless of reviewDecision. reviewDecision can be: APPROVED, CHANGES_REQUESTED, REVIEW_REQUIRED, or empty string. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `PrReviewState`, `PrStatus`, `deriveReviewState`, `fetchPrStatus`.
+- **`git.ts`** (`restored-src/src/utils/git.ts`): Find the git root by walking up the directory tree. Looks for a .git directory or file (worktrees/submodules use a file). Returns the directory containing .git, or null if not found. Memoized per startPath with an LRU cache (max 50 entries) to prevent unbou... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `findGitRoot`, `findCanonicalGitRoot`, `gitExe`, `getIsGit`, dan lainnya.
+- **`gitDiff.ts`** (`restored-src/src/utils/gitDiff.ts`): Fetch git diff stats and hunks comparing working tree to HEAD. Returns null if not in a git repo or if git commands fail. Returns null during merge/rebase/cherry-pick/revert operations since the working tree contains incoming changes that weren't intentiona... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `GitDiffStats`, `PerFileStats`, `GitDiffResult`, `fetchGitDiff`, dan lainnya.
+- **`gitSettings.ts`** (`restored-src/src/utils/gitSettings.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `shouldIncludeGitInstructions`.
+- **`githubRepoPathMapping.ts`** (`restored-src/src/utils/githubRepoPathMapping.ts`): Updates the GitHub repository path mapping in global config. Called at startup (fire-and-forget) to track known local paths for repos. This is non-blocking and errors are logged silently. Stores the git root (not cwd) so the mapping always points to the rep... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `updateGithubRepoPathMapping`, `getKnownPathsForRepo`, `filterExistingPaths`, `validateRepoAtPath`, dan lainnya.
+- **`glob.ts`** (`restored-src/src/utils/glob.ts`): Extracts the static base directory from a glob pattern. The base directory is everything before the first glob special character (* ? [ {). Returns the directory portion and the remaining relative pattern. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `extractGlobBaseDirectory`, `glob`.
+- **`gracefulShutdown.ts`** (`restored-src/src/utils/gracefulShutdown.ts`): Set up global signal handlers for graceful shutdown. Mengimplementasikan class utama untuk area fitur ini. Export utama: `setupGracefulShutdown`, `gracefulShutdownSync`, `isShuttingDown`, `resetShutdownState`, dan lainnya.
+- **`groupToolUses.ts`** (`restored-src/src/utils/groupToolUses.ts`): Groups tool uses by message.id (same API response) if the tool supports grouped rendering. Only groups 2+ tools of the same type from the same message. Also collects corresponding tool_results and attaches them to the grouped message. When verbose is true,... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `MessageWithoutProgress`, `GroupingResult`, `applyGrouping`.
+- **`handlePromptSubmit.ts`** (`restored-src/src/utils/handlePromptSubmit.ts`): Parameters for core execution logic (no UI concerns). Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `PromptInputHelpers`, `HandlePromptSubmitParams`, `handlePromptSubmit`.
+- **`hash.ts`** (`restored-src/src/utils/hash.ts`): djb2 string hash — fast non-cryptographic hash returning a signed 32-bit int. Deterministic across runtimes (unlike Bun.hash which uses wyhash). Use as a fallback when Bun.hash isn't available, or when you need on-disk-stable output (e.g. cache directory na... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `djb2Hash`, `hashContent`, `hashPair`.
+- **`headlessProfiler.ts`** (`restored-src/src/utils/headlessProfiler.ts`): Start a new turn for profiling. Clears previous marks, increments turn number, and records turn_start. Call this at the beginning of each user message processing. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `headlessProfilerStartTurn`, `headlessProfilerCheckpoint`, `logHeadlessProfilerTurn`.
+- **`heapDumpService.ts`** (`restored-src/src/utils/heapDumpService.ts`): Memory diagnostics captured alongside heap dump. Helps identify if leak is in V8 heap (captured in snapshot) or native memory (not captured). Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `HeapDumpResult`, `MemoryDiagnostics`, `captureMemoryDiagnostics`, `performHeapDump`.
+- **`heatmap.ts`** (`restored-src/src/utils/heatmap.ts`): Generates a GitHub-style activity heatmap for the terminal. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `HeatmapOptions`, `generateHeatmap`.
+- **`highlightMatch.tsx`** (`restored-src/src/utils/highlightMatch.tsx`): Inverse-highlight every occurrence of 'query' in 'text' (case-insensitive). Used by search dialogs to show where the query matched in result rows and preview panes. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `highlightMatch`.
+- **`hooks.ts`** (`restored-src/src/utils/hooks.ts`): Checks if a hook should be skipped due to lack of workspace trust. ALL hooks require workspace trust because they execute arbitrary commands from .claude/settings.json. This is a defense-in-depth security measure. Context: Hooks are captured via captureHook... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getSessionEndHookTimeoutMs`, `shouldSkipHookDueToTrust`, `createBaseHookInput`, `HookBlockingError`, dan lainnya.
+- **`horizontalScroll.ts`** (`restored-src/src/utils/horizontalScroll.ts`): Calculate the visible window of items that fit within available width, ensuring the selected item is always visible. Uses edge-based scrolling: the window only scrolls when the selected item would be outside the visible range, and positions the selected ite... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `HorizontalScrollWindow`, `calculateHorizontalScrollWindow`.
+- **`http.ts`** (`restored-src/src/utils/http.ts`): Get authentication headers for API requests Returns either OAuth headers for Max/Pro users or API key headers for regular users. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getUserAgent`, `getMCPUserAgent`, `getWebFetchUserAgent`, `AuthHeaders`, dan lainnya.
+- **`hyperlink.ts`** (`restored-src/src/utils/hyperlink.ts`): Create a clickable hyperlink using OSC 8 escape sequences. Falls back to plain text if the terminal doesn't support hyperlinks. @param url - The URL to link to @param content - Optional content to display as the link text (only when hyperlinks are supported... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `OSC8_START`, `OSC8_END`, `createHyperlink`.
+- **`iTermBackup.ts`** (`restored-src/src/utils/iTermBackup.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `markITerm2SetupComplete`, `checkAndRestoreITerm2Backup`.
+- **`ide.ts`** (`restored-src/src/utils/ide.ts`): Gets sorted IDE lockfiles from ~/.claude/ide directory @returns Array of full lockfile paths sorted by modification time (newest first). Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `DetectedIDEInfo`, `IdeType`, `isVSCodeIde`, `isJetBrainsIde`, dan lainnya.
+- **`idePathConversion.ts`** (`restored-src/src/utils/idePathConversion.ts`): Converter for Windows IDE + WSL Claude scenario. Mengimplementasikan class utama untuk area fitur ini. Export utama: `IDEPathConverter`, `WindowsToWSLConverter`, `checkWSLDistroMatch`.
+- **`idleTimeout.ts`** (`restored-src/src/utils/idleTimeout.ts`): Creates an idle timeout manager for SDK mode. Automatically exits the process after the specified idle duration. @param isIdle Function that returns true if the system is currently idle @returns Object with start/stop methods to control the idle timer. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `createIdleTimeoutManager`.
+- **`imagePaste.ts`** (`restored-src/src/utils/imagePaste.ts`): Check if clipboard contains an image without retrieving it. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `PASTE_THRESHOLD`, `ImageWithDimensions`, `hasImageInClipboard`, `getImageFromClipboard`, dan lainnya.
+- **`imageResizer.ts`** (`restored-src/src/utils/imageResizer.ts`): Error thrown when image resizing fails and the image exceeds the API limit. Mengimplementasikan class utama untuk area fitur ini. Export utama: `ImageResizeError`, `ImageDimensions`, `ResizeResult`, `maybeResizeAndDownsampleImageBuffer`, dan lainnya.
+- **`imageStore.ts`** (`restored-src/src/utils/imageStore.ts`): Cache the image path immediately (fast, no file I/O). Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `cacheImagePath`, `storeImage`, `storeImages`, `getStoredImagePath`, dan lainnya.
+- **`imageValidation.ts`** (`restored-src/src/utils/imageValidation.ts`): Information about an oversized image. Mengimplementasikan class utama untuk area fitur ini. Export utama: `OversizedImage`, `ImageSizeError`, `validateImagesForAPI`.
+- **`immediateCommand.ts`** (`restored-src/src/utils/immediateCommand.ts`): Whether inference-config commands (/model, /fast, /effort) should execute immediately (during a running query) rather than waiting for the current turn to finish. Always enabled for ants; gated by experiment for external users. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `shouldInferenceConfigCommandBeImmediate`.
+- **`inProcessTeammateHelpers.ts`** (`restored-src/src/utils/inProcessTeammateHelpers.ts`): Find the task ID for an in-process teammate by agent name. @param agentName - The agent name (e.g., "researcher") @param appState - Current AppState @returns Task ID if found, undefined otherwise. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `findInProcessTeammateTaskId`, `setAwaitingPlanApproval`, `handlePlanApprovalResponse`, `isPermissionRelatedResponse`.
+- **`ink.ts`** (`restored-src/src/utils/ink.ts`): Convert a color string to Ink's TextProps['color'] format. Colors are typically AgentColorName values like 'blue', 'green', etc. This converts them to theme keys so they respect the current theme. Falls back to the raw ANSI color if the color is not a known... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `toInkColor`.
+- **`intl.ts`** (`restored-src/src/utils/intl.ts`): Extract the first grapheme cluster from a string. Returns '' for empty strings. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getGraphemeSegmenter`, `firstGrapheme`, `lastGrapheme`, `getWordSegmenter`, dan lainnya.
+- **`jetbrains.ts`** (`restored-src/src/utils/jetbrains.ts`): Returns the cached result of isJetBrainsPluginInstalled synchronously. Returns false if the result hasn't been resolved yet. Use this only in sync contexts (e.g., status notice isActive checks). Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `isJetBrainsPluginInstalled`, `isJetBrainsPluginInstalledCached`, `isJetBrainsPluginInstalledCachedSync`.
+- **`json.ts`** (`restored-src/src/utils/json.ts`): Safely parse JSON with comments (jsonc). This is useful for VS Code configuration files like keybindings.json which support comments and other jsonc features. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `safeParseJSON`, `safeParseJSONC`, `parseJSONL`, `readJSONLFile`, dan lainnya.
+- **`jsonRead.ts`** (`restored-src/src/utils/jsonRead.ts`): Leaf stripBOM — extracted from json.ts to break settings → json → log → types/logs → … → settings. json.ts imports this for its memoized+logging safeParseJSON; leaf callers that can't import json.ts use stripBOM + jsonParse inline (syncCacheState does this)... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `stripBOM`.
+- **`keyboardShortcuts.ts`** (`restored-src/src/utils/keyboardShortcuts.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `MACOS_OPTION_SPECIAL_CHARS`, `isMacosOptionChar`.
+- **`lazySchema.ts`** (`restored-src/src/utils/lazySchema.ts`): Returns a memoized factory function that constructs the value on first call. Used to defer Zod schema construction from module init time to first access. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `lazySchema`.
+- **`listSessionsImpl.ts`** (`restored-src/src/utils/listSessionsImpl.ts`): Lists sessions with metadata extracted from stat + head/tail reads. When 'dir' is provided, returns sessions for that project directory and its git worktrees. When omitted, returns sessions across all projects. Pagination via 'limit'/'offset' operates on th... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `SessionInfo`, `ListSessionsOptions`, `parseSessionInfoFromLite`, `listCandidates`, dan lainnya.
+- **`localInstaller.ts`** (`restored-src/src/utils/localInstaller.ts`): Check if we're running from our managed local installation. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getLocalClaudePath`, `isRunningFromLocalInstallation`, `ensureLocalPackageEnvironment`, `installOrUpdateClaudePackage`, dan lainnya.
+- **`lockfile.ts`** (`restored-src/src/utils/lockfile.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `lock`, `lockSync`, `unlock`, `check`.
+- **`log.ts`** (`restored-src/src/utils/log.ts`): Gets the display title for a log/session with fallback logic. Skips firstPrompt if it starts with a tick/goal tag (autonomous mode auto-prompt). Strips display-unfriendly tags (like <ide_opened_file>) from the result. Falls back to a truncated session ID wh... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getLogDisplayTitle`, `dateToFilename`, `ErrorLogSink`, `attachErrorLogSink`, dan lainnya.
+- **`logoV2Utils.ts`** (`restored-src/src/utils/logoV2Utils.ts`): Determines the layout mode based on terminal width. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `LayoutMode`, `LayoutDimensions`, `getLayoutMode`, `calculateLayoutDimensions`, dan lainnya.
+- **`mailbox.ts`** (`restored-src/src/utils/mailbox.ts`): Mengimplementasikan class utama untuk area fitur ini. Export utama: `MessageSource`, `Message`, `Mailbox`.
+- **`managedEnv.ts`** (`restored-src/src/utils/managedEnv.ts`): Apply environment variables from trusted sources to process.env. Called before the trust dialog so that user/enterprise env vars like ANTHROPIC_BASE_URL take effect during first-run/onboarding. For trusted sources (user settings, managed settings, CLI flags... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `applySafeConfigEnvironmentVariables`, `applyConfigEnvironmentVariables`.
+- **`managedEnvConstants.ts`** (`restored-src/src/utils/managedEnvConstants.ts`): Dangerous shell settings that can execute arbitrary shell code. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `isProviderManagedEnvVar`, `DANGEROUS_SHELL_SETTINGS`, `SAFE_ENV_VARS`.
+- **`markdown.ts`** (`restored-src/src/utils/markdown.ts`): Pad 'content' to 'targetWidth' according to alignment. 'displayWidth' is the visible width of 'content' (caller computes this, e.g. via stringWidth on stripAnsi'd text, so ANSI codes in 'content' don't affect padding). Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `configureMarked`, `applyMarkdown`, `formatToken`, `padAligned`.
+- **`markdownConfigLoader.ts`** (`restored-src/src/utils/markdownConfigLoader.ts`): Extracts a description from markdown content Uses the first non-empty line as the description, or falls back to a default. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `CLAUDE_CONFIG_DIRECTORIES`, `ClaudeConfigDirectory`, `MarkdownFile`, `extractDescriptionFromMarkdown`, dan lainnya.
+- **`mcpInstructionsDelta.ts`** (`restored-src/src/utils/mcpInstructionsDelta.ts`): Client-authored instruction block to announce when a server connects, in addition to (or instead of) the server's own 'InitializeResult.instructions'. Lets first-party servers (e.g., claude-in-chrome) carry client-side context the server itself doesn't know... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `McpInstructionsDelta`, `ClientSideInstruction`, `isMcpInstructionsDeltaEnabled`, `getMcpInstructionsDelta`.
+- **`mcpOutputStorage.ts`** (`restored-src/src/utils/mcpOutputStorage.ts`): Generates a format description string based on the MCP result type and schema. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getFormatDescription`, `getLargeOutputInstructions`, `extensionForMimeType`, `isBinaryContentType`, dan lainnya.
+- **`mcpValidation.ts`** (`restored-src/src/utils/mcpValidation.ts`): Resolve the MCP output token cap. Precedence: 1. MAX_MCP_OUTPUT_TOKENS env var (explicit user override) 2. tengu_satin_quoll GrowthBook flag's 'mcp_tool' key (tokens, not chars — unlike the other keys in that map which getPersistenceThreshold reads as chars... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `MCP_TOKEN_COUNT_THRESHOLD_FACTOR`, `IMAGE_TOKEN_ESTIMATE`, `getMaxMcpOutputTokens`, `MCPToolResult`, dan lainnya.
+- **`mcpWebSocketTransport.ts`** (`restored-src/src/utils/mcpWebSocketTransport.ts`): Mengimplementasikan class utama untuk area fitur ini. Export utama: `WebSocketTransport`.
+- **`memoize.ts`** (`restored-src/src/utils/memoize.ts`): Creates a memoized function that returns cached values while refreshing in parallel. This implements a write-through cache pattern: - If cache is fresh, return immediately - If cache is stale, return the stale value but refresh it in the background - If no... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `memoizeWithTTL`, `memoizeWithTTLAsync`, `memoizeWithLRU`.
+- **`memoryFileDetection.ts`** (`restored-src/src/utils/memoryFileDetection.ts`): Detects if a file path is a session-related file under ~/.claude. Returns the type of session file or null if not a session file. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `detectSessionFileType`, `detectSessionPatternType`, `isAutoMemFile`, `MemoryScope`, dan lainnya.
+- **`messagePredicates.ts`** (`restored-src/src/utils/messagePredicates.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `isHumanTurn`.
+- **`messageQueueManager.ts`** (`restored-src/src/utils/messageQueueManager.ts`): Subscribe to command queue changes. Compatible with React's useSyncExternalStore. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `SetAppState`, `subscribeToCommandQueue`, `getCommandQueueSnapshot`, `getCommandQueue`, dan lainnya.
+- **`messages.ts`** (`restored-src/src/utils/messages.ts`): Appends a memory correction hint to a rejection/cancellation message when auto-memory is enabled and the GrowthBook flag is on. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `withMemoryCorrectionHint`, `deriveShortMessageId`, `INTERRUPT_MESSAGE`, `INTERRUPT_MESSAGE_FOR_TOOL_USE`, dan lainnya.
+- **`modelCost.ts`** (`restored-src/src/utils/modelCost.ts`): Get the cost tier for Opus 4.6 based on fast mode. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `ModelCosts`, `COST_TIER_3_15`, `COST_TIER_15_75`, `COST_TIER_5_25`, dan lainnya.
+- **`modifiers.ts`** (`restored-src/src/utils/modifiers.ts`): Pre-warm the native module by loading it in advance. Call this early to avoid delay on first use. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `ModifierKey`, `prewarmModifiers`, `isModifierPressed`.
+- **`mtls.ts`** (`restored-src/src/utils/mtls.ts`): Get mTLS configuration from environment variables. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `MTLSConfig`, `TLSConfig`, `getMTLSConfig`, `getMTLSAgent`, dan lainnya.
+- **`notebook.ts`** (`restored-src/src/utils/notebook.ts`): Reads and parses a Jupyter notebook file into processed cell data. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `readNotebook`, `mapNotebookCellsToToolResult`, `parseCellId`.
+- **`objectGroupBy.ts`** (`restored-src/src/utils/objectGroupBy.ts`): https://tc39.es/ecma262/multipage/fundamental-objects.html#sec-object.groupby. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `objectGroupBy`.
+- **`pasteStore.ts`** (`restored-src/src/utils/pasteStore.ts`): Generate a hash for paste content to use as filename. Exported so callers can get the hash synchronously before async storage. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `hashPastedText`, `storePastedText`, `retrievePastedText`, `cleanupOldPastes`.
+- **`path.ts`** (`restored-src/src/utils/path.ts`): Expands a path that may contain tilde notation (~) to an absolute path. On Windows, POSIX-style paths (e.g., '/c/Users/...') are automatically converted to Windows format (e.g., 'C:\Users\...'). The function always returns paths in the native format for the... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `expandPath`, `toRelativePath`, `getDirectoryForPath`, `containsPathTraversal`, dan lainnya.
+- **`pdf.ts`** (`restored-src/src/utils/pdf.ts`): Read a PDF file and return it as base64-encoded data. @param filePath Path to the PDF file @returns Result containing PDF data or a structured error. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `PDFError`, `PDFResult`, `readPDF`, `getPDFPageCount`, dan lainnya.
+- **`pdfUtils.ts`** (`restored-src/src/utils/pdfUtils.ts`): Parse a page range string into firstPage/lastPage numbers. Supported formats: - "5" → { firstPage: 5, lastPage: 5 } - "1-10" → { firstPage: 1, lastPage: 10 } - "3-" → { firstPage: 3, lastPage: Infinity } Returns null on invalid input (non-numeric, zero, inv... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `DOCUMENT_EXTENSIONS`, `parsePDFPageRange`, `isPDFSupported`, `isPDFExtension`.
+- **`peerAddress.ts`** (`restored-src/src/utils/peerAddress.ts`): Peer address parsing — kept separate from peerRegistry.ts so that SendMessageTool can import parseAddress without transitively loading the bridge (axios) and UDS (fs, net) modules at tool-enumeration time. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `parseAddress`.
+- **`planModeV2.ts`** (`restored-src/src/utils/planModeV2.ts`): Check if plan mode interview phase is enabled. Config: ant=always_on, external=tengu_plan_mode_interview_phase gate, envVar=true. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getPlanModeV2AgentCount`, `getPlanModeV2ExploreAgentCount`, `isPlanModeInterviewPhaseEnabled`, `PewterLedgerVariant`, dan lainnya.
+- **`plans.ts`** (`restored-src/src/utils/plans.ts`): Get or generate a word slug for the current session's plan. The slug is generated lazily on first access and cached for the session. If a plan file with the generated slug already exists, retries up to 10 times. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getPlanSlug`, `setPlanSlug`, `clearPlanSlug`, `clearAllPlanSlugs`, dan lainnya.
+- **`platform.ts`** (`restored-src/src/utils/platform.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `Platform`, `SUPPORTED_PLATFORMS`, `getPlatform`, `getWslVersion`, dan lainnya.
+- **`preflightChecks.tsx`** (`restored-src/src/utils/preflightChecks.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `PreflightCheckResult`, `PreflightStep`.
+- **`privacyLevel.ts`** (`restored-src/src/utils/privacyLevel.ts`): True when all nonessential network traffic should be suppressed. Equivalent to the old 'process.env.CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC' check. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getPrivacyLevel`, `isEssentialTrafficOnly`, `isTelemetryDisabled`, `getEssentialTrafficOnlyReason`.
+- **`process.ts`** (`restored-src/src/utils/process.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `registerProcessOutputErrorHandlers`, `writeToStdout`, `writeToStderr`, `exitWithError`, dan lainnya.
+- **`profilerBase.ts`** (`restored-src/src/utils/profilerBase.ts`): Render a single timeline line in the shared profiler report format: [+ total.ms] (+ delta.ms) name [extra] [| RSS: .., Heap: ..] totalPad/deltaPad control the padStart width so callers can align columns based on their expected magnitude (startup uses 8/7, q... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getPerformance`, `formatMs`, `formatTimelineLine`.
+- **`promptCategory.ts`** (`restored-src/src/utils/promptCategory.ts`): Determines the prompt category for agent usage. Used for analytics to track different agent patterns. @param agentType - The type/name of the agent @param isBuiltInAgent - Whether this is a built-in agent or custom @returns The agent prompt category string. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getQuerySourceForAgent`, `getQuerySourceForREPL`.
+- **`promptEditor.ts`** (`restored-src/src/utils/promptEditor.ts`): Re-collapse expanded pasted text by finding content that matches pastedContents and replacing it with references. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `EditorResult`, `editFileInEditor`, `editPromptInEditor`.
+- **`promptShellExecution.ts`** (`restored-src/src/utils/promptShellExecution.ts`): Parses prompt text and executes any embedded shell commands. Supports two syntaxes: - Code blocks: '''! command ''' - Inline: !'command' @param shell - Shell to route commands through. Defaults to bash. This is *never* read from settings.defaultShell — it c... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `executeShellCommandsInPrompt`.
+- **`proxy.ts`** (`restored-src/src/utils/proxy.ts`): Convert dns.LookupOptions.family to a numeric address family value Handles: 0 | 4 | 6 | 'IPv4' | 'IPv6' | undefined. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `disableKeepAlive`, `_resetKeepAliveForTesting`, `getAddressFamily`, `getProxyUrl`, dan lainnya.
+- **`queryContext.ts`** (`restored-src/src/utils/queryContext.ts`): Fetch the three context pieces that form the API cache-key prefix: systemPrompt parts, userContext, systemContext. When customSystemPrompt is set, the default getSystemPrompt build and getSystemContext are skipped — the custom prompt replaces the default en... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `fetchSystemPromptParts`, `buildSideQuestionFallbackParams`.
+- **`queryHelpers.ts`** (`restored-src/src/utils/queryHelpers.ts`): Checks if the result should be considered successful based on the last message. Returns true if: - Last message is assistant with text/thinking content - Last message is user with only tool_result blocks - Last message is the user prompt but the API complet... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `PermissionPromptTool`, `isResultSuccessful`, `normalizeMessage`, `handleOrphanedPermission`, dan lainnya.
+- **`queryProfiler.ts`** (`restored-src/src/utils/queryProfiler.ts`): Start profiling a new query session. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `startQueryProfile`, `queryCheckpoint`, `endQueryProfile`, `logQueryProfileReport`.
+- **`queueProcessor.ts`** (`restored-src/src/utils/queueProcessor.ts`): Processes commands from the queue. Slash commands (starting with '/') and bash-mode commands are processed one at a time so each goes through the executeInput path individually. Bash commands need individual processing to preserve per-command error isolatio... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `processQueueIfReady`, `hasQueuedCommands`.
+- **`readEditContext.ts`** (`restored-src/src/utils/readEditContext.ts`): Finds 'needle' in the file at 'path' and returns a context-window slice containing the match plus 'contextLines' of surrounding context on each side. Scans in 8KB chunks with a straddle overlap so matches crossing a chunk boundary are found. Capped at MAX_S... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `CHUNK_SIZE`, `MAX_SCAN_BYTES`, `EditContext`, `readEditContext`, dan lainnya.
+- **`readFileInRange.ts`** (`restored-src/src/utils/readFileInRange.ts`): Mengimplementasikan class utama untuk area fitur ini. Export utama: `ReadFileRangeResult`, `FileTooLargeError`, `readFileInRange`.
+- **`releaseNotes.ts`** (`restored-src/src/utils/releaseNotes.ts`): We fetch the changelog from GitHub instead of bundling it with the build. This is necessary because Ink's static rendering makes it difficult to dynamically update/show components after initial render. By storing the changelog in config, we ensure it's avai... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `CHANGELOG_URL`, `_resetChangelogCacheForTesting`, `migrateChangelogFromConfig`, `fetchAndStoreChangelog`, dan lainnya.
+- **`renderOptions.ts`** (`restored-src/src/utils/renderOptions.ts`): Returns base render options for Ink, including stdin override when needed. Use this for all render() calls to ensure piped input works correctly. @param exitOnCtrlC - Whether to exit on Ctrl+C (usually false for dialogs). Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getBaseRenderOptions`.
+- **`ripgrep.ts`** (`restored-src/src/utils/ripgrep.ts`): Custom error class for ripgrep timeouts. This allows callers to distinguish between "no matches" and "timed out". Mengimplementasikan class utama untuk area fitur ini. Export utama: `ripgrepCommand`, `RipgrepTimeoutError`, `ripGrepStream`, `ripGrep`, dan lainnya.
+- **`sanitization.ts`** (`restored-src/src/utils/sanitization.ts`): Unicode Sanitization for Hidden Character Attack Mitigation This module implements security measures against Unicode-based hidden character attacks, specifically targeting ASCII Smuggling and Hidden Prompt Injection vulnerabilities. These attacks use invisi... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `partiallySanitizeUnicode`, `recursivelySanitizeUnicode`.
+- **`screenshotClipboard.ts`** (`restored-src/src/utils/screenshotClipboard.ts`): Copies an image (from ANSI text) to the system clipboard. Supports macOS, Linux (with xclip/xsel), and Windows. Pure-TS pipeline: ANSI text → bitmap-font render → PNG encode. No WASM, no system fonts, so this works in every build (native and JS). Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `copyAnsiToClipboard`.
+- **`sdkEventQueue.ts`** (`restored-src/src/utils/sdkEventQueue.ts`): Emit a task_notification SDK event for a task reaching a terminal state. registerTask() always emits task_started; this is the closing bookend. Call this from any exit path that sets a task terminal WITHOUT going through enqueuePendingNotification-with-<tas... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `SdkEvent`, `enqueueSdkEvent`, `drainSdkEvents`, `emitTaskTerminatedSdk`.
+- **`semanticBoolean.ts`** (`restored-src/src/utils/semanticBoolean.ts`): Boolean that also accepts the string literals "true"/"false". Tool inputs arrive as model-generated JSON. The model occasionally quotes booleans — '"replace_all":"false"' instead of '"replace_all":false' — and z.boolean() rejects that with a type error. z.c... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `semanticBoolean`.
+- **`semanticNumber.ts`** (`restored-src/src/utils/semanticNumber.ts`): Number that also accepts numeric string literals like "30", "-5", "3.14". Tool inputs arrive as model-generated JSON. The model occasionally quotes numbers — '"head_limit":"30"' instead of '"head_limit":30' — and z.number() rejects that with a type error. z... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `semanticNumber`.
+- **`semver.ts`** (`restored-src/src/utils/semver.ts`): Semver comparison utilities that use Bun.semver when available and fall back to the npm 'semver' package in Node.js environments. Bun.semver.order() is ~20x faster than npm semver comparisons. The npm semver fallback always uses { loose: true }. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `gt`, `gte`, `lt`, `lte`, dan lainnya.
+- **`sequential.ts`** (`restored-src/src/utils/sequential.ts`): Creates a sequential execution wrapper for async functions to prevent race conditions. Ensures that concurrent calls to the wrapped function are executed one at a time in the order they were received, while preserving the correct return values. This is usef... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `sequential`.
+- **`sessionActivity.ts`** (`restored-src/src/utils/sessionActivity.ts`): Increment the activity refcount. When it transitions from 0→1 and a callback is registered, start a periodic heartbeat timer. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `SessionActivityReason`, `registerSessionActivityCallback`, `unregisterSessionActivityCallback`, `sendSessionActivitySignal`, dan lainnya.
+- **`sessionEnvVars.ts`** (`restored-src/src/utils/sessionEnvVars.ts`): Session-scoped environment variables set via /env. Applied only to spawned child processes (via bash provider env overrides), not to the REPL process itself. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getSessionEnvVars`, `setSessionEnvVar`, `deleteSessionEnvVar`, `clearSessionEnvVars`.
+- **`sessionEnvironment.ts`** (`restored-src/src/utils/sessionEnvironment.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getSessionEnvDirPath`, `getHookEnvFilePath`, `clearCwdEnvFiles`, `invalidateSessionEnvCache`, dan lainnya.
+- **`sessionFileAccessHooks.ts`** (`restored-src/src/utils/sessionFileAccessHooks.ts`): Check if a tool use constitutes a memory file access. Detects session memory (via Read/Grep/Glob) and memdir access (via Read/Edit/Write). Uses the same conditions as the PostToolUse session file access hooks. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `isMemoryFileAccess`, `registerSessionFileAccessHooks`.
+- **`sessionIngressAuth.ts`** (`restored-src/src/utils/sessionIngressAuth.ts`): Get session ingress authentication token. Priority order: 1. Environment variable (CLAUDE_CODE_SESSION_ACCESS_TOKEN) — set at spawn time, updated in-process via updateSessionIngressAuthToken or update_environment_variables stdin message from the parent brid... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getSessionIngressAuthToken`, `getSessionIngressAuthHeaders`, `updateSessionIngressAuthToken`.
+- **`sessionRestore.ts`** (`restored-src/src/utils/sessionRestore.ts`): Restore session state (file history, attribution, todos) from log on resume. Used by both SDK (print.ts) and interactive (REPL.tsx, main.tsx) resume paths. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `restoreSessionStateFromLog`, `computeRestoredAttributionState`, `computeStandaloneAgentContext`, `restoreAgentFromSession`, dan lainnya.
+- **`sessionStart.ts`** (`restored-src/src/utils/sessionStart.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `takeInitialUserMessage`, `processSessionStartHooks`, `processSetupHooks`.
+- **`sessionState.ts`** (`restored-src/src/utils/sessionState.ts`): Context carried with requires_action transitions so downstream surfaces (CCR sidebar, push notifications) can show what the session is blocked on, not just that it's blocked. Two delivery paths: - tool_name + action_description → RequiresActionDetails proto... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `SessionState`, `RequiresActionDetails`, `SessionExternalMetadata`, `setSessionStateChangedListener`, dan lainnya.
+- **`sessionStorage.ts`** (`restored-src/src/utils/sessionStorage.ts`): Type guard to check if an entry is a transcript message. Transcript messages include user, assistant, attachment, and system messages. IMPORTANT: This is the single source of truth for what constitutes a transcript message. loadTranscriptFile() uses this to... Mengimplementasikan class utama untuk area fitur ini. Export utama: `isTranscriptMessage`, `isChainParticipant`, `isEphemeralToolProgress`, `getProjectsDir`, dan lainnya.
+- **`sessionStoragePortable.ts`** (`restored-src/src/utils/sessionStoragePortable.ts`): Size of the head/tail buffer for lite metadata reads. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `LITE_READ_BUF_SIZE`, `validateUuid`, `unescapeJsonString`, `extractJsonStringField`, dan lainnya.
+- **`sessionTitle.ts`** (`restored-src/src/utils/sessionTitle.ts`): Flatten a message array into a single text string for Haiku title input. Skips meta/non-human messages. Tail-slices to the last 1000 chars so recent context wins when the conversation is long. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `extractConversationText`, `generateSessionTitle`.
+- **`sessionUrl.ts`** (`restored-src/src/utils/sessionUrl.ts`): Parses a session resume identifier which can be either: - A URL containing session ID (e.g., https://api.example.com/v1/session_ingress/session/550e8400-e29b-41d4-a716-446655440000) - A plain session ID (UUID) @param resumeIdentifier - The URL or session ID... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `ParsedSessionUrl`, `parseSessionIdentifier`.
+- **`set.ts`** (`restored-src/src/utils/set.ts`): Note: this code is hot, so is optimized for speed. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `difference`, `intersects`, `every`, `union`.
+- **`shellConfig.ts`** (`restored-src/src/utils/shellConfig.ts`): Get the paths to shell configuration files Respects ZDOTDIR for zsh users @param options Optional overrides for testing (env, homedir). Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `CLAUDE_ALIAS_REGEX`, `getShellConfigPaths`, `filterClaudeAliases`, `readFileLines`, dan lainnya.
+- **`sideQuery.ts`** (`restored-src/src/utils/sideQuery.ts`): Lightweight API wrapper for "side queries" outside the main conversation loop. Use this instead of direct client.beta.messages.create() calls to ensure proper OAuth token validation with fingerprint attribution headers. This handles: - Fingerprint computati... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `SideQueryOptions`, `sideQuery`.
+- **`sideQuestion.ts`** (`restored-src/src/utils/sideQuestion.ts`): Find positions of "/btw" keyword at the start of text for highlighting. Similar to findThinkingTriggerPositions in thinking.ts. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `findBtwTriggerPositions`, `SideQuestionResult`, `runSideQuestion`.
+- **`signal.ts`** (`restored-src/src/utils/signal.ts`): Tiny listener-set primitive for pure event signals (no stored state). Collapses the ~8-line 'const listeners = new Set(); function subscribe(){…}; function notify(){for(const l of listeners) l()}' boilerplate that was duplicated ~15× across the codebase int... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `Signal`, `createSignal`.
+- **`sinks.ts`** (`restored-src/src/utils/sinks.ts`): Attach error log and analytics sinks, draining any events queued before attachment. Both inits are idempotent. Called from setup() for the default command; other entrypoints (subcommands, daemon, bridge) call this directly since they bypass setup(). Leaf mo... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `initSinks`.
+- **`slashCommandParsing.ts`** (`restored-src/src/utils/slashCommandParsing.ts`): Centralized utilities for parsing slash commands. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `ParsedSlashCommand`, `parseSlashCommand`.
+- **`sleep.ts`** (`restored-src/src/utils/sleep.ts`): Abort-responsive sleep. Resolves after 'ms' milliseconds, or immediately when 'signal' aborts (so backoff loops don't block shutdown). By default, abort resolves silently; the caller should check 'signal.aborted' after the await. Pass 'throwOnAbort: true' t... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `sleep`, `withTimeout`.
+- **`sliceAnsi.ts`** (`restored-src/src/utils/sliceAnsi.ts`): Slice a string containing ANSI escape codes. Unlike the slice-ansi package, this properly handles OSC 8 hyperlink sequences because @alcalzone/ansi-tokenize tokenizes them correctly. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `sliceAnsi`.
+- **`slowOperations.ts`** (`restored-src/src/utils/slowOperations.ts`): Extract the first stack frame outside this file, so the DevBar warning points at the actual caller instead of a useless 'Object{N keys}'. Only called when an operation was actually slow — never on the fast path. Mengimplementasikan class utama untuk area fitur ini. Export utama: `SLOW_OPERATION_THRESHOLD_MS`, `callerFrame`, `slowLogging`, `jsonStringify`, dan lainnya.
+- **`standaloneAgent.ts`** (`restored-src/src/utils/standaloneAgent.ts`): Returns the standalone agent name if set and not a swarm teammate. Uses getTeamName() for consistency with isTeammate() swarm detection. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getStandaloneAgentName`.
+- **`startupProfiler.ts`** (`restored-src/src/utils/startupProfiler.ts`): Record a checkpoint with the given name. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `profileCheckpoint`, `profileReport`, `isDetailedProfilingEnabled`, `getStartupPerfLogPath`, dan lainnya.
+- **`staticRender.tsx`** (`restored-src/src/utils/staticRender.tsx`): Renders a React node to a string with ANSI escape codes (for terminal output). Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `renderToAnsiString`, `renderToString`.
+- **`stats.ts`** (`restored-src/src/utils/stats.ts`): Aggregates stats from all Claude Code sessions across all projects. Uses a disk cache to avoid reprocessing historical data. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `DailyActivity`, `DailyModelTokens`, `StreakInfo`, `SessionStats`, dan lainnya.
+- **`statsCache.ts`** (`restored-src/src/utils/statsCache.ts`): Execute a function while holding the stats cache lock. Only one operation can hold the lock at a time. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `STATS_CACHE_VERSION`, `withStatsCacheLock`, `PersistedStatsCache`, `getStatsCachePath`, dan lainnya.
+- **`status.tsx`** (`restored-src/src/utils/status.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `Property`, `Diagnostic`, `buildSandboxProperties`, `buildIDEProperties`, dan lainnya.
+- **`statusNoticeDefinitions.tsx`** (`restored-src/src/utils/statusNoticeDefinitions.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `StatusNoticeType`, `StatusNoticeContext`, `StatusNoticeDefinition`, `statusNoticeDefinitions`, dan lainnya.
+- **`statusNoticeHelpers.ts`** (`restored-src/src/utils/statusNoticeHelpers.ts`): Calculate cumulative token estimate for agent descriptions. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `AGENT_DESCRIPTIONS_THRESHOLD`, `getAgentDescriptionsTotalTokens`.
+- **`stream.ts`** (`restored-src/src/utils/stream.ts`): Mengimplementasikan class utama untuk area fitur ini. Export utama: `Stream`.
+- **`streamJsonStdoutGuard.ts`** (`restored-src/src/utils/streamJsonStdoutGuard.ts`): Sentinel written to stderr ahead of any diverted non-JSON line, so that log scrapers and tests can grep for guard activity. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `STDOUT_GUARD_MARKER`, `installStreamJsonStdoutGuard`, `_resetStreamJsonStdoutGuardForTesting`.
+- **`streamlinedTransform.ts`** (`restored-src/src/utils/streamlinedTransform.ts`): Create a stateful transformer that accumulates tool counts between text messages. Tool counts reset when a message with text content is encountered. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `createStreamlinedTransformer`, `shouldIncludeInStreamlined`.
+- **`stringUtils.ts`** (`restored-src/src/utils/stringUtils.ts`): General string utility functions and classes for safe string accumulation. Mengimplementasikan class utama untuk area fitur ini. Export utama: `escapeRegExp`, `capitalize`, `plural`, `firstLineOf`, dan lainnya.
+- **`subprocessEnv.ts`** (`restored-src/src/utils/subprocessEnv.ts`): Called from init.ts to wire up the proxy env function after the upstreamproxy module has been lazily loaded. Must be called before any subprocess is spawned. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `registerUpstreamProxyEnvFn`, `subprocessEnv`.
+- **`systemDirectories.ts`** (`restored-src/src/utils/systemDirectories.ts`): Get cross-platform system directories Handles differences between Windows, macOS, Linux, and WSL @param options Optional overrides for testing (env, homedir, platform). Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `SystemDirectories`, `getSystemDirectories`.
+- **`systemPrompt.ts`** (`restored-src/src/utils/systemPrompt.ts`): Builds the effective system prompt array based on priority: 0. Override system prompt (if set, e.g., via loop mode - REPLACES all other prompts) 1. Coordinator system prompt (if coordinator mode is active) 2. Agent system prompt (if mainThreadAgentDefinitio... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `asSystemPrompt`, `SystemPrompt`, `buildEffectiveSystemPrompt`.
+- **`systemPromptType.ts`** (`restored-src/src/utils/systemPromptType.ts`): Branded type for system prompt arrays. This module is intentionally dependency-free so it can be imported from anywhere without risking circular initialization issues. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `SystemPrompt`, `asSystemPrompt`.
+- **`systemTheme.ts`** (`restored-src/src/utils/systemTheme.ts`): Get the current terminal theme. Cached after first detection; the watcher updates the cache on live changes. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `SystemTheme`, `getSystemThemeName`, `setCachedSystemTheme`, `resolveThemeSetting`, dan lainnya.
+- **`taggedId.ts`** (`restored-src/src/utils/taggedId.ts`): Convert an account UUID to a tagged ID in the API's format. @param tag - The tag prefix (e.g. "user", "org") @param uuid - A UUID string (with or without hyphens) @returns Tagged ID string like "user_01PaGUP2rbg1XDh7Z9W1CEpd". Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `toTaggedId`.
+- **`tasks.ts`** (`restored-src/src/utils/tasks.ts`): Sets the leader's team name for task list resolution. Called by TeamCreateTool when a team is created. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `setLeaderTeamName`, `clearLeaderTeamName`, `onTasksUpdated`, `notifyTasksUpdated`, dan lainnya.
+- **`teamDiscovery.ts`** (`restored-src/src/utils/teamDiscovery.ts`): Get detailed teammate statuses for a team Reads isActive from config to determine status. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `TeamSummary`, `TeammateStatus`, `getTeammateStatuses`.
+- **`teamMemoryOps.ts`** (`restored-src/src/utils/teamMemoryOps.ts`): Check if a search tool use targets team memory files by examining its path. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `isTeamMemFile`, `isTeamMemorySearch`, `isTeamMemoryWriteOrEdit`, `appendTeamMemorySummaryParts`.
+- **`teammate.ts`** (`restored-src/src/utils/teammate.ts`): Returns the parent session ID for this teammate. For in-process teammates, this is the team lead's session ID. Priority: AsyncLocalStorage (in-process) > dynamicTeamContext (tmux teammates). Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `createTeammateContext`, `getTeammateContext`, `isInProcessTeammate`, `runWithTeammateContext`, dan lainnya.
+- **`teammateContext.ts`** (`restored-src/src/utils/teammateContext.ts`): Runtime context for in-process teammates. Stored in AsyncLocalStorage for concurrent access. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `TeammateContext`, `getTeammateContext`, `runWithTeammateContext`, `isInProcessTeammate`, dan lainnya.
+- **`teammateMailbox.ts`** (`restored-src/src/utils/teammateMailbox.ts`): Get the path to a teammate's inbox file Structure: ~/.claude/teams/{team_name}/inboxes/{agent_name}.json. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `TeammateMessage`, `getInboxPath`, `readMailbox`, `readUnreadMessages`, dan lainnya.
+- **`telemetryAttributes.ts`** (`restored-src/src/utils/telemetryAttributes.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getTelemetryAttributes`.
+- **`teleport.tsx`** (`restored-src/src/utils/teleport.tsx`): Validates that the git working directory is clean (ignoring untracked files) Untracked files are ignored because they won't be lost during branch switching. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `TeleportResult`, `TeleportProgressStep`, `TeleportProgressCallback`, `validateGitState`, dan lainnya.
+- **`tempfile.ts`** (`restored-src/src/utils/tempfile.ts`): Generate a temporary file path. @param prefix Optional prefix for the temp file name @param extension Optional file extension (defaults to '.md') @param options.contentHash When provided, the identifier is derived from a SHA-256 hash of this string (first 1... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `generateTempFilePath`.
+- **`terminal.ts`** (`restored-src/src/utils/terminal.ts`): Renders the content with line-based truncation for terminal display. If the content exceeds the maximum number of lines, it truncates the content and adds a message indicating the number of additional lines. @param content The content to render. @param term... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `renderTruncatedContent`, `isOutputLineTruncated`.
+- **`terminalPanel.ts`** (`restored-src/src/utils/terminalPanel.ts`): Get the tmux socket name for the terminal panel. Uses a unique socket per Claude Code instance (based on session ID) so that each instance has its own isolated terminal panel. Mengimplementasikan class utama untuk area fitur ini. Export utama: `getTerminalPanelSocket`, `getTerminalPanel`.
+- **`textHighlighting.ts`** (`restored-src/src/utils/textHighlighting.ts`): Mengimplementasikan class utama untuk area fitur ini. Export utama: `TextHighlight`, `TextSegment`, `segmentTextByHighlights`.
+- **`theme.ts`** (`restored-src/src/utils/theme.ts`): A renderable theme. Always resolvable to a concrete color palette. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `Theme`, `THEME_NAMES`, `ThemeName`, `THEME_SETTINGS`, dan lainnya.
+- **`thinking.ts`** (`restored-src/src/utils/thinking.ts`): Build-time gate (feature) + runtime gate (GrowthBook). The build flag controls code inclusion in external builds; the GB flag controls rollout. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `ThinkingConfig`, `isUltrathinkEnabled`, `hasUltrathinkKeyword`, `findThinkingTriggerPositions`, dan lainnya.
+- **`timeouts.ts`** (`restored-src/src/utils/timeouts.ts`): Get the default timeout for bash operations in milliseconds Checks BASH_DEFAULT_TIMEOUT_MS environment variable or returns 2 minutes default @param env Environment variables to check (defaults to process.env for production use). Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getDefaultBashTimeoutMs`, `getMaxBashTimeoutMs`.
+- **`tmuxSocket.ts`** (`restored-src/src/utils/tmuxSocket.ts`): Gets the socket name for Claude's isolated tmux session. Format: claude-<PID>. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getClaudeSocketName`, `getClaudeSocketPath`, `setClaudeSocketInfo`, `isSocketInitialized`, dan lainnya.
+- **`tokenBudget.ts`** (`restored-src/src/utils/tokenBudget.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `parseTokenBudget`, `findTokenBudgetPositions`, `getBudgetContinuationMessage`.
+- **`tokens.ts`** (`restored-src/src/utils/tokens.ts`): Calculate total context window tokens from an API response's usage data. Includes input_tokens + cache tokens + output_tokens. This represents the full context size at the time of that API call. Use tokenCountWithEstimation() when you need context size from... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getTokenUsage`, `getTokenCountFromUsage`, `tokenCountFromLastAPIResponse`, `finalContextTokensFromLastResponse`, dan lainnya.
+- **`toolErrors.ts`** (`restored-src/src/utils/toolErrors.ts`): Converts Zod validation errors into a human-readable and LLM friendly error message @param toolName The name of the tool that failed validation @param error The Zod error object @returns A formatted error message string. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `formatError`, `getErrorParts`, `formatZodValidationError`.
+- **`toolPool.ts`** (`restored-src/src/utils/toolPool.ts`): Filters a tool array to the set allowed in coordinator mode. Shared between the REPL path (mergeAndFilterTools) and the headless path (main.tsx) so both stay in sync. PR activity subscription tools are always allowed since subscription management is orchest... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `isPrActivitySubscriptionTool`, `applyCoordinatorToolFilter`, `mergeAndFilterTools`.
+- **`toolResultStorage.ts`** (`restored-src/src/utils/toolResultStorage.ts`): Resolve the effective persistence threshold for a tool. GrowthBook override wins when present; otherwise falls back to the declared per-tool cap clamped by the global default. Defensive: GrowthBook's cache returns 'cached !== undefined ? cached : default',... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `TOOL_RESULTS_SUBDIR`, `PERSISTED_OUTPUT_TAG`, `PERSISTED_OUTPUT_CLOSING_TAG`, `TOOL_RESULT_CLEARED_MESSAGE`, dan lainnya.
+- **`toolSchemaCache.ts`** (`restored-src/src/utils/toolSchemaCache.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getToolSchemaCache`, `clearToolSchemaCache`.
+- **`toolSearch.ts`** (`restored-src/src/utils/toolSearch.ts`): Get the character threshold for auto-enabling tool search for a given model. Used as fallback when the token counting API is unavailable. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getAutoToolSearchCharThreshold`, `ToolSearchMode`, `getToolSearchMode`, `modelSupportsToolReference`, dan lainnya.
+- **`transcriptSearch.ts`** (`restored-src/src/utils/transcriptSearch.ts`): Flatten a RenderableMessage to lowercased searchable text. WeakMap- cached — messages are append-only and immutable so a hit is always valid. Lowercased at cache time: the only caller immediately .toLowerCase()d the result, re-lowering ~1.5MB on every keyst... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `renderableSearchText`, `toolUseSearchText`, `toolResultSearchText`.
+- **`treeify.ts`** (`restored-src/src/utils/treeify.ts`): Custom treeify implementation with Ink theme color support Based on https://github.com/notatestuser/treeify. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `TreeNode`, `TreeifyOptions`, `treeify`.
+- **`truncate.ts`** (`restored-src/src/utils/truncate.ts`): Truncates a string to fit within a maximum display width (terminal columns), splitting on grapheme boundaries to avoid breaking emoji, CJK, or surrogate pairs. Appends '…' when truncation occurs. @param str The string to truncate @param maxWidth Maximum dis... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `truncatePathMiddle`, `truncateToWidth`, `truncateStartToWidth`, `truncateToWidthNoEllipsis`, dan lainnya.
+- **`unaryLogging.ts`** (`restored-src/src/utils/unaryLogging.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `CompletionType`, `logUnaryEvent`.
+- **`undercover.ts`** (`restored-src/src/utils/undercover.ts`): Check whether to show the one-time explainer dialog for auto-undercover. True when: undercover is active via auto-detection (not forced via env), and the user hasn't seen the notice before. Pure — the component marks the flag on mount. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `isUndercover`, `getUndercoverInstructions`, `shouldShowUndercoverAutoNotice`.
+- **`user.ts`** (`restored-src/src/utils/user.ts`): GitHub Actions metadata when running in CI. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `GitHubActionsMetadata`, `CoreUserData`, `initUser`, `resetUserCache`, dan lainnya.
+- **`userAgent.ts`** (`restored-src/src/utils/userAgent.ts`): User-Agent string helpers. Kept dependency-free so SDK-bundled code (bridge, cli/transports) can import without pulling in auth.ts and its transitive dependency tree. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getClaudeCodeUserAgent`.
+- **`userPromptKeywords.ts`** (`restored-src/src/utils/userPromptKeywords.ts`): Checks if input matches negative keyword patterns. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `matchesNegativeKeyword`, `matchesKeepGoingKeyword`.
+- **`uuid.ts`** (`restored-src/src/utils/uuid.ts`): Validate uuid @param maybeUUID The value to be checked if it is a uuid @returns string as UUID or null if it is not valid. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `validateUuid`, `createAgentId`.
+- **`warningHandler.ts`** (`restored-src/src/utils/warningHandler.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `MAX_WARNING_KEYS`, `resetWarningHandler`, `initializeWarningHandler`.
+- **`which.ts`** (`restored-src/src/utils/which.ts`): Finds the full path to a command executable. Uses Bun.which when running in Bun (fast, no process spawn), otherwise spawns the platform-appropriate command. @param command - The command name to look up @returns The full path to the command, or null if not f... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `which`, `whichSync`.
+- **`windowsPaths.ts`** (`restored-src/src/utils/windowsPaths.ts`): If Windows, set the SHELL environment variable to git-bash path. This is used by BashTool and Shell.ts for user shell commands. COMSPEC is left unchanged for system process execution. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `setShellIfWindows`, `findGitBashPath`, `windowsPathToPosixPath`, `posixPathToWindowsPath`.
+- **`withResolvers.ts`** (`restored-src/src/utils/withResolvers.ts`): Polyfill for Promise.withResolvers() (ES2024, Node 22+). package.json declares "engines": { "node": ">=18.0.0" } so we can't use the native one. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `withResolvers`.
+- **`words.ts`** (`restored-src/src/utils/words.ts`): Generate a random word slug in the format "adjective-verb-noun" Example: "gleaming-brewing-phoenix", "cosmic-pondering-lighthouse". Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `generateWordSlug`, `generateShortWordSlug`.
+- **`workloadContext.ts`** (`restored-src/src/utils/workloadContext.ts`): Server-side sanitizer (_sanitize_entrypoint in claude_code.py) accepts only lowercase [a-z0-9_-]{0,32}. Uppercase stops parsing at char 0. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `Workload`, `WORKLOAD_CRON`, `getWorkload`, `runWithWorkload`.
+- **`worktree.ts`** (`restored-src/src/utils/worktree.ts`): Validates a worktree slug to prevent path traversal and directory escape. The slug is joined into '.claude/worktrees/<slug>' via path.join, which normalizes '..' segments — so '../../../target' would escape the worktrees directory. Similarly, an absolute pa... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `validateWorktreeSlug`, `WorktreeSession`, `getCurrentWorktreeSession`, `restoreWorktreeSession`, dan lainnya.
+- **`worktreeModeEnabled.ts`** (`restored-src/src/utils/worktreeModeEnabled.ts`): Worktree mode is now unconditionally enabled for all users. Previously gated by GrowthBook flag 'tengu_worktree_mode', but the CACHED_MAY_BE_STALE pattern returns the default (false) on first launch before the cache is populated, silently swallowing --workt... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `isWorktreeModeEnabled`.
+- **`xdg.ts`** (`restored-src/src/utils/xdg.ts`): Get XDG state home directory Default: ~/.local/state @param options Optional env and homedir overrides for testing. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getXDGStateHome`, `getXDGCacheHome`, `getXDGDataHome`, `getUserBinDir`.
+- **`xml.ts`** (`restored-src/src/utils/xml.ts`): Escape XML/HTML special characters for safe interpolation into element text content (between tags). Use when untrusted strings (process stdout, user input, external data) go inside '<tag>${here}</tag>'. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `escapeXml`, `escapeXmlAttr`.
+- **`yaml.ts`** (`restored-src/src/utils/yaml.ts`): YAML parsing wrapper. Uses Bun.YAML (built-in, zero-cost) when running under Bun, otherwise falls back to the 'yaml' npm package. The package is lazy-required inside the non-Bun branch so native Bun builds never load the ~270KB yaml parser. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `parseYaml`.
+- **`zodToJsonSchema.ts`** (`restored-src/src/utils/zodToJsonSchema.ts`): Converts a Zod v4 schema to JSON Schema format. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `JsonSchema7Type`, `zodToJsonSchema`.
 
 ## Direktori: `restored-src/src/utils/background/remote`
 
-- **`preconditions.ts`**: Checks if user needs to log in with Claude.ai Extracted from getTeleportErrors() in TeleportError.tsx @returns true if login is required, false otherw...
-- **`remoteSession.ts`**: Background remote session type for managing teleport sessions
+- **`preconditions.ts`** (`restored-src/src/utils/background/remote/preconditions.ts`): Checks if user needs to log in with Claude.ai Extracted from getTeleportErrors() in TeleportError.tsx @returns true if login is required, false otherwise. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `checkNeedsClaudeAiLogin`, `checkIsGitClean`, `checkHasRemoteEnvironment`, `checkIsInGitRepo`, dan lainnya.
+- **`remoteSession.ts`** (`restored-src/src/utils/background/remote/remoteSession.ts`): Background remote session type for managing teleport sessions. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `BackgroundRemoteSession`, `BackgroundRemoteSessionPrecondition`, `checkBackgroundRemoteSessionEligibility`.
 
 ## Direktori: `restored-src/src/utils/bash`
 
-- **`ParsedCommand.ts`**: Interface for parsed command implementations. Both tree-sitter and regex fallback implementations conform to this.
-- **`ShellSnapshot.ts`**: Creates a shell function that invokes `binaryPath` with a specific argv[0]. This uses the bun-internal ARGV0 dispatch trick: the bun binary checks its...
-- **`ast.ts`**: AST-based bash command analysis using tree-sitter.  This module replaces the shell-quote + hand-rolled char-walker approach in bashSecurity.ts / comma...
-- **`bashParser.ts`**: Pure-TypeScript bash parser producing tree-sitter-bash-compatible ASTs.  Downstream code in parser.ts, ast.ts, prefix.ts, ParsedCommand.ts walks this ...
-- **`bashPipeCommand.ts`**: Rearranges a command with pipes to place stdin redirect after the first command. This fixes an issue where eval treats the entire piped command as a s...
-- **`commands.ts`**: Generates placeholder strings with random salt to prevent injection attacks. The salt prevents malicious commands from containing literal placeholder ...
-- **`heredoc.ts`**: Heredoc extraction and restoration utilities.  The shell-quote library parses `<<` as two separate `<` redirect operators, which breaks command splitt...
-- **`parser.ts`**: Mengekspor: Node, ParsedCommandData, PARSE_ABORTED.
-- **`prefix.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`registry.ts`**: Mengekspor: CommandSpec, Argument, Option.
-- **`shellCompletion.ts`**: Check if a parsed token is a command operator (|, ||, &&, ;)
-- **`shellPrefix.ts`**: Parses a shell prefix that may contain an executable path and arguments.  Examples: - "bash" -> quotes as 'bash' - "/usr/bin/bash -c" -> quotes as '/u...
-- **`shellQuote.ts`**: Safe wrappers for shell-quote library functions that handle errors gracefully These are drop-in replacements for the original functions
-- **`shellQuoting.ts`**: Detects if a command contains a heredoc pattern Matches patterns like: <<EOF, <<'EOF', <<"EOF", <<-EOF, <<-'EOF', <<\EOF, etc.
-- **`treeSitterAnalysis.ts`**: Tree-sitter AST analysis utilities for bash command security validation.  These functions extract security-relevant information from tree-sitter parse...
+- **`ParsedCommand.ts`** (`restored-src/src/utils/bash/ParsedCommand.ts`): ParsedCommand provides methods for working with shell commands. Uses tree-sitter when available for quote-aware parsing, falls back to regex-based parsing otherwise. Mengimplementasikan class utama untuk area fitur ini. Export utama: `OutputRedirection`, `IParsedCommand`, `RegexParsedCommand_DEPRECATED`, `buildParsedCommandFromRoot`, dan lainnya.
+- **`ShellSnapshot.ts`** (`restored-src/src/utils/bash/ShellSnapshot.ts`): Creates ripgrep shell integration (alias or function) @returns Object with type and the shell snippet to use. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `createRipgrepShellIntegration`, `createFindGrepShellIntegration`, `createAndSaveSnapshot`.
+- **`ast.ts`** (`restored-src/src/utils/bash/ast.ts`): Parse a bash command string and extract a flat list of simple commands. Returns 'too-complex' if the command uses any shell feature we can't statically analyze. Returns 'parse-unavailable' if tree-sitter WASM isn't loaded — caller should fall back to conser... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `Redirect`, `SimpleCommand`, `ParseForSecurityResult`, `nodeTypeId`, dan lainnya.
+- **`bashParser.ts`** (`restored-src/src/utils/bash/bashParser.ts`): Pure-TypeScript bash parser producing tree-sitter-bash-compatible ASTs. Downstream code in parser.ts, ast.ts, prefix.ts, ParsedCommand.ts walks this by field name. startIndex/endIndex are UTF-8 BYTE offsets (not JS string indices). Grammar reference: tree-s... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `TsNode`, `ensureParserInitialized`, `getParserModule`, `SHELL_KEYWORDS`.
+- **`bashPipeCommand.ts`** (`restored-src/src/utils/bash/bashPipeCommand.ts`): Rearranges a command with pipes to place stdin redirect after the first command. This fixes an issue where eval treats the entire piped command as a single unit, causing the stdin redirect to apply to eval itself rather than the first command. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `rearrangePipeCommand`.
+- **`commands.ts`** (`restored-src/src/utils/bash/commands.ts`): @deprecated Legacy regex/shell-quote path. Only used when tree-sitter is unavailable. The primary gate is parseForSecurity (ast.ts). Splits a command string into individual commands based on shell operators. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `CommandPrefixResult`, `CommandSubcommandPrefixResult`, `splitCommandWithOperators`, `filterControlOperators`, dan lainnya.
+- **`heredoc.ts`** (`restored-src/src/utils/bash/heredoc.ts`): Extracts heredocs from a command string and replaces them with placeholders. This allows shell-quote to parse the command without mangling heredoc syntax. After parsing, use 'restoreHeredocs' to replace placeholders with original content. @param command - T... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `HeredocInfo`, `HeredocExtractionResult`, `extractHeredocs`, `restoreHeredocs`, dan lainnya.
+- **`parser.ts`** (`restored-src/src/utils/bash/parser.ts`): Awaits WASM init (Parser.init + Language.load). Must be called before parseCommand/parseCommandRaw for the parser to be available. Idempotent. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `Node`, `ParsedCommandData`, `ensureInitialized`, `parseCommand`, dan lainnya.
+- **`prefix.ts`** (`restored-src/src/utils/bash/prefix.ts`): Computes prefixes for a compound command (with && / || / ;). For single commands, returns a single-element array with the prefix. For compound commands, computes per-subcommand prefixes and collapses them: subcommands sharing a root (first word) are collaps... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getCommandPrefixStatic`, `getCompoundCommandPrefixesStatic`.
+- **`registry.ts`** (`restored-src/src/utils/bash/registry.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `CommandSpec`, `Argument`, `Option`, `loadFigSpec`, dan lainnya.
+- **`shellCompletion.ts`** (`restored-src/src/utils/bash/shellCompletion.ts`): Get shell completions for the given input Supports bash and zsh shells (matches Shell.ts execution support). Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `ShellCompletionType`, `getShellCompletions`.
+- **`shellPrefix.ts`** (`restored-src/src/utils/bash/shellPrefix.ts`): Parses a shell prefix that may contain an executable path and arguments. Examples: - "bash" -> quotes as 'bash' - "/usr/bin/bash -c" -> quotes as '/usr/bin/bash' -c - "C:\Program Files\Git\bin\bash.exe -c" -> quotes as 'C:\Program Files\Git\bin\bash.exe' -c... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `formatShellPrefixCommand`.
+- **`shellQuote.ts`** (`restored-src/src/utils/bash/shellQuote.ts`): Checks if parsed tokens contain malformed entries that suggest shell-quote misinterpreted the command. This happens when input contains ambiguous patterns (like JSON-like strings with semicolons) that shell-quote parses according to shell rules, producing t... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `ParseEntry`, `ShellParseResult`, `ShellQuoteResult`, `tryParseShellCommand`, dan lainnya.
+- **`shellQuoting.ts`** (`restored-src/src/utils/bash/shellQuoting.ts`): Quotes a shell command appropriately, preserving heredocs and multiline strings @param command The command to quote @param addStdinRedirect Whether to add < /dev/null @returns The properly quoted command. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `quoteShellCommand`, `hasStdinRedirect`, `shouldAddStdinRedirect`, `rewriteWindowsNullRedirect`.
+- **`treeSitterAnalysis.ts`** (`restored-src/src/utils/bash/treeSitterAnalysis.ts`): Extract quote context from the tree-sitter AST. Replaces the manual character-by-character extractQuotedContent() function. Tree-sitter node types: - raw_string: single-quoted ('...') - string: double-quoted ("...") - ansi_c_string: ANSI-C quoting ($'...')... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `QuoteContext`, `CompoundStructure`, `DangerousPatterns`, `TreeSitterAnalysis`, dan lainnya.
 
 ## Direktori: `restored-src/src/utils/bash/specs`
 
-- **`alias.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`index.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`nohup.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`pyright.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`sleep.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`srun.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`time.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`timeout.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
+- **`alias.ts`** (`restored-src/src/utils/bash/specs/alias.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain.
+- **`index.ts`** (`restored-src/src/utils/bash/specs/index.ts`): Barrel/entry point yang merapikan export modul di folder ini.
+- **`nohup.ts`** (`restored-src/src/utils/bash/specs/nohup.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain.
+- **`pyright.ts`** (`restored-src/src/utils/bash/specs/pyright.ts`): Berisi logika internal tanpa deklarasi publik yang menonjol.
+- **`sleep.ts`** (`restored-src/src/utils/bash/specs/sleep.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain.
+- **`srun.ts`** (`restored-src/src/utils/bash/specs/srun.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain.
+- **`time.ts`** (`restored-src/src/utils/bash/specs/time.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain.
+- **`timeout.ts`** (`restored-src/src/utils/bash/specs/timeout.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain.
 
 ## Direktori: `restored-src/src/utils/claudeInChrome`
 
-- **`chromeNativeHost.ts`**: Chrome Native Host - Pure TypeScript Implementation  This module provides the Chrome native messaging host functionality, previously implemented as a ...
-- **`common.ts`**: Mengekspor: CLAUDE_IN_CHROME_MCP_SERVER_NAME, CHROMIUM_BROWSERS, BROWSER_DETECTION_ORDER.
-- **`mcpServer.ts`**: Mengekspor: createChromeContext.
-- **`prompt.ts`**: Mengekspor: BASE_CHROME_PROMPT, CHROME_TOOL_SEARCH_INSTRUCTIONS, getChromeSystemPrompt.
-- **`setup.ts`**: Mengekspor: shouldEnableClaudeInChrome, shouldAutoEnableClaudeInChrome, setupClaudeInChrome.
-- **`setupPortable.ts`**: Mengekspor: CHROME_EXTENSION_URL, ChromiumBrowser, BrowserPath.
-- **`toolRendering.tsx`**: All tool names from BROWSER_TOOLS in @ant/claude-for-chrome-mcp. Keep in sync with the package's BROWSER_TOOLS array.
+- **`chromeNativeHost.ts`** (`restored-src/src/utils/claudeInChrome/chromeNativeHost.ts`): Send a message to stdout (Chrome native messaging protocol). Mengimplementasikan class utama untuk area fitur ini. Export utama: `sendChromeMessage`, `runChromeNativeHost`.
+- **`common.ts`** (`restored-src/src/utils/claudeInChrome/common.ts`): Get all browser data paths to check for extension installation. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `CLAUDE_IN_CHROME_MCP_SERVER_NAME`, `ChromiumBrowser`, `CHROMIUM_BROWSERS`, `BROWSER_DETECTION_ORDER`, dan lainnya.
+- **`mcpServer.ts`** (`restored-src/src/utils/claudeInChrome/mcpServer.ts`): Build the ClaudeForChromeContext used by both the subprocess MCP server and the in-process path in the MCP client. Mengimplementasikan class utama untuk area fitur ini. Export utama: `createChromeContext`, `runClaudeInChromeMcpServer`.
+- **`prompt.ts`** (`restored-src/src/utils/claudeInChrome/prompt.ts`): Additional instructions for chrome tools when tool search is enabled. These instruct the model to load chrome tools via ToolSearch before using them. Only injected when tool search is actually enabled (not just optimistically possible). Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `BASE_CHROME_PROMPT`, `CHROME_TOOL_SEARCH_INSTRUCTIONS`, `getChromeSystemPrompt`, `CLAUDE_IN_CHROME_SKILL_HINT`, dan lainnya.
+- **`setup.ts`** (`restored-src/src/utils/claudeInChrome/setup.ts`): Setup Claude in Chrome MCP server and tools @returns MCP config and allowed tools, or throws an error if platform is unsupported. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `shouldEnableClaudeInChrome`, `shouldAutoEnableClaudeInChrome`, `setupClaudeInChrome`, `installChromeNativeHostManifest`, dan lainnya.
+- **`setupPortable.ts`** (`restored-src/src/utils/claudeInChrome/setupPortable.ts`): Get all browser data paths to check for extension installation. Portable version that uses process.platform directly. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `CHROME_EXTENSION_URL`, `ChromiumBrowser`, `BrowserPath`, `getAllBrowserDataPathsPortable`, dan lainnya.
+- **`toolRendering.tsx`** (`restored-src/src/utils/claudeInChrome/toolRendering.tsx`): All tool names from BROWSER_TOOLS in @ant/claude-for-chrome-mcp. Keep in sync with the package's BROWSER_TOOLS array. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `Tool`, `ChromeToolName`, `renderChromeToolResultMessage`, `getClaudeInChromeMCPToolOverrides`.
 
 ## Direktori: `restored-src/src/utils/computerUse`
 
-- **`appNames.ts`**: Filter and sanitize installed-app data for inclusion in the `request_access` tool description. Ported from Cowork's appNames.ts. Two concerns: noise f...
-- **`cleanup.ts`**: Turn-end cleanup for the chicago MCP surface: auto-unhide apps that `prepareForAction` hid, then release the file-based lock.  Called from three sites...
-- **`common.ts`**: Sentinel bundle ID for the frontmost gate. Claude Code is a terminal — it has no window. This never matches a real `NSWorkspace.frontmostApplication`,...
-- **`computerUseLock.ts`**: Mengekspor: AcquireResult, CheckResult, isLockHeldLocally.
-- **`drainRunLoop.ts`**: Shared CFRunLoop pump. Swift's four `@MainActor` async methods (captureExcluding, captureRegion, apps.listInstalled, resolvePrepareCapture) and `@ant/...
-- **`escHotkey.ts`**: Global Escape → abort. Mirrors Cowork's `escAbort.ts` but without Electron: CGEventTap via `@ant/computer-use-swift`. While registered, Escape is cons...
-- **`executor.ts`**: CLI `ComputerExecutor` implementation. Wraps two native modules: - `@ant/computer-use-input` (Rust/enigo) — mouse, keyboard, frontmost app - `@ant/com...
-- **`gates.ts`**: Mengekspor: getChicagoEnabled, getChicagoSubGates, getChicagoCoordinateMode.
-- **`hostAdapter.ts`**: Mengekspor: getComputerUseHostAdapter.
-- **`inputLoader.ts`**: Package's js/index.js reads COMPUTER_USE_INPUT_NODE_PATH (baked by build-with-plugins.ts on darwin targets, unset otherwise — falls through to the nod...
-- **`mcpServer.ts`**: Enumerate installed apps, timed. Fails soft — if Spotlight is slow or claude-swift throws, the tool description just omits the list. Resolution happen...
-- **`setup.ts`**: Build the dynamic MCP config + allowed tool names. Mirror of `setupClaudeInChrome`. The `mcp__computer-use__` tools are added to `allowedTools` so the...
-- **`swiftLoader.ts`**: Package's js/index.js reads COMPUTER_USE_SWIFT_NODE_PATH (baked by build-with-plugins.ts on darwin targets, unset otherwise — falls through to the nod...
-- **`toolRendering.tsx`**: Mengekspor: getComputerUseMCPRenderingOverrides.
-- **`wrapper.tsx`**: The `.call()` override — thin adapter between `ToolUseContext` and `bindSessionContext`. Spread into the MCP tool object in `client.ts` (same pattern ...
+- **`appNames.ts`** (`restored-src/src/utils/computerUse/appNames.ts`): Filter raw Spotlight results to user-facing apps, then sanitize. Always-keep apps bypass path/name filter AND char allowlist (trusted vendors, not attacker-installed); still length-capped, deduped, sorted. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `filterAppsForDescription`.
+- **`cleanup.ts`** (`restored-src/src/utils/computerUse/cleanup.ts`): Turn-end cleanup for the chicago MCP surface: auto-unhide apps that 'prepareForAction' hid, then release the file-based lock. Called from three sites: natural turn end ('stopHooks.ts'), abort during streaming ('query.ts' aborted_streaming), abort during too... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `cleanupComputerUseAfterTurn`.
+- **`common.ts`** (`restored-src/src/utils/computerUse/common.ts`): Sentinel bundle ID for the frontmost gate. Claude Code is a terminal — it has no window. This never matches a real 'NSWorkspace.frontmostApplication', so the package's "host is frontmost" branch (mouse click-through exemption, keyboard safety-net) is dead c... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `COMPUTER_USE_MCP_SERVER_NAME`, `CLI_HOST_BUNDLE_ID`, `getTerminalBundleId`, `CLI_CU_CAPABILITIES`, dan lainnya.
+- **`computerUseLock.ts`** (`restored-src/src/utils/computerUse/computerUseLock.ts`): Check lock state without acquiring. Used for 'request_access' / 'list_granted_applications' — the package's 'defersLockAcquire' contract: these tools check but don't take the lock, so the enter-notification and overlay don't fire while the model is only ask... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `AcquireResult`, `CheckResult`, `checkComputerUseLock`, `isLockHeldLocally`, dan lainnya.
+- **`drainRunLoop.ts`** (`restored-src/src/utils/computerUse/drainRunLoop.ts`): Await 'fn()' with the shared drain pump running. Safe to nest — multiple concurrent drainRunLoop() calls share one setInterval. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `retainPump`, `releasePump`, `drainRunLoop`.
+- **`escHotkey.ts`** (`restored-src/src/utils/computerUse/escHotkey.ts`): Global Escape → abort. Mirrors Cowork's 'escAbort.ts' but without Electron: CGEventTap via '@ant/computer-use-swift'. While registered, Escape is consumed system-wide (PI defense — a prompt-injected action can't dismiss a dialog with Escape). Lifecycle: reg... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `registerEscHotkey`, `unregisterEscHotkey`, `notifyExpectedEscape`.
+- **`executor.ts`** (`restored-src/src/utils/computerUse/executor.ts`): Module-level export (not on the executor object) — called at turn-end from 'stopHooks.ts' / 'query.ts', outside the executor lifecycle. Fire-and-forget at the call site; the caller '.catch()'es. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `createCliExecutor`, `unhideComputerUseApps`.
+- **`gates.ts`** (`restored-src/src/utils/computerUse/gates.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getChicagoEnabled`, `getChicagoSubGates`, `getChicagoCoordinateMode`.
+- **`hostAdapter.ts`** (`restored-src/src/utils/computerUse/hostAdapter.ts`): Process-lifetime singleton. Built once on first CU tool call; native modules (both '@ant/computer-use-input' and '@ant/computer-use-swift') are loaded here via the executor factory, which throws on load failure — there is no degraded mode. Mengimplementasikan class utama untuk area fitur ini. Export utama: `getComputerUseHostAdapter`.
+- **`inputLoader.ts`** (`restored-src/src/utils/computerUse/inputLoader.ts`): Package's js/index.js reads COMPUTER_USE_INPUT_NODE_PATH (baked by build-with-plugins.ts on darwin targets, unset otherwise — falls through to the node_modules prebuilds/ path). The package exports a discriminated union on 'isSupported' — narrowed here once... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `requireComputerUseInput`.
+- **`mcpServer.ts`** (`restored-src/src/utils/computerUse/mcpServer.ts`): Construct the in-process server. Delegates to the package's 'createComputerUseMcpServer' for the Server object + stub CallTool handler, then REPLACES the ListTools handler with one that includes installed-app names in the 'request_access' description (the p... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `createComputerUseMcpServerForCli`, `runComputerUseMcpServer`.
+- **`setup.ts`** (`restored-src/src/utils/computerUse/setup.ts`): Build the dynamic MCP config + allowed tool names. Mirror of 'setupClaudeInChrome'. The 'mcp__computer-use__*' tools are added to 'allowedTools' so they bypass the normal permission prompt — the package's 'request_access' handles approval for the whole sess... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `setupComputerUseMCP`.
+- **`swiftLoader.ts`** (`restored-src/src/utils/computerUse/swiftLoader.ts`): Package's js/index.js reads COMPUTER_USE_SWIFT_NODE_PATH (baked by build-with-plugins.ts on darwin targets, unset otherwise — falls through to the node_modules prebuilds/ path). We cache the loaded native module. The four @MainActor methods (captureExcludin... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `requireComputerUseSwift`, `ComputerUseAPI`.
+- **`toolRendering.tsx`** (`restored-src/src/utils/computerUse/toolRendering.tsx`): Rendering overrides for 'mcp__computer-use__*' tools. Spread into the MCP tool object in 'client.ts' after the default 'userFacingName', so these win. Mirror of 'getClaudeInChromeMCPToolOverrides'. Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `getComputerUseMCPRenderingOverrides`.
+- **`wrapper.tsx`** (`restored-src/src/utils/computerUse/wrapper.tsx`): Cached binding — built on first '.call()', reused for process lifetime. The dispatcher's closure-held screenshot blob persists across calls. 'currentToolUseContext' is updated on every call. Every getter/callback in 'ctx' reads through it, so the per-call p... Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `buildSessionContext`, `getComputerUseMCPToolOverrides`.
 
 ## Direktori: `restored-src/src/utils/deepLink`
 
-- **`banner.ts`**: Deep Link Origin Banner  Builds the warning text shown when a session was opened by an external claude-cli: deep link. Linux xdg-open and browsers wit...
-- **`parseDeepLink.ts`**: Deep Link URI Parser  Parses `claude-cli:open` URIs. All parameters are optional: q    — pre-fill the prompt input (not submitted) cwd  — working dire...
-- **`protocolHandler.ts`**: Protocol Handler  Entry point for `claude --handle-uri <url>`. When the OS invokes claude with a `claude-cli:` URL, this module: 1. Parses the URI int...
-- **`registerProtocol.ts`**: Protocol Handler Registration  Registers the `claude-cli:` custom URI scheme with the OS, so that clicking a `claude-cli:` link in a browser (or any a...
-- **`terminalLauncher.ts`**: Terminal Launcher  Detects the user's preferred terminal emulator and launches Claude Code inside it. Used by the deep link protocol handler when invo...
-- **`terminalPreference.ts`**: Terminal preference capture for deep link handling.  Separate from terminalLauncher.ts so interactiveHelpers.tsx can import this without pulling the f...
+- **`banner.ts`** (`restored-src/src/utils/deepLink/banner.ts`): Build the multi-line warning banner for a deep-link-originated session. Always shows the working directory so the user can see which CLAUDE.md will load. When the link pre-filled a prompt, adds a second line prompting the user to review it — the prompt itse... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `DeepLinkBannerInfo`, `buildDeepLinkBanner`, `readLastFetchTime`.
+- **`parseDeepLink.ts`** (`restored-src/src/utils/deepLink/parseDeepLink.ts`): Parse a claude-cli:// URI into a structured action. @throws {Error} if the URI is malformed or contains dangerous characters. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `DEEP_LINK_PROTOCOL`, `DeepLinkAction`, `parseDeepLink`, `buildDeepLink`.
+- **`protocolHandler.ts`** (`restored-src/src/utils/deepLink/protocolHandler.ts`): Handle an incoming deep link URI. Called from the CLI entry point when '--handle-uri' is passed. This function parses the URI, resolves the claude binary, and launches it in the user's terminal. @param uri - The raw URI string (e.g., "claude-cli://prompt?q=... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `handleDeepLinkUri`, `handleUrlSchemeLaunch`.
+- **`registerProtocol.ts`** (`restored-src/src/utils/deepLink/registerProtocol.ts`): Register the 'claude-cli://' protocol handler with the operating system. After registration, clicking a 'claude-cli://' link will invoke claude. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `MACOS_BUNDLE_ID`, `registerProtocolHandler`, `isProtocolHandlerCurrent`, `ensureDeepLinkProtocolRegistered`.
+- **`terminalLauncher.ts`** (`restored-src/src/utils/deepLink/terminalLauncher.ts`): Detect the user's preferred terminal emulator. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `TerminalInfo`, `detectTerminal`, `launchInTerminal`.
+- **`terminalPreference.ts`** (`restored-src/src/utils/deepLink/terminalPreference.ts`): Capture the current terminal from TERM_PROGRAM and store it for the deep link handler to use later. The handler runs headless (LaunchServices/xdg) where TERM_PROGRAM is unset, so without this it falls back to a static priority list that picks whatever is in... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `updateDeepLinkTerminalPreference`.
 
 ## Direktori: `restored-src/src/utils/dxt`
 
-- **`helpers.ts`**: Parses and validates a DXT manifest from a JSON object.  Lazy-imports @anthropic-ai/mcpb: that package uses zod v3 which eagerly creates 24 .bind(this...
-- **`zip.ts`**: State tracker for zip file validation during extraction
+- **`helpers.ts`** (`restored-src/src/utils/dxt/helpers.ts`): Parses and validates a DXT manifest from a JSON object. Lazy-imports @anthropic-ai/mcpb: that package uses zod v3 which eagerly creates 24 .bind(this) closures per schema instance (~300 instances between schemas.js and schemas-loose.js). Deferring the impor... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `validateManifest`, `parseAndValidateManifestFromText`, `parseAndValidateManifestFromBytes`, `generateExtensionId`.
+- **`zip.ts`** (`restored-src/src/utils/dxt/zip.ts`): Validates a file path to prevent path traversal attacks. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `isPathSafe`, `validateZipFile`, `unzipFile`, `parseZipModes`, dan lainnya.
 
 ## Direktori: `restored-src/src/utils/filePersistence`
 
-- **`filePersistence.ts`**: File persistence orchestrator  This module provides the main orchestration logic for persisting files at the end of each turn: - BYOC mode: Upload fil...
-- **`outputsScanner.ts`**: Outputs directory scanner for file persistence  This module provides utilities to: - Detect the session type from environment variables - Capture turn...
+- **`filePersistence.ts`** (`restored-src/src/utils/filePersistence/filePersistence.ts`): Execute file persistence for modified files in the outputs directory. Assembles all config internally: - Checks environment kind (CLAUDE_CODE_ENVIRONMENT_KIND) - Retrieves session access token - Requires CLAUDE_CODE_REMOTE_SESSION_ID for session ID @param t... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `runFilePersistence`, `executeFilePersistence`, `isFilePersistenceEnabled`.
+- **`outputsScanner.ts`** (`restored-src/src/utils/filePersistence/outputsScanner.ts`): Shared debug logger for file persistence modules. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `logDebug`, `getEnvironmentKind`, `findModifiedFiles`.
 
 ## Direktori: `restored-src/src/utils/git`
 
-- **`gitConfigParser.ts`**: Lightweight parser for .git/config files.  Verified against git's config.c: - Section names: case-insensitive, alphanumeric + hyphen - Subsection name...
-- **`gitFilesystem.ts`**: Filesystem-based git state reading — avoids spawning git subprocesses.  Covers: resolving .git directories (including worktrees/submodules), parsing H...
-- **`gitignore.ts`**: Checks if a path is ignored by git (via `git check-ignore`).  This consults all applicable gitignore sources: repo `.gitignore` files (nested), `.git/...
+- **`gitConfigParser.ts`** (`restored-src/src/utils/git/gitConfigParser.ts`): Parse a single value from .git/config. Finds the first matching key under the given section/subsection. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `parseGitConfigValue`, `parseConfigString`.
+- **`gitFilesystem.ts`** (`restored-src/src/utils/git/gitFilesystem.ts`): Clear cached git dir resolutions. Exported for testing only. Mengimplementasikan class utama untuk area fitur ini. Export utama: `clearResolveGitDirCache`, `resolveGitDir`, `isSafeRefName`, `isValidGitSha`, dan lainnya.
+- **`gitignore.ts`** (`restored-src/src/utils/git/gitignore.ts`): Checks if a path is ignored by git (via 'git check-ignore'). This consults all applicable gitignore sources: repo '.gitignore' files (nested), '.git/info/exclude', and the global gitignore — with correct precedence, because git itself resolves it. Exit code... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `isPathGitignored`, `getGlobalGitignorePath`, `addFileGlobRuleToGitignore`.
 
 ## Direktori: `restored-src/src/utils/github`
 
-- **`ghAuthStatus.ts`**: Returns gh CLI install + auth status for telemetry. Uses which() first (Bun.which — no subprocess) to detect install, then exit code of `gh auth token...
+- **`ghAuthStatus.ts`** (`restored-src/src/utils/github/ghAuthStatus.ts`): Returns gh CLI install + auth status for telemetry. Uses which() first (Bun.which — no subprocess) to detect install, then exit code of 'gh auth token' to detect auth. Uses 'auth token' instead of 'auth status' because the latter makes a network request to... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `GhAuthStatus`, `getGhAuthStatus`.
 
 ## Direktori: `restored-src/src/utils/hooks`
 
-- **`AsyncHookRegistry.ts`**: Mengekspor: PendingAsyncHook, registerPendingAsyncHook, getPendingAsyncHooks.
-- **`apiQueryHookHelper.ts`**: Mengekspor: ApiQueryHookContext, ApiQueryHookConfig, ApiQueryResult.
-- **`execAgentHook.ts`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`execHttpHook.ts`**: Get the sandbox proxy config for routing HTTP hook requests through the sandbox network proxy when sandboxing is enabled.  Uses dynamic import to avoi...
-- **`execPromptHook.ts`**: Execute a prompt-based hook using an LLM
-- **`fileChangedWatcher.ts`**: Mengekspor: setEnvHookNotifier, initializeFileChangedWatcher, updateWatchPaths.
-- **`hookEvents.ts`**: Hook event system for broadcasting hook execution events.  This module provides a generic event system that is separate from the main message stream. ...
-- **`hookHelpers.ts`**: Schema for hook responses (shared by prompt and agent hooks)
-- **`hooksConfigManager.ts`**: Mengekspor: MatcherMetadata, HookEventMetadata, getHookEventMetadata.
-- **`hooksConfigSnapshot.ts`**: Get hooks from allowed sources. If allowManagedHooksOnly is set in policySettings, only managed hooks are returned. If disableAllHooks is set in polic...
-- **`hooksSettings.ts`**: Mengekspor: HookSource, IndividualHookConfig, isHookEqual.
-- **`postSamplingHooks.ts`**: Register a post-sampling hook that will be called after model sampling completes This is an internal API not exposed through settings
-- **`registerFrontmatterHooks.ts`**: Register hooks from frontmatter (agent or skill) into session-scoped hooks. These hooks will be active for the duration of the session/agent and clean...
-- **`registerSkillHooks.ts`**: Registers hooks from a skill's frontmatter as session hooks.  Hooks are registered as session-scoped hooks that persist for the duration of the sessio...
-- **`sessionHooks.ts`**: Function hook callback - returns true if check passes, false to block
-- **`skillImprovement.ts`**: Mengekspor: SkillUpdate, initSkillImprovement.
-- **`ssrfGuard.ts`**: SSRF guard for HTTP hooks.  Blocks private, link-local, and other non-routable address ranges to prevent project-configured HTTP hooks from reaching c...
+- **`AsyncHookRegistry.ts`** (`restored-src/src/utils/hooks/AsyncHookRegistry.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `PendingAsyncHook`, `registerPendingAsyncHook`, `getPendingAsyncHooks`, `checkForAsyncHookResponses`, dan lainnya.
+- **`apiQueryHookHelper.ts`** (`restored-src/src/utils/hooks/apiQueryHookHelper.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `ApiQueryHookContext`, `ApiQueryHookConfig`, `ApiQueryResult`, `createApiQueryHook`.
+- **`execAgentHook.ts`** (`restored-src/src/utils/hooks/execAgentHook.ts`): Execute an agent-based hook using a multi-turn LLM query. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `execAgentHook`.
+- **`execHttpHook.ts`** (`restored-src/src/utils/hooks/execHttpHook.ts`): Execute an HTTP hook by POSTing the hook input JSON to the configured URL. Returns the raw response for the caller to interpret. When sandboxing is enabled, requests are routed through the sandbox network proxy which enforces the domain allowlist. The proxy... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `execHttpHook`.
+- **`execPromptHook.ts`** (`restored-src/src/utils/hooks/execPromptHook.ts`): Execute a prompt-based hook using an LLM. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `execPromptHook`.
+- **`fileChangedWatcher.ts`** (`restored-src/src/utils/hooks/fileChangedWatcher.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `setEnvHookNotifier`, `initializeFileChangedWatcher`, `updateWatchPaths`, `onCwdChangedForHooks`, dan lainnya.
+- **`hookEvents.ts`** (`restored-src/src/utils/hooks/hookEvents.ts`): Enable emission of all hook event types (beyond SessionStart and Setup). Called when the SDK 'includeHookEvents' option is set or when running in CLAUDE_CODE_REMOTE mode. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `HookStartedEvent`, `HookProgressEvent`, `HookResponseEvent`, `HookExecutionEvent`, dan lainnya.
+- **`hookHelpers.ts`** (`restored-src/src/utils/hooks/hookHelpers.ts`): Schema for hook responses (shared by prompt and agent hooks). Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `hookResponseSchema`, `addArgumentsToPrompt`, `createStructuredOutputTool`, `registerStructuredOutputEnforcement`.
+- **`hooksConfigManager.ts`** (`restored-src/src/utils/hooks/hooksConfigManager.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `MatcherMetadata`, `HookEventMetadata`, `getHookEventMetadata`, `groupHooksByEventAndMatcher`, dan lainnya.
+- **`hooksConfigSnapshot.ts`** (`restored-src/src/utils/hooks/hooksConfigSnapshot.ts`): Check if only managed hooks should run. This is true when: - policySettings has allowManagedHooksOnly: true, OR - disableAllHooks is set in non-managed settings (non-managed settings cannot disable managed hooks, so they effectively become managed-only). Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `shouldAllowManagedHooksOnly`, `shouldDisableAllHooksIncludingManaged`, `captureHooksConfigSnapshot`, `updateHooksConfigSnapshot`, dan lainnya.
+- **`hooksSettings.ts`** (`restored-src/src/utils/hooks/hooksSettings.ts`): Check if two hooks are equal (comparing only command/prompt content, not timeout). Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `HookSource`, `IndividualHookConfig`, `isHookEqual`, `getHookDisplayText`, dan lainnya.
+- **`postSamplingHooks.ts`** (`restored-src/src/utils/hooks/postSamplingHooks.ts`): Register a post-sampling hook that will be called after model sampling completes This is an internal API not exposed through settings. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `REPLHookContext`, `PostSamplingHook`, `registerPostSamplingHook`, `clearPostSamplingHooks`, dan lainnya.
+- **`registerFrontmatterHooks.ts`** (`restored-src/src/utils/hooks/registerFrontmatterHooks.ts`): Register hooks from frontmatter (agent or skill) into session-scoped hooks. These hooks will be active for the duration of the session/agent and cleaned up when the session/agent ends. @param setAppState Function to update app state @param sessionId Session... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `registerFrontmatterHooks`.
+- **`registerSkillHooks.ts`** (`restored-src/src/utils/hooks/registerSkillHooks.ts`): Registers hooks from a skill's frontmatter as session hooks. Hooks are registered as session-scoped hooks that persist for the duration of the session. If a hook has 'once: true', it will be automatically removed after its first successful execution. @param... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `registerSkillHooks`.
+- **`sessionHooks.ts`** (`restored-src/src/utils/hooks/sessionHooks.ts`): Function hook callback - returns true if check passes, false to block. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `FunctionHookCallback`, `FunctionHook`, `SessionStore`, `SessionHooksState`, dan lainnya.
+- **`skillImprovement.ts`** (`restored-src/src/utils/hooks/skillImprovement.ts`): Apply skill improvements by calling a side-channel LLM to rewrite the skill file. Fire-and-forget — does not block the main conversation. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `SkillUpdate`, `initSkillImprovement`, `applySkillImprovement`.
+- **`ssrfGuard.ts`** (`restored-src/src/utils/hooks/ssrfGuard.ts`): SSRF guard for HTTP hooks. Blocks private, link-local, and other non-routable address ranges to prevent project-configured HTTP hooks from reaching cloud metadata endpoints (169.254.169.254) or internal infrastructure. Loopback (127.0.0.0/8, ::1) is intenti... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `isBlockedAddress`, `ssrfGuardedLookup`.
 
 ## Direktori: `restored-src/src/utils/mcp`
 
-- **`dateTimeParser.ts`**: Parse natural language date/time input into ISO 8601 format using Haiku.  Examples: - "tomorrow at 3pm" → "2025-10-15T15:00:00-07:00" - "next Monday" ...
-- **`elicitationValidation.ts`**: Mengekspor: ValidationResult, isEnumSchema, isMultiSelectEnumSchema.
+- **`dateTimeParser.ts`** (`restored-src/src/utils/mcp/dateTimeParser.ts`): Parse natural language date/time input into ISO 8601 format using Haiku. Examples: - "tomorrow at 3pm" → "2025-10-15T15:00:00-07:00" - "next Monday" → "2025-10-20" - "in 2 hours" → "2025-10-14T12:30:00-07:00" @param input The natural language date/time stri... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `DateTimeParseResult`, `parseNaturalLanguageDateTime`, `looksLikeISO8601`.
+- **`elicitationValidation.ts`** (`restored-src/src/utils/mcp/elicitationValidation.ts`): Check if schema is a single-select enum (either legacy 'enum' format or new 'oneOf' format). Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `ValidationResult`, `isEnumSchema`, `isMultiSelectEnumSchema`, `getMultiSelectValues`, dan lainnya.
 
 ## Direktori: `restored-src/src/utils/memory`
 
-- **`types.ts`**: Mengekspor: MEMORY_TYPE_VALUES, MemoryType.
-- **`versions.ts`**: Mengekspor: projectIsInGitRepo.
+- **`types.ts`** (`restored-src/src/utils/memory/types.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `MEMORY_TYPE_VALUES`, `MemoryType`.
+- **`versions.ts`** (`restored-src/src/utils/memory/versions.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `projectIsInGitRepo`.
 
 ## Direktori: `restored-src/src/utils/messages`
 
-- **`mappers.ts`**: Mengekspor: toInternalMessages, toSDKCompactMetadata, fromSDKCompactMetadata.
-- **`systemInit.ts`**: Mengekspor: sdkCompatToolName, SystemInitInputs, buildSystemInitMessage.
+- **`mappers.ts`** (`restored-src/src/utils/messages/mappers.ts`): Shared SDK→internal compact_metadata converter. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `toInternalMessages`, `toSDKCompactMetadata`, `fromSDKCompactMetadata`, `toSDKMessages`, dan lainnya.
+- **`systemInit.ts`** (`restored-src/src/utils/messages/systemInit.ts`): Build the 'system/init' SDKMessage — the first message on the SDK stream carrying session metadata (cwd, tools, model, commands, etc.) that remote clients use to render pickers and gate UI. Called from two paths that must produce identical shapes: - QueryEn... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `sdkCompatToolName`, `SystemInitInputs`, `buildSystemInitMessage`.
 
 ## Direktori: `restored-src/src/utils/model`
 
-- **`agent.ts`**: Get the default subagent model. Returns 'inherit' so subagents inherit the model from the parent thread.
-- **`aliases.ts`**: Bare model family aliases that act as wildcards in the availableModels allowlist. When "opus" is in the allowlist, ANY opus model is allowed (opus 4.5...
-- **`antModels.ts`**: Model defaults to adaptive thinking and rejects `thinking: { type: 'disabled' }`.
-- **`bedrock.ts`**: Mengekspor: getBedrockInferenceProfiles, findFirstMatch, getInferenceProfileBackingModel.
-- **`check1mAccess.ts`**: Check if extra usage is enabled based on the cached disabled reason. Extra usage is considered enabled if there's no disabled reason, or if the disabl...
-- **`configs.ts`**: Mengekspor: ModelConfig, CLAUDE_3_7_SONNET_CONFIG, CLAUDE_3_5_V2_SONNET_CONFIG.
-- **`contextWindowUpgradeCheck.ts`**: Get available model upgrade for more context Returns null if no upgrade available or user already has max context
-- **`deprecation.ts`**: Model deprecation utilities  Contains information about deprecated models and their retirement dates.
-- **`model.ts`**: Ensure that any model codenames introduced here are also added to scripts/excluded-strings.txt to avoid leaking them. Wrap any codename string literal...
-- **`modelAllowlist.ts`**: Check if a model belongs to a given family by checking if its name (or resolved name) contains the family identifier.
-- **`modelCapabilities.ts`**: Mengekspor: ModelCapability, getModelCapability.
-- **`modelOptions.ts`**: Mengekspor: ModelOption, getDefaultOptionForUser, getSonnet46_1MOption.
-- **`modelStrings.ts`**: Maps each model version to its provider-specific model ID string. Derived from ALL_MODEL_CONFIGS — adding a model there extends this type.
-- **`modelSupportOverrides.ts`**: Check whether a 3p model capability override is set for a model that matches one of the pinned ANTHROPIC_DEFAULT__MODEL env vars.
-- **`providers.ts`**: Check if ANTHROPIC_BASE_URL is a first-party Anthropic API URL. Returns true if not set (default API) or points to api.anthropic.com (or api-staging.a...
-- **`validateModel.ts`**: Validates a model by attempting an actual API call.
+- **`agent.ts`** (`restored-src/src/utils/model/agent.ts`): Get the default subagent model. Returns 'inherit' so subagents inherit the model from the parent thread. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `AGENT_MODEL_OPTIONS`, `AgentModelAlias`, `AgentModelOption`, `getDefaultSubagentModel`, dan lainnya.
+- **`aliases.ts`** (`restored-src/src/utils/model/aliases.ts`): Bare model family aliases that act as wildcards in the availableModels allowlist. When "opus" is in the allowlist, ANY opus model is allowed (opus 4.5, 4.6, etc.). When a specific model ID is in the allowlist, only that exact version is allowed. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `MODEL_ALIASES`, `ModelAlias`, `isModelAlias`, `MODEL_FAMILY_ALIASES`, dan lainnya.
+- **`antModels.ts`** (`restored-src/src/utils/model/antModels.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `AntModel`, `AntModelSwitchCalloutConfig`, `AntModelOverrideConfig`, `getAntModelOverrideConfig`, dan lainnya.
+- **`bedrock.ts`** (`restored-src/src/utils/model/bedrock.ts`): Check if a model ID is a foundation model (e.g., "anthropic.claude-sonnet-4-5-20250929-v1:0"). Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getBedrockInferenceProfiles`, `findFirstMatch`, `createBedrockRuntimeClient`, `getInferenceProfileBackingModel`, dan lainnya.
+- **`check1mAccess.ts`** (`restored-src/src/utils/model/check1mAccess.ts`): Check if extra usage is enabled based on the cached disabled reason. Extra usage is considered enabled if there's no disabled reason, or if the disabled reason indicates it's provisioned but temporarily unavailable. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `checkOpus1mAccess`, `checkSonnet1mAccess`.
+- **`configs.ts`** (`restored-src/src/utils/model/configs.ts`): Union of all canonical first-party model IDs, e.g. 'claude-opus-4-6' | 'claude-sonnet-4-5-20250929' | …. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `ModelConfig`, `CLAUDE_3_7_SONNET_CONFIG`, `CLAUDE_3_5_V2_SONNET_CONFIG`, `CLAUDE_3_5_HAIKU_CONFIG`, dan lainnya.
+- **`contextWindowUpgradeCheck.ts`** (`restored-src/src/utils/model/contextWindowUpgradeCheck.ts`): Get upgrade message for different contexts. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getUpgradeMessage`.
+- **`deprecation.ts`** (`restored-src/src/utils/model/deprecation.ts`): Get a deprecation warning message for a model, or null if not deprecated. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getModelDeprecationWarning`.
+- **`model.ts`** (`restored-src/src/utils/model/model.ts`): Helper to get the model from /model (including via /config), the --model flag, environment variable, or the saved settings. The returned value can be a model alias if that's what the user specified. Undefined if the user didn't configure anything, in which... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `ModelShortName`, `ModelName`, `ModelSetting`, `getSmallFastModel`, dan lainnya.
+- **`modelAllowlist.ts`** (`restored-src/src/utils/model/modelAllowlist.ts`): Check if a model is allowed by the availableModels allowlist in settings. If availableModels is not set, all models are allowed. Matching tiers: 1. Family aliases ("opus", "sonnet", "haiku") — wildcard for the entire family, UNLESS more specific entries for... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `isModelAllowed`.
+- **`modelCapabilities.ts`** (`restored-src/src/utils/model/modelCapabilities.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `ModelCapability`, `getModelCapability`, `refreshModelCapabilities`.
+- **`modelOptions.ts`** (`restored-src/src/utils/model/modelOptions.ts`): Map a full model name to its family alias and the marketing name of the version the alias currently resolves to. Used to detect when a user has a specific older version pinned and a newer one is available. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `ModelOption`, `getDefaultOptionForUser`, `getSonnet46_1MOption`, `getOpus46_1MOption`, dan lainnya.
+- **`modelStrings.ts`** (`restored-src/src/utils/model/modelStrings.ts`): Maps each model version to its provider-specific model ID string. Derived from ALL_MODEL_CONFIGS — adding a model there extends this type. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `ModelStrings`, `resolveOverriddenModel`, `getModelStrings`, `ensureModelStringsInitialized`.
+- **`modelSupportOverrides.ts`** (`restored-src/src/utils/model/modelSupportOverrides.ts`): Check whether a 3p model capability override is set for a model that matches one of the pinned ANTHROPIC_DEFAULT_*_MODEL env vars. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `ModelCapabilityOverride`, `get3PModelCapabilityOverride`.
+- **`providers.ts`** (`restored-src/src/utils/model/providers.ts`): Check if ANTHROPIC_BASE_URL is a first-party Anthropic API URL. Returns true if not set (default API) or points to api.anthropic.com (or api-staging.anthropic.com for ant users). Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `APIProvider`, `getAPIProvider`, `getAPIProviderForStatsig`, `isFirstPartyAnthropicBaseUrl`.
+- **`validateModel.ts`** (`restored-src/src/utils/model/validateModel.ts`): Validates a model by attempting an actual API call. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `validateModel`.
 
 ## Direktori: `restored-src/src/utils/nativeInstaller`
 
-- **`download.ts`**: Download functionality for native installer  Handles downloading Claude binaries from various sources: - Artifactory NPM packages - GCS bucket
-- **`index.ts`**: Native Installer - Public API  This is the barrel file that exports only the functions actually used by external modules. External modules should only...
-- **`installer.ts`**: Native Installer Implementation  This module implements the file-based native installer system described in docs/native-installer.md. It provides: - D...
-- **`packageManagers.ts`**: Package manager detection for Claude CLI
-- **`pidLock.ts`**: PID-Based Version Locking  This module provides PID-based locking for running Claude Code versions. Unlike mtime-based locking (which can hold locks f...
+- **`download.ts`** (`restored-src/src/utils/nativeInstaller/download.ts`): Common logic for downloading and verifying a binary. Includes stall detection (aborts if no bytes for 60s) and retry logic. Mengimplementasikan class utama untuk area fitur ini. Export utama: `ARTIFACTORY_REGISTRY_URL`, `getLatestVersionFromArtifactory`, `getLatestVersionFromBinaryRepo`, `getLatestVersion`, dan lainnya.
+- **`index.ts`** (`restored-src/src/utils/nativeInstaller/index.ts`): Native Installer - Public API This is the barrel file that exports only the functions actually used by external modules. External modules should only import from this file. Barrel/entry point yang merapikan export modul di folder ini. Export utama: `checkInstall`, `cleanupNpmInstallations`, `cleanupOldVersions`, `cleanupShellAliases`, dan lainnya.
+- **`installer.ts`** (`restored-src/src/utils/nativeInstaller/installer.ts`): Acquire a lock on the current running version to prevent it from being deleted This lock is held for the entire lifetime of the process Uses PID-based locking (when enabled) which can immediately detect crashed processes (unlike mtime-based locking which re... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `VERSION_RETENTION_COUNT`, `SetupMessage`, `getPlatform`, `getBinaryName`, dan lainnya.
+- **`packageManagers.ts`** (`restored-src/src/utils/nativeInstaller/packageManagers.ts`): Parses /etc/os-release to extract the distro ID and ID_LIKE fields. ID_LIKE identifies the distro family (e.g. Ubuntu has ID_LIKE=debian), letting us skip package manager execs on distros that can't have them. Returns null if the file is unreadable (pre-sys... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `PackageManager`, `getOsRelease`, `detectMise`, `detectAsdf`, dan lainnya.
+- **`pidLock.ts`** (`restored-src/src/utils/nativeInstaller/pidLock.ts`): Check if PID-based version locking is enabled. When disabled, falls back to mtime-based locking (30-day timeout). Controlled by GrowthBook gate with local override: - Set ENABLE_PID_BASED_VERSION_LOCKING=true to force-enable - Set ENABLE_PID_BASED_VERSION_L... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `isPidBasedLockingEnabled`, `VersionLockContent`, `LockInfo`, `isProcessRunning`, dan lainnya.
 
 ## Direktori: `restored-src/src/utils/permissions`
 
-- **`PermissionMode.ts`**: Mengekspor: permissionModeSchema, externalPermissionModeSchema, isExternalPermissionMode.
-- **`PermissionPromptToolResultSchema.ts`**: Mengekspor: inputSchema, Input, outputSchema.
-- **`PermissionResult.ts`**: Mengekspor: getRuleBehaviorDescription.
-- **`PermissionRule.ts`**: ToolPermissionBehavior is the behavior associated with a permission rule. 'allow' means the rule allows the tool to run. 'deny' means the rule denies ...
-- **`PermissionUpdate.ts`**: Mengekspor: extractRules, hasRules, applyPermissionUpdate.
-- **`PermissionUpdateSchema.ts`**: Zod schemas for permission updates.  This file is intentionally kept minimal with no complex dependencies so it can be safely imported by src/types/ho...
-- **`autoModeState.ts`**: Mengekspor: setAutoModeActive, isAutoModeActive, setAutoModeFlagCli.
-- **`bashClassifier.ts`**: Mengekspor: PROMPT_PREFIX, ClassifierResult, ClassifierBehavior.
-- **`bypassPermissionsKillswitch.ts`**: Mengekspor: resetBypassPermissionsCheck, useKickOffCheckAndDisableBypassPermissionsIfNeeded, resetAutoModeGateCheck.
-- **`classifierDecision.ts`**: Mengekspor: isAutoModeAllowlistedTool.
-- **`classifierShared.ts`**: Shared infrastructure for classifier-based permission systems.  This module provides common types, schemas, and utilities used by both: - bashClassifi...
-- **`dangerousPatterns.ts`**: Pattern lists for dangerous shell-tool allow-rule prefixes.  An allow rule like `Bash(python:)` or `PowerShell(node:)` lets the model run arbitrary co...
-- **`denialTracking.ts`**: Denial tracking infrastructure for permission classifiers. Tracks consecutive denials and total denials to determine when to fall back to prompting....
-- **`filesystem.ts`**: Mengekspor: DANGEROUS_FILES, DANGEROUS_DIRECTORIES, normalizeCaseForComparison.
-- **`getNextPermissionMode.ts`**: Mengekspor: getNextPermissionMode, cyclePermissionMode.
-- **`pathValidation.ts`**: Mengekspor: FileOperationType, PathCheckResult, ResolvedPathCheckResult.
-- **`permissionExplainer.ts`**: Mengekspor: RiskLevel, PermissionExplanation, isPermissionExplainerEnabled.
-- **`permissionRuleParser.ts`**: Mengekspor: normalizeLegacyToolName, getLegacyToolNames, escapeRuleContent.
-- **`permissionSetup.ts`**: Mengekspor: isDangerousBashPermission, isDangerousPowerShellPermission, isDangerousTaskPermission.
-- **`permissions.ts`**: Mengekspor: permissionRuleSourceDisplayString, getAllowRules, createPermissionRequestMessage.
-- **`permissionsLoader.ts`**: Returns true if allowManagedPermissionRulesOnly is enabled in managed settings (policySettings). When enabled, only permission rules from managed sett...
-- **`shadowedRuleDetection.ts`**: Type of shadowing that makes a rule unreachable
-- **`shellRuleMatching.ts`**: Shared permission rule matching utilities for shell tools.  Extracts common logic for: - Parsing permission rules (exact, prefix, wildcard) - Matching...
-- **`yoloClassifier.ts`**: Mengekspor: AutoModeRules, getDefaultExternalAutoModeRules, buildDefaultExternalSystemPrompt.
+- **`PermissionMode.ts`** (`restored-src/src/utils/permissions/PermissionMode.ts`): Type guard to check if a PermissionMode is an ExternalPermissionMode. auto is ant-only and excluded from external modes. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `EXTERNAL_PERMISSION_MODES`, `PERMISSION_MODES`, `ExternalPermissionMode`, `PermissionMode`, dan lainnya.
+- **`PermissionPromptToolResultSchema.ts`** (`restored-src/src/utils/permissions/PermissionPromptToolResultSchema.ts`): Normalizes the result of a permission prompt tool to a PermissionDecision. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `inputSchema`, `Input`, `outputSchema`, `Output`, dan lainnya.
+- **`PermissionResult.ts`** (`restored-src/src/utils/permissions/PermissionResult.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `PermissionAllowDecision`, `PermissionAskDecision`, `PermissionDecision`, `PermissionDecisionReason`, dan lainnya.
+- **`PermissionRule.ts`** (`restored-src/src/utils/permissions/PermissionRule.ts`): ToolPermissionBehavior is the behavior associated with a permission rule. 'allow' means the rule allows the tool to run. 'deny' means the rule denies the tool from running. 'ask' means the rule forces a prompt to be shown to the user. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `PermissionBehavior`, `PermissionRule`, `PermissionRuleSource`, `PermissionRuleValue`, dan lainnya.
+- **`PermissionUpdate.ts`** (`restored-src/src/utils/permissions/PermissionUpdate.ts`): Applies a single permission update to the context and returns the updated context @param context The current permission context @param update The permission update to apply @returns The updated permission context. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `AdditionalWorkingDirectory`, `WorkingDirectorySource`, `extractRules`, `hasRules`, dan lainnya.
+- **`PermissionUpdateSchema.ts`** (`restored-src/src/utils/permissions/PermissionUpdateSchema.ts`): PermissionUpdateDestination is where a new permission rule should be saved to. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `PermissionUpdate`, `PermissionUpdateDestination`, `permissionUpdateDestinationSchema`, `permissionUpdateSchema`.
+- **`autoModeState.ts`** (`restored-src/src/utils/permissions/autoModeState.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `setAutoModeActive`, `isAutoModeActive`, `setAutoModeFlagCli`, `getAutoModeFlagCli`, dan lainnya.
+- **`bashClassifier.ts`** (`restored-src/src/utils/permissions/bashClassifier.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `PROMPT_PREFIX`, `ClassifierResult`, `ClassifierBehavior`, `extractPromptDescription`, dan lainnya.
+- **`bypassPermissionsKillswitch.ts`** (`restored-src/src/utils/permissions/bypassPermissionsKillswitch.ts`): Reset the run-once flag for checkAndDisableBypassPermissionsIfNeeded. Call this after /login so the gate check re-runs with the new org. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `checkAndDisableBypassPermissionsIfNeeded`, `resetBypassPermissionsCheck`, `useKickOffCheckAndDisableBypassPermissionsIfNeeded`, `checkAndDisableAutoModeIfNeeded`, dan lainnya.
+- **`classifierDecision.ts`** (`restored-src/src/utils/permissions/classifierDecision.ts`): Tools that are safe and don't need any classifier checking. Used by the auto mode classifier to skip unnecessary API calls. Does NOT include write/edit tools — those are handled by the acceptEdits fast path (allowed in CWD, classified outside CWD). Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `isAutoModeAllowlistedTool`.
+- **`classifierShared.ts`** (`restored-src/src/utils/permissions/classifierShared.ts`): Extract tool use block from message content by tool name. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `extractToolUseBlock`, `parseClassifierResponse`.
+- **`dangerousPatterns.ts`** (`restored-src/src/utils/permissions/dangerousPatterns.ts`): Pattern lists for dangerous shell-tool allow-rule prefixes. An allow rule like 'Bash(python:*)' or 'PowerShell(node:*)' lets the model run arbitrary code via that interpreter, bypassing the auto-mode classifier. These lists feed the isDangerous{Bash,PowerSh... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `CROSS_PLATFORM_CODE_EXEC`, `DANGEROUS_BASH_PATTERNS`.
+- **`denialTracking.ts`** (`restored-src/src/utils/permissions/denialTracking.ts`): Denial tracking infrastructure for permission classifiers. Tracks consecutive denials and total denials to determine when to fall back to prompting. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `DenialTrackingState`, `DENIAL_LIMITS`, `createDenialTrackingState`, `recordDenial`, dan lainnya.
+- **`filesystem.ts`** (`restored-src/src/utils/permissions/filesystem.ts`): Dangerous files that should be protected from auto-editing. These files can be used for code execution or data exfiltration. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `DANGEROUS_FILES`, `DANGEROUS_DIRECTORIES`, `normalizeCaseForComparison`, `getClaudeSkillScope`, dan lainnya.
+- **`getNextPermissionMode.ts`** (`restored-src/src/utils/permissions/getNextPermissionMode.ts`): Determines the next permission mode when cycling through modes with Shift+Tab. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getNextPermissionMode`, `cyclePermissionMode`.
+- **`pathValidation.ts`** (`restored-src/src/utils/permissions/pathValidation.ts`): Extracts the base directory from a glob pattern for validation. For example: "/path/to/*.txt" returns "/path/to". Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `FileOperationType`, `PathCheckResult`, `ResolvedPathCheckResult`, `formatDirectoryList`, dan lainnya.
+- **`permissionExplainer.ts`** (`restored-src/src/utils/permissions/permissionExplainer.ts`): Check if the permission explainer feature is enabled. Enabled by default; users can opt out via config. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `RiskLevel`, `PermissionExplanation`, `isPermissionExplainerEnabled`, `generatePermissionExplanation`.
+- **`permissionRuleParser.ts`** (`restored-src/src/utils/permissions/permissionRuleParser.ts`): Escapes special characters in rule content for safe storage in permission rules. Permission rules use the format "Tool(content)", so parentheses in content must be escaped. Escaping order matters: 1. Escape existing backslashes first (\ -> \\) 2. Then escap... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `normalizeLegacyToolName`, `getLegacyToolNames`, `escapeRuleContent`, `unescapeRuleContent`, dan lainnya.
+- **`permissionSetup.ts`** (`restored-src/src/utils/permissions/permissionSetup.ts`): Checks if a Bash permission rule is dangerous for auto mode. A rule is dangerous if it would auto-allow commands that execute arbitrary code, bypassing the classifier's safety evaluation. Dangerous patterns: 1. Tool-level allow (Bash with no ruleContent) -... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `isDangerousBashPermission`, `isDangerousPowerShellPermission`, `isDangerousTaskPermission`, `DangerousPermissionInfo`, dan lainnya.
+- **`permissions.ts`** (`restored-src/src/utils/permissions/permissions.ts`): Creates a permission request message that explain the permission request. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `permissionRuleSourceDisplayString`, `getAllowRules`, `createPermissionRequestMessage`, `getDenyRules`, dan lainnya.
+- **`permissionsLoader.ts`** (`restored-src/src/utils/permissions/permissionsLoader.ts`): Returns true if allowManagedPermissionRulesOnly is enabled in managed settings (policySettings). When enabled, only permission rules from managed settings are respected. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `shouldAllowManagedPermissionRulesOnly`, `shouldShowAlwaysAllowOptions`, `loadAllPermissionRulesFromDisk`, `getPermissionRulesForSource`, dan lainnya.
+- **`shadowedRuleDetection.ts`** (`restored-src/src/utils/permissions/shadowedRuleDetection.ts`): Type of shadowing that makes a rule unreachable. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `ShadowType`, `UnreachableRule`, `DetectUnreachableRulesOptions`, `isSharedSettingSource`, dan lainnya.
+- **`shellRuleMatching.ts`** (`restored-src/src/utils/permissions/shellRuleMatching.ts`): Parsed permission rule discriminated union. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `ShellPermissionRule`, `permissionRuleExtractPrefix`, `hasWildcards`, `matchWildcardPattern`, dan lainnya.
+- **`yoloClassifier.ts`** (`restored-src/src/utils/permissions/yoloClassifier.ts`): Shape of the settings.autoMode config — the three classifier prompt sections a user can customize. Required-field variant (empty arrays when absent) for JSON output; settings.ts uses the optional-field variant. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `AutoModeRules`, `getDefaultExternalAutoModeRules`, `buildDefaultExternalSystemPrompt`, `getAutoModeClassifierErrorDumpPath`, dan lainnya.
 
 ## Direktori: `restored-src/src/utils/plugins`
 
-- **`addDirPluginSettings.ts`**: Reads plugin-related settings (enabledPlugins, extraKnownMarketplaces) from --add-dir directories.  These have the LOWEST priority — callers must spre...
-- **`cacheUtils.ts`**: Mengekspor: clearAllPluginCaches, clearAllCaches.
-- **`dependencyResolver.ts`**: Plugin dependency resolution — pure functions, no I/O.  Semantics are `apt`-style: a dependency is a presence guarantee, not a module graph. Plugin A ...
-- **`fetchTelemetry.ts`**: Telemetry for plugin/marketplace fetches that hit the network.  Added for inc-5046 (GitHub complained about claude-plugins-official load). Before this...
-- **`gitAvailability.ts`**: Utility for checking git availability.  Git is required for installing GitHub-based marketplaces. This module provides a memoized check to determine i...
-- **`headlessPluginInstall.ts`**: Plugin installation for headless/CCR mode.  This module provides plugin installation without AppState updates, suitable for non-interactive environmen...
-- **`hintRecommendation.ts`**: Plugin-hint recommendations.  Companion to lspRecommendation.ts: where LSP recommendations are triggered by file edits, plugin hints are triggered by ...
-- **`installCounts.ts`**: Plugin install counts data layer  This module fetches and caches plugin install counts from the official Claude plugins statistics repository. The cac...
-- **`installedPluginsManager.ts`**: Manages plugin installation metadata stored in installed_plugins.json  This module separates plugin installation state (global) from enabled/disabled ...
-- **`loadPluginAgents.ts`**: Mengekspor: loadPluginAgents, clearPluginAgentCache.
-- **`loadPluginCommands.ts`**: Mengekspor: getPluginCommands, clearPluginCommandCache, getPluginSkills.
-- **`loadPluginHooks.ts`**: Convert plugin hooks configuration to native matchers with plugin context
-- **`loadPluginOutputStyles.ts`**: Mengekspor: loadPluginOutputStyles, clearPluginOutputStyleCache.
-- **`lspPluginIntegration.ts`**: Validate that a resolved path stays within the plugin directory. Prevents path traversal attacks via .. or absolute paths.
-- **`lspRecommendation.ts`**: LSP Plugin Recommendation Utility  Scans installed marketplaces for LSP plugins and recommends plugins based on file extensions, but ONLY when the LSP...
-- **`managedPlugins.ts`**: Plugin names locked by org policy (policySettings.enabledPlugins).  Returns null when managed settings declare no plugin entries (common case — no pol...
-- **`marketplaceHelpers.ts`**: Format plugin failure details for user display @param failures - Array of failures with names and reasons @param includeReasons - Whether to include f...
-- **`marketplaceManager.ts`**: Marketplace manager for Claude Code plugins  This module provides functionality to: - Manage known marketplace sources (URLs, GitHub repos, npm packag...
-- **`mcpPluginIntegration.ts`**: Mengekspor: UnconfiguredChannel, getUnconfiguredChannels, addPluginScopeToServers.
-- **`mcpbHandler.ts`**: User configuration values for MCPB
-- **`officialMarketplace.ts`**: Constants for the official Anthropic plugins marketplace.  The official marketplace is hosted on GitHub and provides first-party plugins developed by ...
-- **`officialMarketplaceGcs.ts`**: inc-5046: fetch the official marketplace from a GCS mirror instead of git-cloning GitHub on every startup.  Backend (anthropic#317037) publishes a mar...
-- **`officialMarketplaceStartupCheck.ts`**: Auto-install logic for the official Anthropic marketplace.  This module handles automatically installing the official marketplace on startup for new u...
-- **`orphanedPluginFilter.ts`**: Provides ripgrep glob exclusion patterns for orphaned plugin versions.  When plugin versions are updated, old versions are marked with a `.orphaned_at...
-- **`parseMarketplaceInput.ts`**: Parses a marketplace input string and returns the appropriate marketplace source type. Handles various input formats: - Git SSH URLs (user@host:path o...
-- **`performStartupChecks.tsx`**: Perform plugin startup checks and initiate background installations  This function starts background installation of marketplaces and plugins from tru...
-- **`pluginAutoupdate.ts`**: Background plugin autoupdate functionality  At startup, this module: 1. First updates marketplaces that have autoUpdate enabled 2. Then checks all ins...
-- **`pluginBlocklist.ts`**: Plugin delisting detection.  Compares installed plugins against marketplace manifests to find plugins that have been removed, and auto-uninstalls them...
-- **`pluginDirectories.ts`**: Centralized plugin directory configuration.  This module provides the single source of truth for the plugins directory path. It supports switching bet...
-- **`pluginFlagging.ts`**: Flagged plugin tracking utilities  Tracks plugins that were auto-removed because they were delisted from their marketplace. Data is stored in ~/.claud...
-- **`pluginIdentifier.ts`**: Extended scope type that includes 'flag' for session-only plugins. 'flag' scope is NOT persisted to installed_plugins.json.
-- **`pluginInstallationHelpers.ts`**: Shared helper functions for plugin installation  This module contains common utilities used across the plugin installation system to reduce code dupli...
-- **`pluginLoader.ts`**: Plugin Loader Module  This module is responsible for discovering, loading, and validating Claude Code plugins from various sources including marketpla...
-- **`pluginOptionsStorage.ts`**: Plugin option storage and substitution.  Plugins declare user-configurable options in `manifest.userConfig` — a record of field schemas matching `Mcpb...
-- **`pluginPolicy.ts`**: Plugin policy checks backed by managed settings (policySettings).  Kept as a leaf module (only imports settings) to avoid circular dependencies — mark...
-- **`pluginStartupCheck.ts`**: Checks for enabled plugins across all settings sources, including --add-dir.
-- **`pluginVersioning.ts`**: Plugin Version Calculation Module  Handles version calculation for plugins from various sources. Versions are used for versioned cache paths and updat...
-- **`reconciler.ts`**: Marketplace reconciler — makes known_marketplaces.json consistent with declared intent in settings.  Two layers: - diffMarketplaces(): comparison (rea...
-- **`refresh.ts`**: Layer-3 refresh primitive: swap active plugin components in the running session.  Three-layer model (see reconciler.ts for Layer-2): - Layer 1: intent...
-- **`schemas.ts`**: First-layer defense against official marketplace impersonation.  This validation blocks direct impersonation attempts like "anthropic-official", "clau...
-- **`validatePlugin.ts`**: Fields that belong in marketplace.json entries (PluginMarketplaceEntrySchema) but not plugin.json (PluginManifestSchema). Plugin authors reasonably co...
-- **`walkPluginMarkdown.ts`**: Recursively walk a plugin directory, invoking onFile for each .md file.  The namespace array tracks the subdirectory path relative to the root (e.g., ...
-- **`zipCache.ts`**: Plugin Zip Cache Module  Manages plugins as ZIP archives in a mounted directory (e.g., Filestore). When CLAUDE_CODE_PLUGIN_USE_ZIP_CACHE is enabled an...
-- **`zipCacheAdapters.ts`**: Zip Cache Adapters  I/O helpers for the plugin zip cache. These functions handle reading/writing zip-cache-local metadata files, extracting ZIPs to se...
+- **`addDirPluginSettings.ts`** (`restored-src/src/utils/plugins/addDirPluginSettings.ts`): Returns a merged record of enabledPlugins from all --add-dir directories. Within each directory, settings.local.json is processed after settings.json (local wins within that dir). Across directories, later CLI-order wins on conflict. This has the lowest pri... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getAddDirEnabledPlugins`, `getAddDirExtraMarketplaces`.
+- **`cacheUtils.ts`** (`restored-src/src/utils/plugins/cacheUtils.ts`): Mark a plugin version as orphaned. Called when a plugin is uninstalled or updated to a new version. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `clearAllPluginCaches`, `clearAllCaches`, `markPluginVersionOrphaned`, `cleanupOrphanedPluginVersionsInBackground`.
+- **`dependencyResolver.ts`** (`restored-src/src/utils/plugins/dependencyResolver.ts`): Normalize a dependency reference to fully-qualified "name@marketplace" form. Bare names (no @) inherit the marketplace of the plugin declaring them — cross-marketplace deps are blocked anyway, so the @-suffix is boilerplate in the common case. EXCEPTION: if... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `qualifyDependency`, `DependencyLookupResult`, `ResolutionResult`, `resolveDependencyClosure`, dan lainnya.
+- **`fetchTelemetry.ts`** (`restored-src/src/utils/plugins/fetchTelemetry.ts`): Classify an error into a stable bucket for the error_kind field. Keeps cardinality bounded — raw error messages would explode dashboard grouping. Handles both axios Error objects (Node.js error codes like ENOTFOUND) and git stderr strings (human phrases lik... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `PluginFetchSource`, `PluginFetchOutcome`, `logPluginFetch`, `classifyFetchError`.
+- **`gitAvailability.ts`** (`restored-src/src/utils/plugins/gitAvailability.ts`): Check if git is available on the system. This is memoized so repeated calls within a session return the cached result. Git availability is unlikely to change during a single CLI session. Only checks PATH — does not exec git. On macOS this means the /usr/bin... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `checkGitAvailable`, `markGitUnavailable`, `clearGitAvailabilityCache`.
+- **`headlessPluginInstall.ts`** (`restored-src/src/utils/plugins/headlessPluginInstall.ts`): Install plugins for headless/CCR mode. This is the headless equivalent of performBackgroundPluginInstallations(), but without AppState updates (no UI to update in headless mode). @returns true if any plugins were installed (caller should refresh MCP). Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `installPluginsForHeadless`.
+- **`hintRecommendation.ts`** (`restored-src/src/utils/plugins/hintRecommendation.ts`): Pre-store gate called by shell tools when a 'type="plugin"' hint is detected. Drops the hint if: - a dialog has already been shown this session - user has disabled hints - the shown-plugins list has hit the config-growth cap - plugin slug doesn't parse as '... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `PluginHintRecommendation`, `maybeRecordPluginHint`, `_resetHintRecommendationForTesting`, `resolvePluginHint`, dan lainnya.
+- **`installCounts.ts`** (`restored-src/src/utils/plugins/installCounts.ts`): Get plugin install counts as a Map. Uses cached data if available and less than 24 hours old. Returns null on errors so UI can hide counts rather than show misleading zeros. @returns Map of plugin ID (name@marketplace) to install count, or null if unavailable. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getInstallCounts`, `formatInstallCount`.
+- **`installedPluginsManager.ts`** (`restored-src/src/utils/plugins/installedPluginsManager.ts`): Get the path to the installed_plugins.json file. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `PersistableScope`, `getInstalledPluginsFilePath`, `getInstalledPluginsV2FilePath`, `clearInstalledPluginsCache`, dan lainnya.
+- **`loadPluginAgents.ts`** (`restored-src/src/utils/plugins/loadPluginAgents.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `loadPluginAgents`, `clearPluginAgentCache`.
+- **`loadPluginCommands.ts`** (`restored-src/src/utils/plugins/loadPluginCommands.ts`): Check if a file path is a skill file (SKILL.md). Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getPluginCommands`, `clearPluginCommandCache`, `getPluginSkills`, `clearPluginSkillsCache`.
+- **`loadPluginHooks.ts`** (`restored-src/src/utils/plugins/loadPluginHooks.ts`): Load and register hooks from all enabled plugins. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `loadPluginHooks`, `clearPluginHookCache`, `pruneRemovedPluginHooks`, `resetHotReloadState`, dan lainnya.
+- **`loadPluginOutputStyles.ts`** (`restored-src/src/utils/plugins/loadPluginOutputStyles.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `loadPluginOutputStyles`, `clearPluginOutputStyleCache`.
+- **`lspPluginIntegration.ts`** (`restored-src/src/utils/plugins/lspPluginIntegration.ts`): Load LSP server configurations from a plugin. Checks for: 1. .lsp.json file in plugin directory 2. manifest.lspServers field @param plugin - The loaded plugin @param errors - Array to collect any errors encountered @returns Record of server name to config,... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `loadPluginLspServers`, `resolvePluginLspEnvironment`, `addPluginScopeToLspServers`, `getPluginLspServers`, dan lainnya.
+- **`lspRecommendation.ts`** (`restored-src/src/utils/plugins/lspRecommendation.ts`): LSP plugin recommendation returned to the caller. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `LspPluginRecommendation`, `getMatchingLspPlugins`, `addToNeverSuggest`, `incrementIgnoredCount`, dan lainnya.
+- **`managedPlugins.ts`** (`restored-src/src/utils/plugins/managedPlugins.ts`): Plugin names locked by org policy (policySettings.enabledPlugins). Returns null when managed settings declare no plugin entries (common case — no policy in effect). Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getManagedPluginNames`.
+- **`marketplaceHelpers.ts`** (`restored-src/src/utils/plugins/marketplaceHelpers.ts`): Format plugin failure details for user display @param failures - Array of failures with names and reasons @param includeReasons - Whether to include failure reasons (true for full errors, false for summaries) @returns Formatted string like "plugin-a (reason... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `formatFailureDetails`, `getMarketplaceSourceDisplay`, `createPluginId`, `loadMarketplacesWithGracefulDegradation`, dan lainnya.
+- **`marketplaceManager.ts`** (`restored-src/src/utils/plugins/marketplaceManager.ts`): Get the path to the marketplaces cache directory Using a function instead of a constant allows proper mocking in tests. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getMarketplacesCacheDir`, `clearMarketplacesCache`, `KnownMarketplacesConfig`, `DeclaredMarketplace`, dan lainnya.
+- **`mcpPluginIntegration.ts`** (`restored-src/src/utils/plugins/mcpPluginIntegration.ts`): Load MCP servers from a plugin's manifest This function loads MCP server configurations from various sources within the plugin including manifest entries, .mcp.json files, and .mcpb files. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `loadPluginMcpServers`, `UnconfiguredChannel`, `getUnconfiguredChannels`, `addPluginScopeToServers`, dan lainnya.
+- **`mcpbHandler.ts`** (`restored-src/src/utils/plugins/mcpbHandler.ts`): User configuration values for MCPB. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `UserConfigValues`, `UserConfigSchema`, `McpbLoadResult`, `McpbNeedsConfigResult`, dan lainnya.
+- **`officialMarketplace.ts`** (`restored-src/src/utils/plugins/officialMarketplace.ts`): Source configuration for the official Anthropic plugins marketplace. Used when auto-installing the marketplace on startup. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `OFFICIAL_MARKETPLACE_SOURCE`, `OFFICIAL_MARKETPLACE_NAME`.
+- **`officialMarketplaceGcs.ts`** (`restored-src/src/utils/plugins/officialMarketplaceGcs.ts`): Fetch the official marketplace from GCS and extract to installLocation. Idempotent — checks a '.gcs-sha' sentinel before downloading the ~3.5MB zip. @param installLocation where to extract (must be inside marketplacesCacheDir) @param marketplacesCacheDir th... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `fetchOfficialMarketplaceFromGcs`, `classifyGcsError`.
+- **`officialMarketplaceStartupCheck.ts`** (`restored-src/src/utils/plugins/officialMarketplaceStartupCheck.ts`): Reason why the official marketplace was not installed. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `OfficialMarketplaceSkipReason`, `isOfficialMarketplaceAutoInstallDisabled`, `RETRY_CONFIG`, `OfficialMarketplaceCheckResult`, dan lainnya.
+- **`orphanedPluginFilter.ts`** (`restored-src/src/utils/plugins/orphanedPluginFilter.ts`): Get ripgrep glob exclusion patterns for orphaned plugin versions. @param searchPath - When provided, exclusions are only returned if the search overlaps the plugin cache directory (avoids unnecessary --glob args for searches outside the cache). Warmed eager... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getGlobExclusionsForPluginCache`, `clearPluginCacheExclusions`.
+- **`parseMarketplaceInput.ts`** (`restored-src/src/utils/plugins/parseMarketplaceInput.ts`): Parses a marketplace input string and returns the appropriate marketplace source type. Handles various input formats: - Git SSH URLs (user@host:path or user@host:path.git) - Standard: git@github.com:owner/repo.git - GitHub Enterprise SSH certificates: org-1... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `parseMarketplaceInput`.
+- **`performStartupChecks.tsx`** (`restored-src/src/utils/plugins/performStartupChecks.tsx`): Perform plugin startup checks and initiate background installations This function starts background installation of marketplaces and plugins from trusted sources (repository and user settings) without blocking startup. Installation progress and errors are t... Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `performStartupChecks`.
+- **`pluginAutoupdate.ts`** (`restored-src/src/utils/plugins/pluginAutoupdate.ts`): Callback type for notifying when plugins have been updated. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `PluginAutoUpdateCallback`, `onPluginsAutoUpdated`, `getAutoUpdatedPluginNames`, `updatePluginsForMarketplaces`, dan lainnya.
+- **`pluginBlocklist.ts`** (`restored-src/src/utils/plugins/pluginBlocklist.ts`): Detect plugins installed from a marketplace that are no longer listed there. @param installedPlugins All installed plugins @param marketplace The marketplace to check against @param marketplaceName The marketplace name suffix (e.g. "claude-plugins-official"... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `detectDelistedPlugins`, `detectAndUninstallDelistedPlugins`.
+- **`pluginDirectories.ts`** (`restored-src/src/utils/plugins/pluginDirectories.ts`): Get the full path to the plugins directory. Priority: 1. CLAUDE_CODE_PLUGIN_CACHE_DIR env var (explicit override) 2. Default: ~/.claude/plugins or ~/.claude/cowork_plugins. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getPluginsDirectory`, `getPluginSeedDirs`, `pluginDataDirPath`, `getPluginDataDir`, dan lainnya.
+- **`pluginFlagging.ts`** (`restored-src/src/utils/plugins/pluginFlagging.ts`): Load flagged plugins from disk into the module cache. Must be called (and awaited) before getFlaggedPlugins() returns meaningful data. Called by useManagePlugins during plugin refresh. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `FlaggedPlugin`, `loadFlaggedPlugins`, `getFlaggedPlugins`, `addFlaggedPlugin`, dan lainnya.
+- **`pluginIdentifier.ts`** (`restored-src/src/utils/plugins/pluginIdentifier.ts`): Extended scope type that includes 'flag' for session-only plugins. 'flag' scope is NOT persisted to installed_plugins.json. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `ExtendedPluginScope`, `PersistablePluginScope`, `SETTING_SOURCE_TO_SCOPE`, `ParsedPluginIdentifier`, dan lainnya.
+- **`pluginInstallationHelpers.ts`** (`restored-src/src/utils/plugins/pluginInstallationHelpers.ts`): Plugin installation metadata for installed_plugins.json. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `PluginInstallationInfo`, `getCurrentTimestamp`, `validatePathWithinBase`, `cacheAndRegisterPlugin`, dan lainnya.
+- **`pluginLoader.ts`** (`restored-src/src/utils/plugins/pluginLoader.ts`): Get the path where plugin cache is stored. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getPluginCachePath`, `getVersionedCachePathIn`, `getVersionedCachePath`, `getVersionedZipCachePath`, dan lainnya.
+- **`pluginOptionsStorage.ts`** (`restored-src/src/utils/plugins/pluginOptionsStorage.ts`): Canonical storage key for a plugin's options in both 'settings.pluginConfigs' and 'secureStorage.pluginSecrets'. Today this is 'plugin.source' — always '"${name}@${marketplace}"' (pluginLoader.ts:1400). 'plugin.repository' is a backward-compat alias that's... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `PluginOptionValues`, `PluginOptionSchema`, `getPluginStorageId`, `loadPluginOptions`, dan lainnya.
+- **`pluginPolicy.ts`** (`restored-src/src/utils/plugins/pluginPolicy.ts`): Check if a plugin is force-disabled by org policy (managed-settings.json). Policy-blocked plugins cannot be installed or enabled by the user at any scope. Used as the single source of truth for policy blocking across the install chokepoint, enable op, and U... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `isPluginBlockedByPolicy`.
+- **`pluginStartupCheck.ts`** (`restored-src/src/utils/plugins/pluginStartupCheck.ts`): Checks for enabled plugins across all settings sources, including --add-dir. Uses getInitialSettings() which merges all sources with policy as highest priority, then layers --add-dir plugins underneath. This is the authoritative "is this plugin enabled?" ch... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `checkEnabledPlugins`, `getPluginEditableScopes`, `isPersistableScope`, `settingSourceToScope`, dan lainnya.
+- **`pluginVersioning.ts`** (`restored-src/src/utils/plugins/pluginVersioning.ts`): Calculate the version for a plugin based on its source. Version sources (in order of priority): 1. plugin.json version field (highest priority) 2. Provided version (typically from marketplace entry) 3. Git commit SHA from install path 4. 'unknown' as last r... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `calculatePluginVersion`, `getGitCommitSha`, `getVersionFromPath`, `isVersionedPath`.
+- **`reconciler.ts`** (`restored-src/src/utils/plugins/reconciler.ts`): Compare declared intent (settings) against materialized state (JSON). Resolves relative directory/file paths in 'declared' before comparing, so project settings with './path' match JSON's absolute path. Path resolution reads '.git' to canonicalize worktree... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `MarketplaceDiff`, `diffMarketplaces`, `ReconcileOptions`, `ReconcileProgressEvent`, dan lainnya.
+- **`refresh.ts`** (`restored-src/src/utils/plugins/refresh.ts`): Refresh all active plugin components: commands, agents, hooks, MCP-reconnect trigger, AppState plugin arrays. Clears ALL plugin caches (unlike the old needsRefresh path which only cleared loadAllPlugins and returned stale data from downstream memoized loade... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `RefreshActivePluginsResult`, `refreshActivePlugins`.
+- **`schemas.ts`** (`restored-src/src/utils/plugins/schemas.ts`): First-layer defense against official marketplace impersonation. This validation blocks direct impersonation attempts like "anthropic-official", "claude-marketplace", etc. Indirect variations (e.g., "my-claude-marketplace") are not blocked intentionally to a... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `ALLOWED_OFFICIAL_MARKETPLACE_NAMES`, `isMarketplaceAutoUpdate`, `BLOCKED_OFFICIAL_NAME_PATTERN`, `isBlockedOfficialName`, dan lainnya.
+- **`validatePlugin.ts`** (`restored-src/src/utils/plugins/validatePlugin.ts`): Validate a plugin manifest file (plugin.json). Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `ValidationResult`, `ValidationError`, `ValidationWarning`, `validatePluginManifest`, dan lainnya.
+- **`walkPluginMarkdown.ts`** (`restored-src/src/utils/plugins/walkPluginMarkdown.ts`): Recursively walk a plugin directory, invoking onFile for each .md file. The namespace array tracks the subdirectory path relative to the root (e.g., ['foo', 'bar'] for root/foo/bar/file.md). Callers that don't need namespacing can ignore the second argument... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `walkPluginMarkdown`.
+- **`zipCache.ts`** (`restored-src/src/utils/plugins/zipCache.ts`): Check if the plugin zip cache mode is enabled. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `isPluginZipCacheEnabled`, `getPluginZipCachePath`, `getZipCacheKnownMarketplacesPath`, `getZipCacheInstalledPluginsPath`, dan lainnya.
+- **`zipCacheAdapters.ts`** (`restored-src/src/utils/plugins/zipCacheAdapters.ts`): Read known_marketplaces.json from the zip cache. Returns empty object if file doesn't exist, can't be parsed, or fails schema validation (data comes from a shared mounted volume — other containers may write). Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `readZipCacheKnownMarketplaces`, `writeZipCacheKnownMarketplaces`, `readMarketplaceJson`, `saveMarketplaceJsonToZipCache`, dan lainnya.
 
 ## Direktori: `restored-src/src/utils/powershell`
 
-- **`dangerousCmdlets.ts`**: Shared constants for PowerShell cmdlets that execute arbitrary code.  These lists are consumed by both the permission-engine validators (powershellSec...
-- **`parser.ts`**: The PowerShell AST element type for pipeline elements. Maps directly to CommandBaseAst derivatives in System.Management.Automation.Language.
-- **`staticPrefix.ts`**: PowerShell static command prefix extraction.  Mirrors bash's getCommandPrefixStatic / getCompoundCommandPrefixesStatic (src/utils/bash/prefix.ts) but ...
+- **`dangerousCmdlets.ts`** (`restored-src/src/utils/powershell/dangerousCmdlets.ts`): Cmdlets that accept a -FilePath (or positional path) and execute the file's contents as a script. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `FILEPATH_EXECUTION_CMDLETS`, `DANGEROUS_SCRIPT_BLOCK_CMDLETS`, `MODULE_LOADING_CMDLETS`, `NETWORK_CMDLETS`, dan lainnya.
+- **`parser.ts`** (`restored-src/src/utils/powershell/parser.ts`): A child node of a command element (one level deep). Populated for CommandParameterAst → .Argument (colon-bound parameters like '-InputObject:$env:SECRET'). Consumers check 'child.type' to classify the bound value (Variable, StringConstant, Other) without pa... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `CommandElementChild`, `ParsedCommandElement`, `ParsedPowerShellCommand`, `RawCommandElement`, dan lainnya.
+- **`staticPrefix.ts`** (`restored-src/src/utils/powershell/staticPrefix.ts`): Extract a prefix suggestion for a PowerShell command. Parses the command, takes the first CommandAst, returns a prefix suitable for the permission dialog's "don't ask again for: ___" editable input. Returns null when no safe prefix can be extracted (parse f... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getCommandPrefixStatic`, `getCompoundCommandPrefixesStatic`.
 
 ## Direktori: `restored-src/src/utils/processUserInput`
 
-- **`processBashCommand.tsx`**: Berisi logika internal atau utilitas tanpa export utama yang eksplisit.
-- **`processSlashCommand.tsx`**: Mengekspor: looksLikeCommand, formatSkillLoadingMetadata.
-- **`processTextPrompt.ts`**: Mengekspor: processTextPrompt.
-- **`processUserInput.ts`**: Mengekspor: ProcessUserInputContext, ProcessUserInputBaseResult.
+- **`processBashCommand.tsx`** (`restored-src/src/utils/processUserInput/processBashCommand.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `processBashCommand`.
+- **`processSlashCommand.tsx`** (`restored-src/src/utils/processUserInput/processSlashCommand.tsx`): Determines if a string looks like a valid command name. Valid command names only contain letters, numbers, colons, hyphens, and underscores. @param commandName - The potential command name to check @returns true if it looks like a command name, false if it... Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `looksLikeCommand`, `processSlashCommand`, `formatSkillLoadingMetadata`, `processPromptSlashCommand`.
+- **`processTextPrompt.ts`** (`restored-src/src/utils/processUserInput/processTextPrompt.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `processTextPrompt`.
+- **`processUserInput.ts`** (`restored-src/src/utils/processUserInput/processUserInput.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `ProcessUserInputContext`, `ProcessUserInputBaseResult`, `processUserInput`.
 
 ## Direktori: `restored-src/src/utils/sandbox`
 
-- **`sandbox-adapter.ts`**: Adapter layer that wraps @anthropic-ai/sandbox-runtime with Claude CLI-specific integrations. This file provides the bridge between the external sandb...
-- **`sandbox-ui-utils.ts`**: UI utilities for sandbox violations These utilities are used for displaying sandbox-related information in the UI
+- **`sandbox-adapter.ts`** (`restored-src/src/utils/sandbox/sandbox-adapter.ts`): Resolve Claude Code-specific path patterns for sandbox-runtime. Claude Code uses special path prefixes in permission rules: - '//path' → absolute from filesystem root (becomes '/path') - '/path' → relative to settings file directory (becomes '$SETTINGS_DIR/... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `resolvePathPatternForSandbox`, `resolveSandboxFilesystemPath`, `shouldAllowManagedSandboxDomainsOnly`, `convertToSandboxRuntimeConfig`, dan lainnya.
+- **`sandbox-ui-utils.ts`** (`restored-src/src/utils/sandbox/sandbox-ui-utils.ts`): UI utilities for sandbox violations These utilities are used for displaying sandbox-related information in the UI. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `removeSandboxViolationTags`.
 
 ## Direktori: `restored-src/src/utils/secureStorage`
 
-- **`fallbackStorage.ts`**: Creates a fallback storage that tries to use the primary storage first, and if that fails, falls back to the secondary storage
-- **`index.ts`**: Get the appropriate secure storage implementation for the current platform
-- **`keychainPrefetch.ts`**: Minimal module for firing macOS keychain reads in parallel with main.tsx module evaluation, same pattern as startMdmRawRead() in settings/mdm/rawRead....
-- **`macOsKeychainHelpers.ts`**: Lightweight helpers shared between keychainPrefetch.ts and macOsKeychainStorage.ts.  This module MUST NOT import execa, execFileNoThrow, or execFileNo...
-- **`macOsKeychainStorage.ts`**: Mengekspor: macOsKeychainStorage, isMacOsKeychainLocked.
-- **`plainTextStorage.ts`**: Mengekspor: plainTextStorage.
+- **`fallbackStorage.ts`** (`restored-src/src/utils/secureStorage/fallbackStorage.ts`): Creates a fallback storage that tries to use the primary storage first, and if that fails, falls back to the secondary storage. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `createFallbackStorage`.
+- **`index.ts`** (`restored-src/src/utils/secureStorage/index.ts`): Get the appropriate secure storage implementation for the current platform. Barrel/entry point yang merapikan export modul di folder ini. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getSecureStorage`.
+- **`keychainPrefetch.ts`** (`restored-src/src/utils/secureStorage/keychainPrefetch.ts`): Fire both keychain reads in parallel. Called at main.tsx top-level immediately after startMdmRawRead(). Non-darwin is a no-op. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `startKeychainPrefetch`, `ensureKeychainPrefetchCompleted`, `getLegacyApiKeyPrefetchResult`, `clearLegacyApiKeyPrefetch`.
+- **`macOsKeychainHelpers.ts`** (`restored-src/src/utils/secureStorage/macOsKeychainHelpers.ts`): Prime the keychain cache from a prefetch result (keychainPrefetch.ts). Only writes if the cache hasn't been touched yet — if sync read() or update() already ran, their result is authoritative and we discard this. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `CREDENTIALS_SERVICE_SUFFIX`, `getMacOsKeychainStorageServiceName`, `getUsername`, `KEYCHAIN_CACHE_TTL_MS`, dan lainnya.
+- **`macOsKeychainStorage.ts`** (`restored-src/src/utils/secureStorage/macOsKeychainStorage.ts`): Checks if the macOS keychain is locked. Returns true if on macOS and keychain is locked (exit code 36 from security show-keychain-info). This commonly happens in SSH sessions where the keychain isn't automatically unlocked. Cached for process lifetime — exe... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `macOsKeychainStorage`, `isMacOsKeychainLocked`.
+- **`plainTextStorage.ts`** (`restored-src/src/utils/secureStorage/plainTextStorage.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `plainTextStorage`.
 
 ## Direktori: `restored-src/src/utils/settings`
 
-- **`allErrors.ts`**: Combines settings validation errors with MCP configuration errors.  This module exists to break a circular dependency: settings.ts → mcp/config.ts → s...
-- **`applySettingsChange.ts`**: Apply a settings change to app state. Re-reads settings from disk, reloads permissions and hooks, and pushes the new state.  Used by both the interact...
-- **`changeDetector.ts`**: Time in milliseconds to wait for file writes to stabilize before processing. This helps avoid processing partial writes or rapid successive changes....
-- **`constants.ts`**: All possible sources where settings can come from Order matters - later sources override earlier ones
-- **`internalWrites.ts`**: Tracks timestamps of in-process settings-file writes so the chokidar watcher in changeDetector.ts can ignore its own echoes.  Extracted from changeDet...
-- **`managedPath.ts`**: Get the path to the managed settings directory based on the current platform.
-- **`permissionValidation.ts`**: Checks if a character at a given index is escaped (preceded by odd number of backslashes).
-- **`pluginOnlyPolicy.ts`**: Check whether a customization surface is locked to plugin-only sources by the managed `strictPluginOnlyCustomization` policy.  "Locked" means user-lev...
-- **`schemaOutput.ts`**: Mengekspor: generateSettingsJSONSchema.
-- **`settings.ts`**: Mengekspor: loadManagedFileSettings, getManagedFileSettingsPresence, parseSettingsFile.
-- **`settingsCache.ts`**: Per-source cache for getSettingsForSource. Invalidated alongside the merged sessionSettingsCache — same resetSettingsCache() triggers (settings write,...
-- **`toolValidationConfig.ts`**: Tool validation configuration  Most tools need NO configuration - basic validation works automatically. Only add your tool here if it has special patt...
-- **`types.ts`**: Mengekspor: EnvironmentVariablesSchema, PermissionsSchema, ExtraKnownMarketplaceSchema.
-- **`validateEditTool.ts`**: Validates settings file edits to ensure the result conforms to SettingsSchema. This is used by FileEditTool to avoid code duplication.  @param filePat...
-- **`validation.ts`**: Helper type guards for specific Zod v4 issue types In v4, issue types have different structures than v3
-- **`validationTips.ts`**: Mengekspor: ValidationTip, TipContext, getValidationTip.
+- **`allErrors.ts`** (`restored-src/src/utils/settings/allErrors.ts`): Get merged settings with all validation errors, including MCP config errors. Use this instead of getSettingsWithErrors() when you need the full set of errors (settings + MCP). The underlying getSettingsWithErrors() no longer includes MCP errors to avoid the... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getSettingsWithAllErrors`.
+- **`applySettingsChange.ts`** (`restored-src/src/utils/settings/applySettingsChange.ts`): Apply a settings change to app state. Re-reads settings from disk, reloads permissions and hooks, and pushes the new state. Used by both the interactive path (AppState.tsx via useSettingsChange) and the headless/SDK path (print.ts direct subscribe) so that... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `applySettingsChange`.
+- **`changeDetector.ts`** (`restored-src/src/utils/settings/changeDetector.ts`): Initialize file watching. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `initialize`, `dispose`, `subscribe`, `notifyChange`, dan lainnya.
+- **`constants.ts`** (`restored-src/src/utils/settings/constants.ts`): All possible sources where settings can come from Order matters - later sources override earlier ones. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `SETTING_SOURCES`, `SettingSource`, `getSettingSourceName`, `getSourceDisplayName`, dan lainnya.
+- **`internalWrites.ts`** (`restored-src/src/utils/settings/internalWrites.ts`): True if 'path' was marked within 'windowMs'. Consumes the mark on match — the watcher fires once per write, so a matched mark shouldn't suppress the next (real, external) change to the same file. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `markInternalWrite`, `consumeInternalWrite`, `clearInternalWrites`.
+- **`managedPath.ts`** (`restored-src/src/utils/settings/managedPath.ts`): Get the path to the managed settings directory based on the current platform. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getManagedFilePath`, `getManagedSettingsDropInDir`.
+- **`permissionValidation.ts`** (`restored-src/src/utils/settings/permissionValidation.ts`): Validates permission rule format and content. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `validatePermissionRule`, `PermissionRuleSchema`.
+- **`pluginOnlyPolicy.ts`** (`restored-src/src/utils/settings/pluginOnlyPolicy.ts`): Check whether a customization surface is locked to plugin-only sources by the managed 'strictPluginOnlyCustomization' policy. "Locked" means user-level (~/.claude/*) and project-level (.claude/*) sources are skipped for that surface. Managed (policySettings... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `CustomizationSurface`, `isRestrictedToPluginOnly`, `isSourceAdminTrusted`.
+- **`schemaOutput.ts`** (`restored-src/src/utils/settings/schemaOutput.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `generateSettingsJSONSchema`.
+- **`settings.ts`** (`restored-src/src/utils/settings/settings.ts`): Load file-based managed settings: managed-settings.json + managed-settings.d/*.json. managed-settings.json is merged first (lowest precedence / base), then drop-in files are sorted alphabetically and merged on top (higher precedence, later files win). This... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `loadManagedFileSettings`, `getManagedFileSettingsPresence`, `parseSettingsFile`, `getSettingsRootPathForSource`, dan lainnya.
+- **`settingsCache.ts`** (`restored-src/src/utils/settings/settingsCache.ts`): Per-source cache for getSettingsForSource. Invalidated alongside the merged sessionSettingsCache — same resetSettingsCache() triggers (settings write, --add-dir, plugin init, hooks refresh). Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getSessionSettingsCache`, `setSessionSettingsCache`, `getCachedSettingsForSource`, `setCachedSettingsForSource`, dan lainnya.
+- **`toolValidationConfig.ts`** (`restored-src/src/utils/settings/toolValidationConfig.ts`): Tool validation configuration Most tools need NO configuration - basic validation works automatically. Only add your tool here if it has special pattern requirements. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `ToolValidationConfig`, `TOOL_VALIDATION_CONFIG`, `isFilePatternTool`, `isBashPrefixTool`, dan lainnya.
+- **`types.ts`** (`restored-src/src/utils/settings/types.ts`): Schema for environment variables. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `AgentHook`, `BashCommandHook`, `HookCommand`, `HookCommandSchema`, dan lainnya.
+- **`validateEditTool.ts`** (`restored-src/src/utils/settings/validateEditTool.ts`): Validates settings file edits to ensure the result conforms to SettingsSchema. This is used by FileEditTool to avoid code duplication. @param filePath - The file path being edited @param originalContent - The original file content before edits @param getUpd... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `validateInputForSettingsFileEdit`.
+- **`validation.ts`** (`restored-src/src/utils/settings/validation.ts`): Field path in dot notation (e.g., "permissions.defaultMode", "env.DEBUG"). Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `FieldPath`, `ValidationError`, `SettingsWithErrors`, `formatZodError`, dan lainnya.
+- **`validationTips.ts`** (`restored-src/src/utils/settings/validationTips.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `ValidationTip`, `TipContext`, `getValidationTip`.
 
 ## Direktori: `restored-src/src/utils/settings/mdm`
 
-- **`constants.ts`**: Shared constants and path builders for MDM settings modules.  This module has ZERO heavy imports (only `os`) — safe to use from mdmRawRead.ts. Both md...
-- **`rawRead.ts`**: Minimal module for firing MDM subprocess reads without blocking the event loop. Has minimal imports — only child_process, fs, and mdmConstants (which ...
-- **`settings.ts`**: MDM (Mobile Device Management) profile enforcement for Claude Code managed settings.  Reads enterprise settings from OS-level MDM configuration: - mac...
+- **`constants.ts`** (`restored-src/src/utils/settings/mdm/constants.ts`): macOS preference domain for Claude Code MDM profiles. Utilitas pembacaan, validasi, dan sinkronisasi settings. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `MACOS_PREFERENCE_DOMAIN`, `WINDOWS_REGISTRY_KEY_PATH_HKLM`, `WINDOWS_REGISTRY_KEY_PATH_HKCU`, `WINDOWS_REGISTRY_VALUE_NAME`, dan lainnya.
+- **`rawRead.ts`** (`restored-src/src/utils/settings/mdm/rawRead.ts`): Fire fresh subprocess reads for MDM settings and return raw stdout. On macOS: spawns plutil for each plist path in parallel, picks first winner. On Windows: spawns reg query for HKLM and HKCU in parallel. On Linux: returns empty (no MDM equivalent). Utilitas pembacaan, validasi, dan sinkronisasi settings. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `RawReadResult`, `fireRawRead`, `startMdmRawRead`, `getMdmRawReadPromise`.
+- **`settings.ts`** (`restored-src/src/utils/settings/mdm/settings.ts`): Kick off async MDM/HKCU reads. Call this as early as possible in startup so the subprocess runs in parallel with module loading. Utilitas pembacaan, validasi, dan sinkronisasi settings. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `startMdmSettingsLoad`, `ensureMdmSettingsLoaded`, `getMdmSettings`, `getHkcuSettings`, dan lainnya.
 
 ## Direktori: `restored-src/src/utils/shell`
 
-- **`bashProvider.ts`**: Returns a shell command to disable extended glob patterns for security. Extended globs (bash extglob, zsh EXTENDED_GLOB) can be exploited via maliciou...
-- **`outputLimits.ts`**: Mengekspor: BASH_MAX_OUTPUT_UPPER_LIMIT, BASH_MAX_OUTPUT_DEFAULT, getMaxOutputLength.
-- **`powershellDetection.ts`**: Attempts to find PowerShell on the system via PATH. Prefers pwsh (PowerShell Core 7+), falls back to powershell (5.1).  On Linux, if PATH resolves to ...
-- **`powershellProvider.ts`**: PowerShell invocation flags + command. Shared by the provider's getSpawnArgs and the hook spawn path in hooks.ts so the flag set stays in one place....
-- **`prefix.ts`**: Shared command prefix extraction using Haiku LLM  This module provides a factory for creating command prefix extractors that can be used by different ...
-- **`readOnlyCommandValidation.ts`**: Shared command validation maps for shell tools (BashTool, PowerShellTool, etc.).  Exports complete command configuration maps that any shell tool can ...
-- **`resolveDefaultShell.ts`**: Resolve the default shell for input-box `!` commands.  Resolution order (docs/design/ps-shell-selection.md §4.2): settings.defaultShell → 'bash'  Plat...
-- **`shellProvider.ts`**: Build the full command string including all shell-specific setup. For bash: source snapshot, session env, disable extglob, eval-wrap, pwd tracking.
-- **`shellToolUtils.ts`**: Runtime gate for PowerShellTool. Windows-only (the permission engine uses Win32-specific path normalizations). Ant defaults on (opt-out via env=0); ex...
-- **`specPrefix.ts`**: Fig-spec-driven command prefix extraction.  Given a command name + args array + its @withfig/autocomplete spec, walks the spec to find how deep into t...
+- **`bashProvider.ts`** (`restored-src/src/utils/shell/bashProvider.ts`): Returns a shell command to disable extended glob patterns for security. Extended globs (bash extglob, zsh EXTENDED_GLOB) can be exploited via malicious filenames that expand after our security validation. When CLAUDE_CODE_SHELL_PREFIX is set, the actual exe... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `createBashShellProvider`.
+- **`outputLimits.ts`** (`restored-src/src/utils/shell/outputLimits.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `BASH_MAX_OUTPUT_UPPER_LIMIT`, `BASH_MAX_OUTPUT_DEFAULT`, `getMaxOutputLength`.
+- **`powershellDetection.ts`** (`restored-src/src/utils/shell/powershellDetection.ts`): Attempts to find PowerShell on the system via PATH. Prefers pwsh (PowerShell Core 7+), falls back to powershell (5.1). On Linux, if PATH resolves to a snap launcher (/snap/…) — directly or via a symlink chain like /usr/bin/pwsh → /snap/bin/pwsh — probe know... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `findPowerShell`, `getCachedPowerShellPath`, `PowerShellEdition`, `getPowerShellEdition`, dan lainnya.
+- **`powershellProvider.ts`** (`restored-src/src/utils/shell/powershellProvider.ts`): PowerShell invocation flags + command. Shared by the provider's getSpawnArgs and the hook spawn path in hooks.ts so the flag set stays in one place. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `buildPowerShellArgs`, `createPowerShellProvider`.
+- **`prefix.ts`** (`restored-src/src/utils/shell/prefix.ts`): Result of command prefix extraction. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `CommandPrefixResult`, `CommandSubcommandPrefixResult`, `PrefixExtractorConfig`, `createCommandPrefixExtractor`, dan lainnya.
+- **`readOnlyCommandValidation.ts`** (`restored-src/src/utils/shell/readOnlyCommandValidation.ts`): Check if a path or command contains a UNC path that could trigger network requests (NTLM/Kerberos credential leakage, WebDAV attacks). This function detects: - Basic UNC paths: \\server\share, \\foo.com\file - WebDAV patterns: \\server@SSL@8443\, \\server@8... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `FlagArgType`, `ExternalCommandConfig`, `GIT_READ_ONLY_COMMANDS`, `GH_READ_ONLY_COMMANDS`, dan lainnya.
+- **`resolveDefaultShell.ts`** (`restored-src/src/utils/shell/resolveDefaultShell.ts`): Resolve the default shell for input-box '!' commands. Resolution order (docs/design/ps-shell-selection.md §4.2): settings.defaultShell → 'bash' Platform default is 'bash' everywhere — we do NOT auto-flip Windows to PowerShell (would break existing Windows u... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `resolveDefaultShell`.
+- **`shellProvider.ts`** (`restored-src/src/utils/shell/shellProvider.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `SHELL_TYPES`, `ShellType`, `DEFAULT_HOOK_SHELL`, `ShellProvider`.
+- **`shellToolUtils.ts`** (`restored-src/src/utils/shell/shellToolUtils.ts`): Runtime gate for PowerShellTool. Windows-only (the permission engine uses Win32-specific path normalizations). Ant defaults on (opt-out via env=0); external defaults off (opt-in via env=1). Used by tools.ts (tool-list visibility), processBashCommand (! rout... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `SHELL_TOOL_NAMES`, `isPowerShellToolEnabled`.
+- **`specPrefix.ts`** (`restored-src/src/utils/shell/specPrefix.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `DEPTH_RULES`, `buildPrefix`.
 
 ## Direktori: `restored-src/src/utils/skills`
 
-- **`skillChangeDetector.ts`**: Time in milliseconds to wait for file writes to stabilize before processing.
+- **`skillChangeDetector.ts`** (`restored-src/src/utils/skills/skillChangeDetector.ts`): Initialize file watching for skill directories. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `initialize`, `dispose`, `subscribe`, `resetForTesting`, dan lainnya.
 
 ## Direktori: `restored-src/src/utils/suggestions`
 
-- **`commandSuggestions.ts`**: Mengekspor: MidInputSlashCommand, findMidInputSlashCommand, getBestCommandMatch.
-- **`directoryCompletion.ts`**: Mengekspor: DirectoryEntry, PathEntry, CompletionOptions.
-- **`shellHistoryCompletion.ts`**: Result of shell history completion lookup
-- **`skillUsageTracking.ts`**: Records a skill usage for ranking purposes. Updates both usage count and last used timestamp.
-- **`slackChannelSuggestions.ts`**: Mengekspor: subscribeKnownChannels, hasSlackMcpServer, getKnownChannelsVersion.
+- **`commandSuggestions.ts`** (`restored-src/src/utils/suggestions/commandSuggestions.ts`): Represents a slash command found mid-input (not at the start). Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `MidInputSlashCommand`, `findMidInputSlashCommand`, `getBestCommandMatch`, `isCommandInput`, dan lainnya.
+- **`directoryCompletion.ts`** (`restored-src/src/utils/suggestions/directoryCompletion.ts`): Parses a partial path into directory and prefix components. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `DirectoryEntry`, `PathEntry`, `CompletionOptions`, `PathCompletionOptions`, dan lainnya.
+- **`shellHistoryCompletion.ts`** (`restored-src/src/utils/suggestions/shellHistoryCompletion.ts`): Result of shell history completion lookup. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `ShellHistoryMatch`, `clearShellHistoryCache`, `prependToShellHistoryCache`, `getShellHistoryCompletion`.
+- **`skillUsageTracking.ts`** (`restored-src/src/utils/suggestions/skillUsageTracking.ts`): Records a skill usage for ranking purposes. Updates both usage count and last used timestamp. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `recordSkillUsage`, `getSkillUsageScore`.
+- **`slackChannelSuggestions.ts`** (`restored-src/src/utils/suggestions/slackChannelSuggestions.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `subscribeKnownChannels`, `hasSlackMcpServer`, `getKnownChannelsVersion`, `findSlackChannelPositions`, dan lainnya.
 
 ## Direktori: `restored-src/src/utils/swarm`
 
-- **`It2SetupPrompt.tsx`**: Mengekspor: It2SetupPrompt.
-- **`constants.ts`**: Gets the socket name for external swarm sessions (when user is not in tmux). Uses a separate socket to isolate swarm operations from user's tmux sessi...
-- **`inProcessRunner.ts`**: In-process teammate runner  Wraps runAgent() for in-process teammates, providing: - AsyncLocalStorage-based context isolation via runWithTeammateConte...
-- **`leaderPermissionBridge.ts`**: Leader Permission Bridge  Module-level bridge that allows the REPL to register its setToolUseConfirmQueue and setToolPermissionContext functions for i...
-- **`permissionSync.ts`**: Synchronized Permission Prompts for Agent Swarms  This module provides infrastructure for coordinating permission prompts across multiple agents in a ...
-- **`reconnection.ts`**: Swarm Reconnection Module  Handles initialization of swarm context for teammates. - Fresh spawns: Initialize from CLI args (set in main.tsx via dynami...
-- **`spawnInProcess.ts`**: In-process teammate spawning  Creates and registers an in-process teammate task. Unlike process-based teammates (tmux/iTerm2), in-process teammates ru...
-- **`spawnUtils.ts`**: Shared utilities for spawning teammates across different backends.
-- **`teamHelpers.ts`**: Mengekspor: inputSchema, SpawnTeamOutput, CleanupOutput.
-- **`teammateInit.ts`**: Teammate Initialization Module  Handles initialization for Claude Code instances running as teammates in a swarm. Registers a Stop hook to notify the ...
-- **`teammateLayoutManager.ts`**: Gets the appropriate backend for the current environment. detectAndGetBackend() caches internally — no need for a second cache here.
-- **`teammateModel.ts`**: Mengekspor: getHardcodedTeammateModelFallback.
-- **`teammatePromptAddendum.ts`**: Teammate-specific system prompt addendum.  This is appended to the full main agent system prompt for teammates. It explains visibility constraints and...
+- **`It2SetupPrompt.tsx`** (`restored-src/src/utils/swarm/It2SetupPrompt.tsx`): Modul React/Ink yang merender UI atau dialog interaktif. Export utama: `It2SetupPrompt`.
+- **`constants.ts`** (`restored-src/src/utils/swarm/constants.ts`): Gets the socket name for external swarm sessions (when user is not in tmux). Uses a separate socket to isolate swarm operations from user's tmux sessions. Includes PID to ensure multiple Claude instances don't conflict. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `TEAM_LEAD_NAME`, `SWARM_SESSION_NAME`, `SWARM_VIEW_WINDOW_NAME`, `TMUX_COMMAND`, dan lainnya.
+- **`inProcessRunner.ts`** (`restored-src/src/utils/swarm/inProcessRunner.ts`): Configuration for running an in-process teammate. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `InProcessRunnerConfig`, `InProcessRunnerResult`, `runInProcessTeammate`, `startInProcessTeammate`.
+- **`leaderPermissionBridge.ts`** (`restored-src/src/utils/swarm/leaderPermissionBridge.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `SetToolUseConfirmQueueFn`, `SetToolPermissionContextFn`, `registerLeaderToolUseConfirmQueue`, `getLeaderToolUseConfirmQueue`, dan lainnya.
+- **`permissionSync.ts`** (`restored-src/src/utils/swarm/permissionSync.ts`): Full request schema for a permission request from a worker to the leader. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `SwarmPermissionRequestSchema`, `SwarmPermissionRequest`, `PermissionResolution`, `getPermissionDir`, dan lainnya.
+- **`reconnection.ts`** (`restored-src/src/utils/swarm/reconnection.ts`): Computes the initial teamContext for AppState. This is called synchronously in main.tsx to compute the teamContext BEFORE the first render, eliminating the need for useEffect workarounds. @returns The teamContext object to include in initialState, or undefi... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `computeInitialTeamContext`, `initializeTeammateContextFromSession`.
+- **`spawnInProcess.ts`** (`restored-src/src/utils/swarm/spawnInProcess.ts`): Minimal context required for spawning an in-process teammate. This is a subset of ToolUseContext - only what spawnInProcessTeammate actually uses. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `SpawnContext`, `InProcessSpawnConfig`, `InProcessSpawnOutput`, `spawnInProcessTeammate`, dan lainnya.
+- **`spawnUtils.ts`** (`restored-src/src/utils/swarm/spawnUtils.ts`): Gets the command to use for spawning teammate processes. Uses TEAMMATE_COMMAND_ENV_VAR if set, otherwise falls back to the current process executable path. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getTeammateCommand`, `buildInheritedCliFlags`, `buildInheritedEnvVars`.
+- **`teamHelpers.ts`** (`restored-src/src/utils/swarm/teamHelpers.ts`): Sanitizes a name for use in tmux window names, worktree paths, and file paths. Replaces all non-alphanumeric characters with hyphens and lowercases. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `inputSchema`, `SpawnTeamOutput`, `CleanupOutput`, `TeamAllowedPath`, dan lainnya.
+- **`teammateInit.ts`** (`restored-src/src/utils/swarm/teammateInit.ts`): Initializes hooks for a teammate running in a swarm. Should be called early in session startup after AppState is available. Registers a Stop hook that sends an idle notification to the team leader when this teammate's session stops. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `initializeTeammateHooks`.
+- **`teammateLayoutManager.ts`** (`restored-src/src/utils/swarm/teammateLayoutManager.ts`): Assigns a unique color to a teammate from the available palette. Colors are assigned in round-robin order. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `assignTeammateColor`, `getTeammateColor`, `clearTeammateColors`, `isInsideTmux`, dan lainnya.
+- **`teammateModel.ts`** (`restored-src/src/utils/swarm/teammateModel.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getHardcodedTeammateModelFallback`.
+- **`teammatePromptAddendum.ts`** (`restored-src/src/utils/swarm/teammatePromptAddendum.ts`): Teammate-specific system prompt addendum. This is appended to the full main agent system prompt for teammates. It explains visibility constraints and communication requirements. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `TEAMMATE_SYSTEM_PROMPT_ADDENDUM`.
 
 ## Direktori: `restored-src/src/utils/swarm/backends`
 
-- **`ITermBackend.ts`**: Acquires a lock for pane creation, ensuring sequential execution. Returns a release function that must be called when done.
-- **`InProcessBackend.ts`**: InProcessBackend implements TeammateExecutor for in-process teammates.  Unlike pane-based backends (tmux/iTerm2), in-process teammates run in the same...
-- **`PaneBackendExecutor.ts`**: PaneBackendExecutor adapts a PaneBackend to the TeammateExecutor interface.  This allows pane-based backends (tmux, iTerm2) to be used through the sam...
-- **`TmuxBackend.ts`**: Mengekspor: TmuxBackend.
-- **`detection.ts`**: Captured at module load time to detect if the user started Claude from within tmux. Shell.ts may override TMUX env var later, so we capture the origin...
-- **`it2Setup.ts`**: Package manager types for installing it2. Listed in order of preference.
-- **`registry.ts`**: Cached backend detection result. Once detected, the backend selection is fixed for the lifetime of the process.
-- **`teammateModeSnapshot.ts`**: Teammate mode snapshot module.  Captures the teammate mode at session startup, following the same pattern as hooksConfigSnapshot.ts. This ensures that...
-- **`types.ts`**: Types of backends available for teammate execution. - 'tmux': Uses tmux for pane management (works in tmux or standalone) - 'iterm2': Uses iTerm2 nati...
+- **`ITermBackend.ts`** (`restored-src/src/utils/swarm/backends/ITermBackend.ts`): ITermBackend implements pane management using iTerm2's native split panes via the it2 CLI tool. Utilitas mode swarm/teammate dan orkestrasi backend-nya. Mengimplementasikan class utama untuk area fitur ini. Export utama: `ITermBackend`.
+- **`InProcessBackend.ts`** (`restored-src/src/utils/swarm/backends/InProcessBackend.ts`): InProcessBackend implements TeammateExecutor for in-process teammates. Unlike pane-based backends (tmux/iTerm2), in-process teammates run in the same Node.js process with isolated context via AsyncLocalStorage. They: - Share resources (API client, MCP conne... Utilitas mode swarm/teammate dan orkestrasi backend-nya. Mengimplementasikan class utama untuk area fitur ini. Export utama: `InProcessBackend`, `createInProcessBackend`.
+- **`PaneBackendExecutor.ts`** (`restored-src/src/utils/swarm/backends/PaneBackendExecutor.ts`): PaneBackendExecutor adapts a PaneBackend to the TeammateExecutor interface. This allows pane-based backends (tmux, iTerm2) to be used through the same TeammateExecutor abstraction as InProcessBackend, making getTeammateExecutor() return a meaningful executo... Utilitas mode swarm/teammate dan orkestrasi backend-nya. Mengimplementasikan class utama untuk area fitur ini. Export utama: `PaneBackendExecutor`, `createPaneBackendExecutor`.
+- **`TmuxBackend.ts`** (`restored-src/src/utils/swarm/backends/TmuxBackend.ts`): TmuxBackend implements PaneBackend using tmux for pane management. When running INSIDE tmux (leader is in tmux): - Splits the current window to add teammates alongside the leader - Leader stays on left (30%), teammates on right (70%) When running OUTSIDE tm... Utilitas mode swarm/teammate dan orkestrasi backend-nya. Mengimplementasikan class utama untuk area fitur ini. Export utama: `TmuxBackend`.
+- **`detection.ts`** (`restored-src/src/utils/swarm/backends/detection.ts`): Checks if we're currently running inside a tmux session (synchronous version). Uses the original TMUX value captured at module load, not process.env.TMUX, because Shell.ts overrides TMUX when Claude's socket is initialized. IMPORTANT: We ONLY check the TMUX... Utilitas mode swarm/teammate dan orkestrasi backend-nya. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `isInsideTmuxSync`, `isInsideTmux`, `getLeaderPaneId`, `isTmuxAvailable`, dan lainnya.
+- **`it2Setup.ts`** (`restored-src/src/utils/swarm/backends/it2Setup.ts`): Package manager types for installing it2. Listed in order of preference. Utilitas mode swarm/teammate dan orkestrasi backend-nya. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `PythonPackageManager`, `It2InstallResult`, `It2VerifyResult`, `detectPythonPackageManager`, dan lainnya.
+- **`registry.ts`** (`restored-src/src/utils/swarm/backends/registry.ts`): Ensures backend classes are dynamically imported so getBackendByType() can construct them. Unlike detectAndGetBackend(), this never spawns subprocesses and never throws — it's the lightweight option when you only need class registration (e.g., killing a pan... Utilitas mode swarm/teammate dan orkestrasi backend-nya. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `ensureBackendsRegistered`, `registerTmuxBackend`, `registerITermBackend`, `detectAndGetBackend`, dan lainnya.
+- **`teammateModeSnapshot.ts`** (`restored-src/src/utils/swarm/backends/teammateModeSnapshot.ts`): Set the CLI override for teammate mode. Must be called before captureTeammateModeSnapshot(). Utilitas mode swarm/teammate dan orkestrasi backend-nya. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `TeammateMode`, `setCliTeammateModeOverride`, `getCliTeammateModeOverride`, `clearCliTeammateModeOverride`, dan lainnya.
+- **`types.ts`** (`restored-src/src/utils/swarm/backends/types.ts`): Types of backends available for teammate execution. - 'tmux': Uses tmux for pane management (works in tmux or standalone) - 'iterm2': Uses iTerm2 native split panes via the it2 CLI - 'in-process': Runs teammate in the same Node.js process with isolated cont... Utilitas mode swarm/teammate dan orkestrasi backend-nya. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `BackendType`, `PaneBackendType`, `PaneId`, `CreatePaneResult`, dan lainnya.
 
 ## Direktori: `restored-src/src/utils/task`
 
-- **`TaskOutput.ts`**: Single source of truth for a shell command's output.  For bash commands (file mode): both stdout and stderr go directly to a file via stdio fds — neit...
-- **`diskOutput.ts`**: Disk cap for task output files. In file mode (bash), a watchdog polls file size and kills the process. In pipe mode (hooks), DiskTaskOutput drops chun...
-- **`framework.ts`**: Mengekspor: POLL_INTERVAL_MS, STOPPED_DISPLAY_MS, PANEL_GRACE_MS.
-- **`outputFormatting.ts`**: Format task output for API consumption, truncating if too large. When truncated, includes a header with the file path and returns the last N character...
-- **`sdkProgress.ts`**: Emit a `task_progress` SDK event. Shared by background agents (per tool_use in runAsyncAgentLifecycle) and workflows (per flushProgress batch). Accept...
+- **`TaskOutput.ts`** (`restored-src/src/utils/task/TaskOutput.ts`): Single source of truth for a shell command's output. For bash commands (file mode): both stdout and stderr go directly to a file via stdio fds — neither enters JS. Progress is extracted by polling the file tail. getStderr() returns '' since stderr is interl... Mengimplementasikan class utama untuk area fitur ini. Export utama: `TaskOutput`.
+- **`diskOutput.ts`** (`restored-src/src/utils/task/diskOutput.ts`): Disk cap for task output files. In file mode (bash), a watchdog polls file size and kills the process. In pipe mode (hooks), DiskTaskOutput drops chunks past this limit. Shared so both caps stay in sync. Mengimplementasikan class utama untuk area fitur ini. Export utama: `MAX_TASK_OUTPUT_BYTES`, `MAX_TASK_OUTPUT_BYTES_DISPLAY`, `getTaskOutputDir`, `_resetTaskOutputDirForTest`, dan lainnya.
+- **`framework.ts`** (`restored-src/src/utils/task/framework.ts`): Update a task's state in AppState. Helper function for task implementations. Generic to allow type-safe updates for specific task types. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `POLL_INTERVAL_MS`, `STOPPED_DISPLAY_MS`, `PANEL_GRACE_MS`, `TaskAttachment`, dan lainnya.
+- **`outputFormatting.ts`** (`restored-src/src/utils/task/outputFormatting.ts`): Format task output for API consumption, truncating if too large. When truncated, includes a header with the file path and returns the last N characters that fit within the limit. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `TASK_MAX_OUTPUT_UPPER_LIMIT`, `TASK_MAX_OUTPUT_DEFAULT`, `getMaxTaskOutputLength`, `formatTaskOutput`.
+- **`sdkProgress.ts`** (`restored-src/src/utils/task/sdkProgress.ts`): Emit a 'task_progress' SDK event. Shared by background agents (per tool_use in runAsyncAgentLifecycle) and workflows (per flushProgress batch). Accepts already-computed primitives so callers can derive them from their own state shapes (ProgressTracker for a... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `emitTaskProgress`.
 
 ## Direktori: `restored-src/src/utils/telemetry`
 
-- **`betaSessionTracing.ts`**: Beta Session Tracing for Claude Code  This module contains beta tracing features enabled when ENABLE_BETA_TRACING_DETAILED=1 and BETA_TRACING_ENDPOINT...
-- **`bigqueryExporter.ts`**: Mengekspor: BigQueryMetricsExporter.
-- **`events.ts`**: Mengekspor: redactIfDisabled.
-- **`instrumentation.ts`**: Mengekspor: bootstrapTelemetry, parseExporterTypes, isTelemetryEnabled.
-- **`logger.ts`**: Mengekspor: ClaudeCodeDiagLogger.
-- **`perfettoTracing.ts`**: Perfetto Tracing for Claude Code (Ant-only)  This module generates traces in the Chrome Trace Event format that can be viewed in ui.perfetto.dev or Ch...
-- **`pluginTelemetry.ts`**: Plugin telemetry helpers — shared field builders for plugin lifecycle events.  Implements the twin-column privacy pattern: every user-defined-name fie...
-- **`sessionTracing.ts`**: Session Tracing for Claude Code using OpenTelemetry (BETA)  This module provides a high-level API for creating and managing spans to trace Claude Code...
-- **`skillLoadedEvent.ts`**: Logs a tengu_skill_loaded event for each skill available at session startup. This enables analytics on which skills are available across sessions.
+- **`betaSessionTracing.ts`** (`restored-src/src/utils/telemetry/betaSessionTracing.ts`): Clear tracking state after compaction. Old hashes are irrelevant once messages have been replaced. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `clearBetaTracingState`, `isBetaTracingEnabled`, `truncateContent`, `LLMRequestNewContext`, dan lainnya.
+- **`bigqueryExporter.ts`** (`restored-src/src/utils/telemetry/bigqueryExporter.ts`): Mengimplementasikan class utama untuk area fitur ini. Export utama: `BigQueryMetricsExporter`.
+- **`events.ts`** (`restored-src/src/utils/telemetry/events.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `redactIfDisabled`, `logOTelEvent`.
+- **`instrumentation.ts`** (`restored-src/src/utils/telemetry/instrumentation.ts`): Flush all pending telemetry data immediately. This should be called before logout or org switching to prevent data leakage. Mengimplementasikan class utama untuk area fitur ini. Export utama: `bootstrapTelemetry`, `parseExporterTypes`, `isTelemetryEnabled`, `initializeTelemetry`, dan lainnya.
+- **`logger.ts`** (`restored-src/src/utils/telemetry/logger.ts`): Mengimplementasikan class utama untuk area fitur ini. Export utama: `ClaudeCodeDiagLogger`.
+- **`perfettoTracing.ts`** (`restored-src/src/utils/telemetry/perfettoTracing.ts`): Chrome Trace Event format types See: https://docs.google.com/document/d/1CvAClvFfyA5R-PhYUmn5OOQtYMH4h6I0nSsKchNAySU. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `TraceEventPhase`, `TraceEvent`, `initializePerfettoTracing`, `isPerfettoTracingEnabled`, dan lainnya.
+- **`pluginTelemetry.ts`** (`restored-src/src/utils/telemetry/pluginTelemetry.ts`): Opaque per-plugin aggregation key. Input is the name@marketplace string as it appears in enabledPlugins keys, lowercased on the marketplace suffix for reproducibility. 16-char truncation keeps BQ GROUP BY cardinality manageable while making collisions negli... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `hashPluginId`, `TelemetryPluginScope`, `getTelemetryPluginScope`, `EnabledVia`, dan lainnya.
+- **`sessionTracing.ts`** (`restored-src/src/utils/telemetry/sessionTracing.ts`): Check if enhanced telemetry is enabled. Priority: env var override > ant build > GrowthBook gate. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `Span`, `isBetaTracingEnabled`, `LLMRequestNewContext`, `isEnhancedTelemetryEnabled`, dan lainnya.
+- **`skillLoadedEvent.ts`** (`restored-src/src/utils/telemetry/skillLoadedEvent.ts`): Logs a tengu_skill_loaded event for each skill available at session startup. This enables analytics on which skills are available across sessions. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `logSkillsLoaded`.
 
 ## Direktori: `restored-src/src/utils/teleport`
 
-- **`api.ts`**: Checks if an axios error is a transient network error that should be retried
-- **`environmentSelection.ts`**: Gets information about available environments and the currently selected one.  @returns Promise<EnvironmentSelectionInfo> containing: - availableEnvir...
-- **`environments.ts`**: Fetches the list of available environments from the Environment API @returns Promise<EnvironmentResource[]> Array of available environments @throws Er...
-- **`gitBundle.ts`**: Git bundle creation + upload for CCR seed-bundle seeding.  Flow: 1. git stash create → update-ref refs/seed/stash (makes it reachable) 2. git bundle c...
+- **`api.ts`** (`restored-src/src/utils/teleport/api.ts`): Checks if an axios error is a transient network error that should be retried. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `CCR_BYOC_BETA`, `isTransientNetworkError`, `axiosGetWithRetry`, `SessionStatus`, dan lainnya.
+- **`environmentSelection.ts`** (`restored-src/src/utils/teleport/environmentSelection.ts`): Gets information about available environments and the currently selected one. @returns Promise<EnvironmentSelectionInfo> containing: - availableEnvironments: all environments from the API - selectedEnvironment: the environment that would be used (based on s... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `EnvironmentSelectionInfo`, `getEnvironmentSelectionInfo`.
+- **`environments.ts`** (`restored-src/src/utils/teleport/environments.ts`): Fetches the list of available environments from the Environment API @returns Promise<EnvironmentResource[]> Array of available environments @throws Error if the API request fails or no access token is available. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `EnvironmentKind`, `EnvironmentState`, `EnvironmentResource`, `EnvironmentListResponse`, dan lainnya.
+- **`gitBundle.ts`** (`restored-src/src/utils/teleport/gitBundle.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `BundleUploadResult`, `createAndUploadGitBundle`.
 
 ## Direktori: `restored-src/src/utils/todo`
 
-- **`types.ts`**: Mengekspor: TodoItemSchema, TodoItem, TodoListSchema.
+- **`types.ts`** (`restored-src/src/utils/todo/types.ts`): Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `TodoItemSchema`, `TodoItem`, `TodoListSchema`, `TodoList`.
 
 ## Direktori: `restored-src/src/utils/ultraplan`
 
-- **`ccrSession.ts`**: Mengekspor: PollFailReason, UltraplanPollError, ULTRAPLAN_TELEPORT_SENTINEL.
-- **`keyword.ts`**: Find keyword positions, skipping occurrences that are clearly not a launch directive:  - Inside paired delimiters: backticks, double quotes, angle bra...
+- **`ccrSession.ts`** (`restored-src/src/utils/ultraplan/ccrSession.ts`): Pill/detail-view state derived from the event stream. Transitions: running → (turn ends, no ExitPlanMode) → needs_input needs_input → (user replies in browser) → running running → (ExitPlanMode emitted, no result yet) → plan_ready plan_ready → (rejected) →... Mengimplementasikan class utama untuk area fitur ini. Export utama: `PollFailReason`, `UltraplanPollError`, `ULTRAPLAN_TELEPORT_SENTINEL`, `ScanResult`, dan lainnya.
+- **`keyword.ts`** (`restored-src/src/utils/ultraplan/keyword.ts`): Replace the first triggerable "ultraplan" with "plan" so the forwarded prompt stays grammatical ("please ultraplan this" → "please plan this"). Preserves the user's casing of the "plan" suffix. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `findUltraplanTriggerPositions`, `findUltrareviewTriggerPositions`, `hasUltraplanKeyword`, `hasUltrareviewKeyword`, dan lainnya.
 
 ## Direktori: `restored-src/src/vim`
 
-- **`motions.ts`**: Vim Motion Functions  Pure functions for resolving vim motions to cursor positions.
-- **`operators.ts`**: Vim Operator Functions  Pure functions for executing vim operators (delete, change, yank, etc.)
-- **`textObjects.ts`**: Vim Text Object Finding  Functions for finding text object boundaries (iw, aw, i", a(, etc.)
-- **`transitions.ts`**: Vim State Transition Table  This is the scannable source of truth for state transitions. To understand what happens in any state, look up that state's...
-- **`types.ts`**: Vim Mode State Machine Types  This file defines the complete state machine for vim input handling. The types ARE the documentation - reading them tell...
+- **`motions.ts`** (`restored-src/src/vim/motions.ts`): Resolve a motion to a target cursor position. Does not modify anything - pure calculation. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `resolveMotion`, `isInclusiveMotion`, `isLinewiseMotion`.
+- **`operators.ts`** (`restored-src/src/vim/operators.ts`): Context for operator execution. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `OperatorContext`, `executeOperatorMotion`, `executeOperatorFind`, `executeOperatorTextObj`, dan lainnya.
+- **`textObjects.ts`** (`restored-src/src/vim/textObjects.ts`): Find a text object at the given position. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `TextObjectRange`, `findTextObject`.
+- **`transitions.ts`** (`restored-src/src/vim/transitions.ts`): Context passed to transition functions. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `TransitionContext`, `TransitionResult`, `transition`.
+- **`types.ts`** (`restored-src/src/vim/types.ts`): Vim Mode State Machine Types This file defines the complete state machine for vim input handling. The types ARE the documentation - reading them tells you how the system works. State Diagram: ''' VimState ┌──────────────────────────────┬────────────────────... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `Operator`, `FindType`, `TextObjScope`, `VimState`, dan lainnya.
 
 ## Direktori: `restored-src/src/voice`
 
-- **`voiceModeEnabled.ts`**: Kill-switch check for voice mode. Returns true unless the `tengu_amber_quartz_disabled` GrowthBook flag is flipped on (emergency off). Default `false`...
+- **`voiceModeEnabled.ts`** (`restored-src/src/voice/voiceModeEnabled.ts`): Kill-switch check for voice mode. Returns true unless the 'tengu_amber_quartz_disabled' GrowthBook flag is flipped on (emergency off). Default 'false' means a missing/stale disk cache reads as "not killed" — so fresh installs get voice working immediately w... Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `isVoiceGrowthBookEnabled`, `hasVoiceAuth`, `isVoiceModeEnabled`.
 
+## Direktori: `restored-src/vendor/audio-capture-src`
+
+- **`index.ts`** (`restored-src/vendor/audio-capture-src/index.ts`): Barrel/entry point yang merapikan export modul di folder ini. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `isNativeAudioAvailable`, `startNativeRecording`, `stopNativeRecording`, `isNativeRecordingActive`, dan lainnya.
+
+## Direktori: `restored-src/vendor/image-processor-src`
+
+- **`index.ts`** (`restored-src/vendor/image-processor-src/index.ts`): Barrel/entry point yang merapikan export modul di folder ini. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `ClipboardImageResult`, `NativeModule`, `getNativeModule`, `sharp`.
+
+## Direktori: `restored-src/vendor/modifiers-napi-src`
+
+- **`index.ts`** (`restored-src/vendor/modifiers-napi-src/index.ts`): Pre-warm the native module by loading it in advance. Call this early (e.g., at startup) to avoid delay on first use. Barrel/entry point yang merapikan export modul di folder ini. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `getModifiers`, `isModifierPressed`, `prewarm`.
+
+## Direktori: `restored-src/vendor/url-handler-src`
+
+- **`index.ts`** (`restored-src/vendor/url-handler-src/index.ts`): Wait for a macOS URL event (Apple Event kAEGetURL). Initializes NSApplication, registers for the URL event, and pumps the event loop for up to 'timeoutMs' milliseconds. Returns the URL string if one was received, or null. Only functional on macOS — returns... Barrel/entry point yang merapikan export modul di folder ini. Berisi fungsi utilitas/operasional yang dipakai modul lain. Export utama: `waitForUrlEvent`.
