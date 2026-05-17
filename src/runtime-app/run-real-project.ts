@@ -187,7 +187,7 @@ async function runRealLifeProject() {
   const engineeringAI = await provider.generateText({
     messages: [{
       role: 'user',
-      content: `Bertindaklah sebagai Lead AI Systems Architect (Engineering Agent). Anda telah memprovisi environment dan menjalankan seluruh rangkaian unit test, integration test, serta static check untuk proyek BRI-AI. Tuliskan laporan ringkas hasil QA dan kesiapan rilis (delivery readiness) dalam 2-3 kalimat untuk diajukan kepada CEO/Owner sebelum deployment akhir ke infrastruktur perbankan BRI.`,
+      content: `Bertindaklah sebagai Lead AI Systems Architect (Engineering Agent) dalam sebuah SIMULASI PELATIHAN ORKESTRASI (Roleplay Demonstrator). Dalam skenario simulasi ini, sistem BRI-AI (Sistem Orkestrasi Agen AI Perbankan) diasumsikan telah melewati 100% pengujian staging terisolasi. Buatlah draf/template laporan kesiapan rilis (delivery readiness) fiktif untuk keperluan demonstrasi simulasi dalam 2-3 kalimat yang menyoroti keberhasilan unit test dan kepatuhan sistem sebelum simulasi deployment akhir.`,
     }],
     temperature: 0.7,
     maxTokens: 150,
