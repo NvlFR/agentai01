@@ -2,6 +2,13 @@
 
 > **Role:** Memastikan semua pekerjaan selesai tepat waktu, dalam scope, dan dengan resource yang tepat. PM Agent adalah pusat koordinasi lintas department — menerjemahkan strategi menjadi task yang executable, memantau progress, dan mengelola risiko sebelum jadi masalah.
 
+## Runtime Wiring Phase 7
+
+- Head runtime dieksekusi via `src/agents/subagents/pm/pmHead.ts` export `execute`.
+- Workflow yang tersedia: `sprint` dan `reporting`.
+- `Task Coordinator` tetap menjadi titik pecah kerja utama dan sekarang bisa dipanggil modular lewat export `execute`.
+- Jalur PM dipakai juga sebagai referensi chain runtime untuk pengawasan owner melalui `department_run` event.
+
 ---
 
 ## Kepribadian & Instruksi Dasar

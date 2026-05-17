@@ -1,117 +1,240 @@
-# CODEX.md
+# CODEX.md — AgentAI01 Coding Standards
 
-Symlink ke `AGENTS.md`. Baca `AGENTS.md` untuk full policy.
-Dokumen ini adalah ringkasan cepat untuk Codex worktree.
+> Panduan coding ketat untuk semua agen (Codex, Claude, Gemini, Kiro) yang bekerja di repo ini.
+> Ikuti setiap aturan tanpa pengecualian.
 
-## Project
+---
 
-AI Company Runtime Platform — runtime untuk menjalankan perusahaan AI dengan agen-agen yang berkoordinasi.
-Stack: TypeScript ESM strict, Bun 1.3.x, Node 20+, OpenAI-compatible provider.
+## 1. TypeScript ESM Strict
 
-## Map
+```typescript
+// ✅ BENAR — import dengan suffix .js
+import { BatonPassingOrchestrator } from './batonPassing.js'
+import type { AgentHierarchyConfig } from '../domain/hierarchy.js'
+
+// ❌ SALAH — tidak ada suffix
+import { BatonPassingOrchestrator } from './batonPassing'
+```
+
+- Semua file TypeScript menggunakan ESM (`"type": "module"` di package.json)
+- Import relatif **wajib** menggunakan suffix `.js`
+- `strict: true` di tsconfig — tidak ada implicit `any`
+- Tidak ada `@ts-nocheck` — jika harus suppress, beri komentar alasannya
+
+---
+
+## 2. No Any
+
+```typescript
+// ✅ BENAR
+function processPayload(payload: unknown): string {
+  if (typeof payload !== 'object' || payload === null) throw new Error('Invalid')
+  const p = payload as Record<string, unknown>
+  return String(p['text'] ?? '')
+}
+
+// ❌ SALAH
+function processPayload(payload: any): string {
+  return payload.text
+}
+```
+
+Gunakan: `unknown`, discriminated unions, Zod parse, atau narrow adapter pattern.
+
+---
+
+## 3. External Boundary — Selalu Zod
+
+Semua data dari luar boundary (config file, API request, env var) harus divalidasi Zod:
+
+```typescript
+// ✅ BENAR
+const result = AgentHierarchyConfigSchema.safeParse(rawInput)
+if (!result.success) {
+  throw new Error(`Invalid config: ${result.error.issues.map(i => i.message).join(', ')}`)
+}
+const config = result.data
+
+// ❌ SALAH — langsung cast tanpa validasi
+const config = rawInput as AgentHierarchyConfig
+```
+
+---
+
+## 4. Error Handling — Discriminated Union
+
+```typescript
+// ✅ BENAR — result type yang jelas
+type RegisterResult =
+  | { success: true; agentId: string }
+  | { success: false; reason: string }
+
+function register(config: unknown): RegisterResult {
+  // ...
+}
+
+// ❌ SALAH — throw untuk flow control normal
+function register(config: unknown): string {
+  throw new Error('duplicate') // caller tidak tahu ini normal atau exceptional
+}
+```
+
+Gunakan `throw` hanya untuk kondisi truly exceptional (programming error, invariant violation).
+
+---
+
+## 5. Immutability
+
+```typescript
+// ✅ BENAR — kembalikan salinan baru
+getConfig(agentId: string): AgentHierarchyConfig | undefined {
+  const config = this._store.get(agentId)
+  if (!config) return undefined
+  return { ...config, subAgentIds: [...config.subAgentIds] }
+}
+
+// ❌ SALAH — expose reference langsung
+getConfig(agentId: string): AgentHierarchyConfig | undefined {
+  return this._store.get(agentId) // caller bisa mutasi!
+}
+```
+
+---
+
+## 6. Sub-Agent Rules
+
+### Registrasi
+
+```typescript
+// ✅ BENAR — gunakan makeSpecialistConfig helper
+const config = makeSpecialistConfig({
+  agentId: 'marketing-content-creator',
+  parentAgentId: 'marketing-head',
+  departmentName: 'marketing',
+  allowedMcpTools: ['canva_mcp', 'notion', 'google_drive'],
+})
+
+// ❌ SALAH — CEO tidak boleh punya parentAgentId
+const ceo: AgentHierarchyConfig = {
+  agentId: 'ceo-agent',
+  roleType: 'ceo',
+  parentAgentId: 'some-parent', // INVALID!
+  // ...
+}
+```
+
+### Integrity check wajib setelah batch:
+
+```typescript
+registry.registerBatch(MARKETING_DEPARTMENT_CONFIGS)
+const errors = registry.validateIntegrity()
+if (errors.length > 0) throw new Error(errors.join('\n'))
+```
+
+---
+
+## 7. Baton Passing Pattern
+
+```typescript
+// ✅ Pattern lengkap
+const pad = new IntraDepartmentScratchpad('marketing')
+const orch = new BatonPassingOrchestrator(pad)
+
+const result = orch.delegate({
+  delegatorId: 'marketing-head',
+  departmentName: 'marketing',
+  agentChain: [...MARKETING_CAMPAIGN_CHAIN],
+  payload: { brief: 'Q2 Campaign' },
+})
+if (!result.success) throw new Error(result.reason)
+
+// Setiap sub-agent memanggil pass() setelah selesai
+orch.pass({ taskId: result.taskId, agentId: 'marketing-content-creator', output: { draft: '...' } })
+```
+
+---
+
+## 8. Test Rules
+
+### Colocated test files
+```
+src/registry/subAgentRegistry.ts        # implementation
+src/registry/subAgentRegistry.test.ts   # test (same folder!)
+```
+
+### Timebound behavior pakai injected `now`
+```typescript
+// ✅ BENAR — injectable now untuk determinisme
+pad.write({ fromAgentId: 'a', messageType: 'baton_pass', payload: {}, now: '2026-01-01T00:00:00Z' })
+const entries = pad.readFor('b', '2026-01-01T00:00:00Z') // deterministic!
+
+// ❌ SALAH — bergantung pada waktu nyata
+pad.write({ fromAgentId: 'a', messageType: 'baton_pass', payload: {} })
+const entries = pad.readFor('b') // non-deterministic!
+```
+
+### Cleanup
+```typescript
+beforeEach(() => {
+  registry.clear()
+  scratchpad.clear()
+})
+```
+
+---
+
+## 9. Prohibited Patterns
+
+| Pattern | Alasan |
+|---------|--------|
+| `throw new Error('not implemented')` | Production code path harus selalu punya behavior |
+| `() => {}` sebagai final body | Harus punya real behavior atau explicit no-op comment |
+| `// TODO` di production code | Catat di `TODO.md` root, bukan di source |
+| Import tanpa `.js` suffix | Breaks ESM resolution |
+| `export type {}` file kosong | File harus punya runtime value atau tidak dibuat |
+| `Date.now()` langsung di test | Pakai injected `now` |
+| Hardcoded API keys | Selalu dari env |
+
+---
+
+## 10. Commit & PR Rules
+
+- Conventional commits: `feat(marketing): add campaign baton chain`
+- Stage hanya file yang intended — `git diff --staged` sebelum commit
+- `npm run check` + `bun test` harus green sebelum push
+- Branch: `feat/<feature>`, `fix/<issue>`, `docs/<topic>`
+- Jangan push langsung ke `main` kecuali diminta eksplisit
+
+---
+
+## 11. File Organization
 
 ```
 src/
-  domain/          # types dan kontrak utama
-  agents/          # CEO, engineering, marketing, product, project-manager, sales, support
-  runtime/         # orchestrator
-  runtime-app/     # HTTP server, worker, scheduler, Telegram bot, UI, providers
-  registry/        # AgentRegistry
-  app/             # app-level exports
+  domain/           ← Pure types, no side effects
+  registry/         ← AgentRegistry + SubAgentRegistry
+  runtime/          ← Orchestrator, scratchpad, batonPassing
+  agents/
+    ceo/            ← CEO agent logic
+    marketing/      ← Marketing head logic
+    ...
+    subagents/
+      ceo/          ← CEO sub-agent configs
+      marketing/    ← Marketing sub-agent configs
+      ...
+  runtime-app/      ← HTTP server, channels, scheduler
 ```
 
-## Commands
+Barrel index (`index.ts`) hanya re-export — implementasi di sub-file.
+
+---
+
+## 12. Verifikasi Sebelum Handoff
 
 ```bash
-npm install                  # install deps
-npm run dev                  # dev server dengan watch mode
-npm run check                # TypeScript typecheck
-bun test                     # unit tests
-npm run runtime:smoke        # smoke test end-to-end
-npm run runtime:telegram     # Telegram bot
-npm run runtime:worker       # worker loop
-npm run runtime:scheduler    # scheduler loop
+npm run check        # Zero TypeScript errors
+bun test             # All tests pass
+npm run runtime:smoke # No regression (butuh AI_API_KEY)
 ```
 
-## Validation Rules
-
-- Jalankan `npm run check` sebelum push — typecheck wajib hijau.
-- Jalankan `bun test` untuk unit tests.
-- Jangan landing kode dengan failing typecheck atau test.
-- Untuk perubahan provider/auth/secrets: jalankan `npm run runtime:smoke` juga.
-
-## Code Rules
-
-- TypeScript ESM strict. Tidak ada `any`. Tidak ada `@ts-nocheck`.
-- Discriminated unions untuk runtime branching, bukan freeform strings.
-- Tidak ada hardcoded secrets, tokens, atau API keys.
-- Split file di ~700 LOC kalau clarity membaik.
-- Comments: singkat, hanya untuk logic non-obvious.
-
-## Test Rules
-
-- Bun test. Colocated `*.test.ts`.
-- Prefer behavior tests.
-- Clean timers/env/mocks/temp dirs setelah test.
-- Prefer injection dan narrow mocks.
-
-## Git Rules
-
-- Commits: conventional-ish, concise.
-- Stage hanya file yang intended — jangan `git add .` sembarangan.
-- Push ke branch baru, bukan langsung ke `main`.
-- Jangan commit `.env.local`, secrets, atau credentials.
-
-## Security Rules
-
-- Jangan pernah print atau log raw secrets.
-- `OPERATOR_TOKEN`, `AI_API_KEY`, `TOKEN_TELE` harus dari env — tidak pernah hardcoded.
-- UI harus mask `AI_API_KEY`.
-- Lihat `SECURITY.md` untuk full policy.
-## Aturan Global (berlaku untuk SEMUA task)
-
-**Larangan keras di setiap task:**
-- Dilarang menghasilkan file yang hanya berisi `export type {}` atau type definitions tanpa runtime code
-- Dilarang menggunakan `throw new Error('not implemented')` sebagai implementasi final
-- Dilarang menggunakan `() => {}` sebagai body function yang seharusnya punya behavior
-- Dilarang meninggalkan `// TODO` di production code path — catat di `TODO.md` root jika benar-benar blocked
-- Dilarang menggunakan `any`; gunakan real types, `unknown`, atau narrow adapter
-- Dilarang import relatif tanpa suffix `.js` pada TypeScript ESM
-- Dilarang copy platform-specific OpenClaw code (iOS, macOS native, browser extension, product-specific glue)
-- Dilarang commit jika `npm run check` masih error
-- Dilarang commit jika `bun test` masih failing untuk file yang disentuh
-
-**Verifikasi wajib di setiap task:**
-1. `npm run check` — zero TypeScript errors
-2. `bun test <file>.test.ts` — semua test pass
-3. **AI smoke test** — jalankan `npm run runtime:smoke` dan pastikan output tidak ada error baru yang disebabkan oleh perubahan task ini. Smoke test memanggil AI provider nyata via `AI_BASE_URL` + `AI_API_KEY`.
-
-**Test dan boundary rules:**
-- External boundary wajib pakai Zod atau schema helper yang sudah ada.
-- Module parse/serialize wajib punya round-trip behavior test.
-- Time-dependent behavior wajib pakai injected `now`, bukan `Date.now()` langsung di test.
-- Timer, env, globals, mocks, dan temp dirs wajib dibersihkan.
-- Filesystem test wajib pakai `createTempDirectory()` setelah tersedia.
-- Index barrel hanya re-export; implementasi tetap di sub-file.
-
-**Format bukti selesai:**
-Setiap task dianggap selesai hanya jika ada bukti nyata:
-- Output `npm run check` clean
-- Output `bun test` semua pass
-- Output `npm run runtime:smoke` tidak ada regression
-
-## Specs
-
-Semua specs ada di `.kiro/specs/`. Setiap spec punya `requirements.md`, `design.md`, dan `tasks.md`.
-**Baca `tasks.md` untuk daftar task yang perlu dikerjakan.**
-Konvensi task status di `tasks.md`:
-- `[x]` — selesai
-- `[ ]` — belum dikerjakan
-- `[~]` — in progress / sebagian selesai
-
-## Referensi
-
-- Full policy: `AGENTS.md`
-- Security: `SECURITY.md`
-- Vision: `VISION.md`
-- Referensi OpenClaw: `referensi/openclaw/` (jangan edit)
+Jangan serahkan pekerjaan jika ada satu pun yang failing.

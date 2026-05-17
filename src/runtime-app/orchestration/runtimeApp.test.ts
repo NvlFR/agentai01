@@ -51,4 +51,55 @@ describe('RuntimeOperationalApp', () => {
     expect(app.events.some(event => event.kind === 'escalation')).toBe(true)
     expect(app.shell.buildSnapshot().open_blockers).toHaveLength(1)
   })
+
+  it('runs a department workflow and records owner approval', async () => {
+    const app = createRuntimeOperationalApp({
+      now: '2026-05-18T08:30:00Z',
+      specialistMode: 'provider',
+      specialistProvider: {
+        async generateText() {
+          return {
+            content: JSON.stringify({
+              summary: 'Marketing copy ready',
+              output: {
+                draft: 'Draft from provider',
+                assetType: 'social_post',
+              },
+            }),
+          }
+        },
+      },
+      specialistToolExecutor: {
+        async execute(invocation) {
+          return {
+            ok: true,
+            toolId: invocation.toolId,
+            action: invocation.action,
+            transport: 'mcp',
+            data: { invoked: invocation.action },
+          }
+        },
+      },
+    })
+
+    const record = await app.runDepartmentWorkflow({
+      headAgentId: 'marketing-head',
+      workflow: 'campaign',
+      payload: {
+        brief: {
+          title: 'Operator Launch',
+          objective: 'Prepare launch collateral',
+        },
+      },
+      requireApproval: true,
+      projectId: 'proj-operator',
+      now: '2026-05-18T08:35:00Z',
+    })
+
+    expect(record.status).toBe('completed')
+    expect(record.approvalRequestId).toBeDefined()
+    expect(app.departmentRuns[0]?.headAgentId).toBe('marketing-head')
+    expect(app.events.some(event => event.kind === 'department_run')).toBe(true)
+    expect(app.shell.buildSnapshot('2026-05-18T08:35:00Z').pending_approvals).toHaveLength(1)
+  })
 })

@@ -15,7 +15,10 @@ export type NotionClient = {
 
 export function createNotionAdapter(token: string | undefined, client?: NotionClient): {
   enabled: boolean
-  createPage: (parentId: string, title: string) => Promise<void>
+  createPage: (
+    parentId: string,
+    title: string,
+  ) => Promise<{ pageId: string; url: string; title: string }>
 } {
   const sdk = client ?? (token ? new Client({ auth: token }) : undefined)
 
@@ -26,7 +29,7 @@ export function createNotionAdapter(token: string | undefined, client?: NotionCl
         throw new Error('Notion integration is not configured')
       }
 
-      await sdk.pages.create({
+      const response = await sdk.pages.create({
         parent: { page_id: parentId },
         properties: {
           title: {
@@ -34,6 +37,22 @@ export function createNotionAdapter(token: string | undefined, client?: NotionCl
           },
         },
       })
+
+      return {
+        pageId: readString(response, 'id', `${parentId}:${title}`),
+        url: readString(response, 'url'),
+        title,
+      }
     },
   }
+}
+
+function readString(record: unknown, key: string, fallback = ''): string {
+  if (record !== null && typeof record === 'object') {
+    const value = (record as Record<string, unknown>)[key]
+    if (typeof value === 'string') {
+      return value
+    }
+  }
+  return fallback
 }

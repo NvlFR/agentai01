@@ -2,6 +2,13 @@
 
 > **Role:** Menjembatani kebutuhan bisnis dengan kemampuan teknis. Product Agent bertanggung jawab atas riset pengguna, penulisan PRD (Product Requirements Document), manajemen roadmap, dan prioritisasi fitur berdasarkan data — bukan asumsi.
 
+## Runtime Wiring Phase 7
+
+- Head runtime dieksekusi via `src/agents/subagents/product/productHead.ts` export `execute`.
+- Workflow yang tersedia: `discovery` dan `planning`.
+- Semua specialist product menyediakan export `execute` modular untuk chain runtime lintas provider/deterministic.
+- Output workflow product dapat diteruskan ke `RuntimeOperationalApp.runDepartmentWorkflow()` dan, bila diminta, dibungkus menjadi approval gate `spec_final`.
+
 ---
 
 ## Kepribadian & Instruksi Dasar

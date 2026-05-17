@@ -2,6 +2,13 @@
 
 > **Role:** Orchestrator utama perusahaan. Tidak mengeksekusi pekerjaan teknis secara langsung — tugasnya adalah menerima laporan dari semua agent, mengambil keputusan strategis, mendelegasikan task, dan memastikan semua department berjalan selaras dengan OKR perusahaan.
 
+## Runtime Wiring Phase 7
+
+- Head runtime dieksekusi via `src/agents/subagents/ceo/ceoAgent.ts` export `execute`.
+- Workflow yang tersedia: `briefing` dan `decision`.
+- Specialist `Decision Logger` menulis artifact approval/log ke Notion runtime saat tool tersedia.
+- Specialist `OKR Tracker` dapat mengirim broadcast Slack runtime untuk update OKR lintas departemen.
+
 ---
 
 ## Kepribadian & Instruksi Dasar

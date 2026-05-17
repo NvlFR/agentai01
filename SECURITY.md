@@ -1,218 +1,74 @@
-# Security Policy
+# SECURITY.md — Security Policy
 
-Kalau kamu menemukan security issue di project ini, laporkan secara private dulu.
+## Prinsip Utama
 
-Project ini adalah AI Company Runtime Platform — local-first agent infrastructure untuk trusted operators. Ini bukan shared multi-tenant boundary antara adversarial users.
+AgentAI01 memperlakukan semua credentials, API keys, dan tokens sebagai secret class-1. Tidak ada pengecualian.
 
-Report yang paling berguna menunjukkan boundary bypass yang reproducible dengan demonstrated impact. Scanner output saja, atau prompt-injection-only chains, biasanya bukan security vulnerability di model ini.
+## Aturan Wajib
 
-## Laporkan Security Issue
+### Secrets & Credentials
+- **TIDAK PERNAH** commit `AI_API_KEY`, `OPERATOR_TOKEN`, atau credential apapun ke repo
+- Gunakan `.env.local` (tidak di-commit) untuk secret lokal development
+- `.env` hanya boleh berisi default non-secret (base URL, model name, timeout)
+- Environment variable wajib divalidasi saat startup — fail fast jika tidak ada
+- UI **harus** mask `AI_API_KEY`; jangan tampilkan raw value ke operator
 
-Laporkan vulnerability secara private via:
+### Access Control
+- `OPERATOR_TOKEN` wajib untuk semua endpoint `/api/*` yang mengubah state
+- `/health` dan `/ready` boleh tanpa auth
+- Implementasi token comparison harus constant-time untuk mencegah timing attack
+- Jangan log request body yang berisi credentials
 
-- **GitHub Security Advisory** (private): buka advisory baru di repo ini
-- **Email**: hubungi maintainer langsung
+### Agent Isolation
+- Sub-agen **tidak boleh** mengakses data departemen lain melalui scratchpad
+- `IntraDepartmentScratchpad` hanya boleh diakses oleh Head dan specialist dalam departemen yang sama
+- `SubAgentRegistry.validateIntegrity()` wajib dipanggil setelah setiap batch registration
+- MCP tools yang tidak ada dalam `allowedMcpTools` tidak boleh dipanggil oleh agen apapun
 
-Jangan buka public issue atau PR yang mengungkap vulnerability yang belum di-patch, exploit path, secret, atau security-sensitive proof of concept.
+### Project Isolation
+- Setiap agen hanya boleh akses artifact project yang sedang aktif (`current_project_id`)
+- Cross-project access harus divalidasi oleh `AgentRegistry.validateAgentProjectAccess()`
+- Dashboard hanya menampilkan data agregat — tidak expose raw artifact project lain
+- Semua pelanggaran isolation dicatat di audit log
 
-### Yang Kami Butuhkan
+### Data Handling
+- Credentials klien (API key, password) tidak boleh disimpan di Notion, spec, proposal, atau source code
+- Log tidak boleh berisi PII tanpa masking
+- Scratchpad entries memiliki TTL default 30 menit dan bersifat ephemeral
+- Tidak ada persistent storage untuk conversation history di luar provider yang ditentukan
 
-Buat report mudah di-reproduce dan mudah di-route:
+## Env Variables
 
-- Apa yang ditemukan dan kenapa dianggap security-relevant.
-- Komponen yang terpengaruh, versi, dan commit SHA kalau memungkinkan.
-- Langkah reproduksi atau proof of concept terhadap `main` terbaru.
-- Dampak aktual, termasuk trust boundary mana yang dilanggar.
-- Saran remediasi atau focused patch kalau bisa.
+| Variable | Wajib | Default | Keterangan |
+|----------|-------|---------|-----------|
+| `AI_API_KEY` | ✅ | — | API key AI provider. Tanpa ini `/ready` tidak ready |
+| `AI_BASE_URL` | ❌ | `http://127.0.0.1:8045/v1` | Base URL OpenAI-compatible endpoint |
+| `AI_MODEL` | ❌ | `gemini-3-flash` | Model ID |
+| `AI_TIMEOUT_MS` | ❌ | `30000` | Timeout request ke AI provider |
+| `OPERATOR_TOKEN` | ✅ | — | Bearer token untuk operator API |
+| `PORT` | ❌ | `3001` | HTTP server port |
+| `NODE_ENV` | ❌ | `development` | Environment mode |
 
-Report tanpa reproduction steps, demonstrated impact, dan remediation advice akan di-deprioritize.
+## Incident Response
 
-### Yang Biasanya Bukan Security Bug
+1. **Credential leak** → Segera revoke key, ganti dengan yang baru, audit commit history dengan `git log -S "key_value"`
+2. **Unauthorized access** → Periksa audit log `AgentRegistry`, cek token validation code
+3. **Cross-project data leak** → Review `validateAgentProjectAccess()`, cek `current_project_id` assignment
+4. **Sub-agent tool misuse** → Audit `allowedMcpTools` config, periksa `SubAgentRegistry` integrity
 
-Pattern ini biasanya bukan vulnerability:
+## File yang Tidak Boleh di-commit
 
-- Prompt injection tanpa policy, auth, approval, sandbox, atau tool-boundary bypass.
-- Trusted operator menggunakan intentional local feature seperti local shell access.
-- Plugin berbahaya setelah trusted operator menginstall atau mengaktifkannya.
-- Scanner-only atau dependency-only reports tanpa working repro dan demonstrated impact.
-- Public internet exposure atau risky deployment choices yang sudah di-recommend against di docs.
-
-Kalau tidak yakin, laporkan secara private. Lebih baik route careful report daripada miss real boundary issue.
-
-## Security Posture
-
-### Trust Model
-
-Project ini **tidak** memodelkan satu runtime sebagai multi-tenant, adversarial user boundary.
-
-- Authenticated callers diperlakukan sebagai trusted operators untuk instance runtime tersebut.
-- `OPERATOR_TOKEN` mengautentikasi operator; session identifiers adalah routing controls, bukan per-user authorization boundaries.
-- Kalau satu operator bisa lihat data dari operator lain di runtime yang sama, itu expected dalam trust model ini.
-- Recommended mode: satu user per machine/host, satu runtime untuk user tersebut.
-- Kalau multiple users butuh akses, gunakan satu VPS (atau host/OS user boundary) per user.
-
-### Operator Trust Model
-
-- Authenticated runtime callers diperlakukan sebagai trusted operators.
-- Direct localhost/loopback sessions yang diautentikasi dengan shared operator token ada di trusted-operator bucket yang sama.
-- Session identifiers adalah routing controls, bukan per-user authorization boundaries.
-
-### Trusted Plugins / Extensions
-
-Extensions dan plugins adalah bagian dari trusted computing base untuk runtime.
-
-- Menginstall atau mengaktifkan plugin memberikan trust level yang sama dengan local code yang berjalan di host tersebut.
-- Security reports harus menunjukkan boundary bypass (misalnya unauthenticated plugin load, allowlist/policy bypass), bukan hanya malicious behavior dari trusted-installed plugin.
-
-### Agent dan Model Assumptions
-
-- Model/agent **bukan** trusted principal. Asumsikan prompt/content injection bisa memanipulasi behavior.
-- Security boundaries berasal dari host/config trust, auth, tool policy, dan exec approvals.
-- Prompt injection sendiri bukan vulnerability report kecuali melanggar salah satu boundary tersebut.
-
-### Out of Scope
-
-- Public Internet Exposure
-- Menggunakan project ini dengan cara yang sudah di-recommend against di docs
-- Prompt-injection-only attacks (tanpa policy/auth/sandbox boundary bypass)
-- Reports yang butuh write access ke trusted local state
-- Exposed secrets yang merupakan third-party/user-controlled credentials tanpa demonstrated impact
-- Reports yang hanya menunjukkan behavior dari trusted-installed plugin/extension
-
-## Secrets dan Credentials
-
-### Aturan Wajib
-
-- **Jangan pernah commit** credentials, tokens, API keys, atau secrets ke repo.
-- Simpan secrets di `.env.local` (tidak di-commit) atau environment variable langsung.
-- `.env` hanya boleh berisi defaults non-secret.
-- `OPERATOR_TOKEN` dan `AI_API_KEY` harus selalu dari environment, tidak pernah hardcoded.
-
-### Environment Variables Sensitif
-
-| Variable | Keterangan |
-|----------|------------|
-| `OPERATOR_TOKEN` | Token owner/operator untuk aksi mutasi — jangan expose ke client |
-| `AI_API_KEY` | API key provider AI — UI harus mask nilai ini |
-| `TOKEN_TELE` | Telegram bot token — jangan log atau print |
-| `ID_CHAT` | Allowed Telegram chat IDs |
-
-### Penanganan di UI
-
-- UI harus mask `AI_API_KEY`; jangan tampilkan raw secret ke operator.
-- Jangan log secrets ke console atau file log.
-- Jangan include secrets di error messages yang dikirim ke client.
-
-## Web Interface Safety
-
-Runtime app web interface dimaksudkan untuk **local use only**.
-
-- Recommended: keep runtime **loopback-only** (`127.0.0.1`).
-- Default `APP_HOST=127.0.0.1` sudah aman untuk local development.
-- **Jangan expose** ke public internet (jangan bind ke `0.0.0.0` tanpa firewall, jangan pakai public reverse proxy tanpa auth).
-- Kalau butuh remote access, prefer SSH tunnel atau Tailscale.
-- `OPERATOR_TOKEN` development harus diganti kalau app dibuka di jaringan bersama.
-
-## Runtime Requirements
-
-### Bun Version
-
-Project ini membutuhkan **Bun 1.3.x atau lebih baru**.
-
-Verifikasi versi Bun:
-
-```bash
-bun --version  # Should be 1.3.x or later
-```
-
-### Node.js Version
-
-Untuk toolchain compatibility, butuh **Node.js 20 atau lebih baru**.
-
-```bash
-node --version  # Should be v20.x or later
-```
-
-## Security Scanning
-
-### Secret Detection
-
-Jalankan secret scan secara lokal sebelum commit:
-
-```bash
-# Cek apakah ada secrets yang tidak sengaja masuk
-git diff --cached | grep -iE "(api_key|secret|token|password|credential)" 
-```
-
-Pastikan `.gitignore` sudah include:
-
-```
+```gitignore
 .env.local
-*.key
 *.pem
+*.key
+*.p12
+secrets/
+.env.*.local
 ```
 
-### Static Analysis
+Pastikan `.gitignore` sudah mencakup semua file di atas sebelum `git add`.
 
-Jalankan typecheck untuk mendeteksi type errors yang bisa jadi security issue:
+## Responsible Disclosure
 
-```bash
-npm run check
-```
-
-### Smoke Test
-
-Jalankan smoke test untuk validasi end-to-end behavior:
-
-```bash
-npm run runtime:smoke
-```
-
-## Deployment Assumptions
-
-Security guidance project ini mengasumsikan:
-
-- Host tempat runtime berjalan ada dalam trusted OS/admin boundary.
-- Siapapun yang bisa modifikasi `.env.local` atau config runtime adalah effectively trusted operator.
-- Satu runtime yang di-share oleh mutually untrusted people **bukan setup yang direkomendasikan**.
-- Authenticated runtime callers diperlakukan sebagai trusted operators.
-
-## One-User Trust Model
-
-Security model project ini adalah "personal assistant" (satu trusted operator, potentially many agents), bukan "shared multi-tenant bus."
-
-- Kalau multiple people bisa message agent yang sama, mereka semua bisa steer agent tersebut dalam granted permissions-nya.
-- Session atau memory scoping mengurangi context bleed, tapi **tidak** membuat per-user host authorization boundaries.
-- Untuk mixed-trust atau adversarial users, isolate by OS user/host dan gunakan separate credentials per boundary.
-
-## Aturan Global (berlaku untuk SEMUA task)
-
-**Larangan keras di setiap task:**
-- Dilarang menghasilkan file yang hanya berisi `export type {}` atau type definitions tanpa runtime code
-- Dilarang menggunakan `throw new Error('not implemented')` sebagai implementasi final
-- Dilarang menggunakan `() => {}` sebagai body function yang seharusnya punya behavior
-- Dilarang meninggalkan `// TODO` di production code path — catat di `TODO.md` root jika benar-benar blocked
-- Dilarang menggunakan `any`; gunakan real types, `unknown`, atau narrow adapter
-- Dilarang import relatif tanpa suffix `.js` pada TypeScript ESM
-- Dilarang copy platform-specific OpenClaw code (iOS, macOS native, browser extension, product-specific glue)
-- Dilarang commit jika `npm run check` masih error
-- Dilarang commit jika `bun test` masih failing untuk file yang disentuh
-
-**Verifikasi wajib di setiap task:**
-1. `npm run check` — zero TypeScript errors
-2. `bun test <file>.test.ts` — semua test pass
-3. **AI smoke test** — jalankan `npm run runtime:smoke` dan pastikan output tidak ada error baru yang disebabkan oleh perubahan task ini. Smoke test memanggil AI provider nyata via `AI_BASE_URL` + `AI_API_KEY`.
-
-**Test dan boundary rules:**
-- External boundary wajib pakai Zod atau schema helper yang sudah ada.
-- Module parse/serialize wajib punya round-trip behavior test.
-- Time-dependent behavior wajib pakai injected `now`, bukan `Date.now()` langsung di test.
-- Timer, env, globals, mocks, dan temp dirs wajib dibersihkan.
-- Filesystem test wajib pakai `createTempDirectory()` setelah tersedia.
-- Index barrel hanya re-export; implementasi tetap di sub-file.
-
-**Format bukti selesai:**
-Setiap task dianggap selesai hanya jika ada bukti nyata:
-- Output `npm run check` clean
-- Output `bun test` semua pass
-- Output `npm run runtime:smoke` tidak ada regression
+Laporkan security issue ke founder melalui channel private (Telegram/email). Jangan buat public GitHub issue untuk security vulnerability.

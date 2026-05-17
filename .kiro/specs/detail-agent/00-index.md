@@ -2,6 +2,14 @@
 
 > Dokumentasi lengkap arsitektur multi-agent perusahaan. Setiap agent memiliki file terpisah dengan detail sub-agent, tools, alur kerja, dan batasan.
 
+## Update Runtime Phase 7
+
+- Semua specialist sekarang wajib menyediakan export `execute` di file masing-masing agar bisa dipanggil modular oleh runtime.
+- Department Head menjalankan workflow lewat `BatonPassingOrchestrator` dinamis dengan pilihan workflow seperti `campaign`, `planning`, `bug`, `sprint`, dan `triage`.
+- Runtime specialist mendukung dua jalur: deterministic handler dan provider-backed execution (`auto` / `provider`) dengan prompt aktual.
+- Integrasi tool tidak lagi murni simulasi: runtime sekarang bisa memanggil MCP/direct adapters untuk `notion`, `github`, `slack`, dan `canva_mcp`.
+- `RuntimeOperationalApp` menyimpan jejak `departmentRuns`, menerbitkan event `department_run`, dan dapat membuat `Approval_Request` untuk *human-in-the-loop* owner review.
+
 ---
 
 ## Daftar Agent

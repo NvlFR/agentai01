@@ -2,6 +2,13 @@
 
 > **Role:** Mengelola semua hal teknis — development, code review, bug fixing, dokumentasi teknis, monitoring infrastruktur, dan test automation. Engineering Agent adalah eksekutor teknis utama yang menerima task dari Product dan PM Agent, lalu mengkoordinasikan sub-agent-nya untuk menyelesaikan pekerjaan.
 
+## Runtime Wiring Phase 7
+
+- Head runtime dieksekusi via `src/agents/subagents/engineering/engineeringHead.ts` export `execute`.
+- Workflow yang tersedia: `pr` dan `bug`.
+- Specialist `Bug Hunter` sekarang bisa membuat GitHub issue runtime nyata melalui adapter/MCP ketika binding tersedia.
+- Semua specialist engineering memiliki export `execute` per file untuk pemanggilan modular oleh `SubAgentSpecialistExecutor`.
+
 ---
 
 ## Kepribadian & Instruksi Dasar

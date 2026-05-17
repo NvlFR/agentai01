@@ -34,6 +34,14 @@ export type RuntimeEvent =
       target: AgentType
       reason: string
     }
+  | {
+      kind: 'department_run'
+      timestamp: string
+      head_agent_id: string
+      workflow: string
+      status: 'completed' | 'failed'
+      requires_approval: boolean
+    }
 
 export class RuntimeMessageBus {
   readonly events: RuntimeEvent[] = []

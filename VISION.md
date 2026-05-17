@@ -1,147 +1,91 @@
-## Vision
+# VISION.md — AgentAI01 Platform Vision
 
-Project ini adalah AI Company Runtime — platform untuk menjalankan perusahaan AI yang benar-benar beroperasi.
+## Misi
 
-Bukan chatbot. Bukan demo. Sebuah runtime di mana agen-agen AI bekerja bersama menjalankan proyek nyata: dari lead masuk, proposal, discovery, implementasi, QA, sampai delivery ke klien.
+Membangun **AI Company Runtime Platform** — sebuah sistem di mana sebuah perusahaan dijalankan oleh tim agen AI yang terorganisir secara hierarkis, otonom, dan dapat berkomunikasi satu sama lain layaknya karyawan nyata.
 
-Dokumen ini menjelaskan state saat ini dan arah project ke depan.
-Kita masih early, jadi iterasi cepat.
-Overview project dan developer docs: [`README.md`](README.md)
-Security policy: [`SECURITY.md`](SECURITY.md)
-Panduan adaptasi dari referensi: [`TODO.md`](TODO.md)
+## Problem Statement
 
----
+Perusahaan modern membutuhkan kecepatan eksekusi yang lebih tinggi dari kapasitas manusia. Namun AI yang ada hari ini bekerja secara monolitik — satu prompt besar untuk semua tugas, tanpa spesialisasi, tanpa memori konteks yang terisolasi, dan tanpa struktur organisasi yang jelas.
 
-Project ini dimulai dari satu pertanyaan sederhana:
-**Bisa tidak sebuah perusahaan dijalankan sepenuhnya oleh agen AI?**
+Hasilnya: AI yang "terlalu pintar sedikit untuk segalanya" tapi tidak cukup tajam untuk satu hal secara mendalam.
 
-Bukan perusahaan simulasi. Bukan workflow demo. Tapi perusahaan yang punya CEO, tim engineering, sales, marketing, product, project manager, dan support — semuanya agen AI yang berkoordinasi, mengambil keputusan, dan mengeksekusi pekerjaan nyata.
+## Solusi — Hierarchical Agent Company
 
-Jawabannya: bisa. Dan project ini adalah runtime-nya.
+AgentAI01 membangun paradigma baru: **Tree of Agents** berbasis departemen.
 
----
+```
+Human Operator (Owner / Mission Control)
+    │
+    ▼
+CEO Agent ← Orchestrator strategis, tidak mengeksekusi
+    │
+    ├── Marketing Head ← Orkestrasi kampanye dan konten
+    │     └── [6 specialist sub-agents]
+    ├── Engineering Head ← Code review, bug hunting, docs
+    │     └── [6 specialist sub-agents]
+    ├── Product Head ← Riset user, PRD, roadmap
+    │     └── [5 specialist sub-agents]
+    ├── Project Manager Head ← Sprint, koordinasi, deadline
+    │     └── [5 specialist sub-agents]
+    ├── Sales Head ← Lead, proposal, pipeline
+    │     └── [5 specialist sub-agents]
+    └── Support Head ← Tiket, FAQ, CSAT, WA bot
+          └── [6 specialist sub-agents]
+```
 
-## State Saat Ini
+Setiap agen memiliki:
+- **Domain yang jelas** — tidak ada tumpang tindih tanggung jawab
+- **MCP tools eksklusif** — hanya tools yang relevan, mencegah halusinasi
+- **Memori terisolasi** — `IntraDepartmentScratchpad` per departemen
+- **Baton passing** — serah terima tugas berantai antar sub-agen
 
-Runtime sudah berjalan. Agen-agen sudah ada. Lifecycle proyek dari `lead` sampai `delivered` sudah terdefinisi.
+## Prinsip Desain
 
-Yang sudah ada:
+1. **CEO Agent tidak mengeksekusi** — hanya memutuskan dan mendelegasikan
+2. **Support Agent adalah satu-satunya yang berkomunikasi dengan user akhir**
+3. **Product Agent adalah sumber kebenaran untuk roadmap**
+4. **PM Agent adalah pusat koordinasi** — semua task harus tercatat di sini
+5. **Semua agent melapor ke CEO Agent** — minimum mingguan
+6. **Context isolation** — sub-agen hanya tahu tugasnya sendiri, bukan seluruh konteks perusahaan
 
-- **CEO Agent** — orkestrasi, dashboard, registry, dan delegasi ke agen lain
-- **Sales Agent** — lifecycle sales, proposal, approval gate, dan `lead_handoff`
-- **Product Agent** — discovery, spec, dan `discovery_handoff` ke engineering
-- **Engineering Agent** — implementasi, QA, delivery packaging, dan approval gate final
-- **Project Manager Agent** — monitoring milestone, SLA, dan koordinasi lintas agen
-- **Marketing Agent** — lead generation dan handoff ke sales
-- **Support Agent** — tiket support dan eskalasi post-delivery
-- **Runtime App** — HTTP server, worker, scheduler, approval queue, message log, audit log
-- **Operator UI** — dashboard web untuk operator memantau dan mengontrol runtime
-- **Telegram Bot** — channel alternatif untuk operator berinteraksi dengan runtime
+## Teknologi
 
----
+- **Runtime**: Bun 1.3.x + TypeScript ESM strict
+- **AI Provider**: OpenAI-compatible API (default: Gemini via local proxy)
+- **Communication**: OperatorEventBus + IntraDepartmentScratchpad
+- **Orchestration**: BatonPassingOrchestrator (delegate → pass → return)
+- **Registry**: AgentRegistry (domain state) + SubAgentRegistry (hierarki 4 tingkat)
+- **Channels**: Telegram, WhatsApp, HTTP REST API
+- **MCP Tools**: Notion, Google Workspace, Slack, GitHub, WhatsApp API, Canva, Figma
 
-## Fokus Saat Ini
+## Roadmap
 
-**Priority:**
+### Phase 1 — Foundation ✅
+- Domain types (lifecycle, approval gates, project namespace)
+- AgentRegistry dengan audit log dan history
+- Agent implementations: CEO, Engineering, Marketing, Product, PM, Sales, Support
 
-- Stabilitas runtime dan recovery setelah restart
-- Kelengkapan lifecycle end-to-end: lead → delivered
-- Keamanan dan safe defaults untuk operator
-- Observability: structured logging, metrics, correlation ID
+### Phase 2 — Sub-Agent Hierarchy ✅
+- `AgentHierarchyConfig` + Zod schema validation
+- `SubAgentRegistry` (4-tier tree)
+- `IntraDepartmentScratchpad` (isolated dept memory)
+- `BatonPassingOrchestrator` (delegate/pass/fail state machine)
+- 33 sub-agent specialists across 7 departments
 
-**Next priorities:**
+### Phase 3 — MCP Integration (Next)
+- Live binding MCP tools ke sub-agen (Notion, Slack, GitHub, WA API)
+- Real-time baton execution dengan AI provider calls
+- Telegram/WA channel bridge untuk Support sub-agen
 
-- Dukungan multi-provider LLM (Anthropic, Google, Groq, OpenRouter)
-- Persistent memory untuk agen (antar sesi, antar proyek)
-- Channel tambahan: WhatsApp
-- Search dan web tools untuk agen (Brave, Tavily, Firecrawl)
-- Tool execution yang lebih kaya: shell, file, browser, diffs
-- Diagnostics dan observability yang lebih dalam (OpenTelemetry, Prometheus)
-- Deployment ke VPS/cloud dengan Docker
+### Phase 4 — Operator Control (Planned)
+- Company Dashboard (web UI) untuk monitoring seluruh hierarki
+- Approval gate UI untuk human-in-the-loop decisions
+- OKR tracking dan auto-reporting ke founder
 
----
+## Success Metrics
 
-## Arsitektur
-
-Runtime ini dibangun di atas beberapa prinsip:
-
-**Agen adalah first-class citizens.**
-Setiap agen punya domain, state, dan kontrak komunikasi sendiri.
-Agen tidak saling tahu implementasi internal satu sama lain — mereka berkomunikasi via `Agent_Message` yang terdefinisi.
-
-**Core tetap lean.**
-Capability opsional harus bisa ditambahkan sebagai extension atau plugin, bukan hardcoded ke core.
-Kalau sebuah fitur tidak bisa dibangun sebagai extension, itu sinyal bahwa extension API perlu diperluas.
-
-**Operator tetap in control.**
-Runtime tidak mengambil keputusan destruktif tanpa konfirmasi operator.
-Approval gate ada di titik-titik kritis: proposal ke klien, delivery final, aksi berisiko.
-
-**Local-first, cloud-ready.**
-Runtime berjalan di lokal dengan satu command. Tidak butuh cloud untuk mulai.
-Tapi arsitekturnya dirancang agar bisa di-deploy ke VPS atau container tanpa perubahan besar.
-
----
-
-## Extension dan Provider
-
-Runtime ini dirancang untuk mendukung berbagai provider dan channel via extension system yang diadaptasi dari referensi OpenClaw.
-
-**LLM Providers yang akan didukung:**
-`openai`, `anthropic`, `google`, `groq`, `openrouter`
-
-**Channels:**
-`telegram` (sudah ada), `whatsapp` (planned)
-
-**Memory:**
-`memory-core`, `memory-lancedb`, `memory-wiki`, `active-memory`
-
-**Search & Web:**
-`brave`, `tavily`, `firecrawl`, `web-readability`
-
-**Tools:**
-`openshell`, `file-transfer`, `diffs`, `llm-task`, `webhooks`, `browser`
-
-**Diagnostics:**
-`diagnostics-otel`, `diagnostics-prometheus`
-
-Lihat [`TODO.md`](TODO.md) untuk daftar lengkap adaptasi yang direncanakan.
-
----
-
-## Security
-
-Security di runtime ini adalah tradeoff yang disengaja: default yang aman tanpa membunuh capability.
-
-Tujuannya: tetap powerful untuk pekerjaan nyata sambil membuat jalur berisiko eksplisit dan operator-controlled.
-
-Prinsip utama:
-- Secrets tidak pernah di-commit ke repo
-- UI tidak pernah menampilkan raw API key
-- Aksi destruktif selalu butuh konfirmasi operator
-- Audit log untuk semua approval, handoff, dan aksi operasional penting
-
-Canonical security policy: [`SECURITY.md`](SECURITY.md)
-
----
-
-## Yang Tidak Akan Di-merge (Untuk Sekarang)
-
-- Agent-hierarchy frameworks berlapis-lapis (manager-of-managers / nested planner trees) sebagai arsitektur default
-- Heavy orchestration layers yang menduplikasi infrastructure agen dan tool yang sudah ada
-- Integrasi service komersial yang tidak jelas fit-nya dengan model provider
-- Wrapper channel di atas channel yang sudah didukung tanpa capability atau security gap yang jelas
-- Fitur yang bisa dibangun sebagai extension tapi malah hardcoded ke core
-
-Daftar ini adalah guardrail roadmap, bukan hukum alam.
-Demand yang kuat dan rationale teknis yang kuat bisa mengubahnya.
-
----
-
-## Kenapa TypeScript + Bun?
-
-Runtime ini pada dasarnya adalah sistem orkestrasi: prompts, tools, protokol, dan integrasi.
-TypeScript dipilih agar runtime ini hackable by default.
-Widely known, cepat untuk iterasi, mudah dibaca, dimodifikasi, dan di-extend.
-
-Bun dipilih untuk startup yang cepat, built-in test runner, dan kompatibilitas TypeScript native tanpa build step yang berat.
+- **CEO → Departemen → Sub-Agent latency** < 5 detik per delegation
+- **Baton chain completion rate** > 95% untuk 3-agent chains
+- **MCP tool call accuracy** (tool dipanggil sesuai agent role) > 99%
+- **Context leak rate** (informasi bocor antar departemen) = 0%

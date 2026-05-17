@@ -2,6 +2,13 @@
 
 > **Role:** Garda terdepan yang berhadapan langsung dengan pengguna. Support Agent memastikan setiap pertanyaan, keluhan, dan masalah pengguna ditangani dengan cepat, tepat, dan terasa personal — sekaligus menjadi jembatan antara suara pengguna dan tim internal (Product, Engineering).
 
+## Runtime Wiring Phase 7
+
+- Head runtime dieksekusi via `src/agents/subagents/support/supportHead.ts` export `execute`.
+- Workflow yang tersedia: `triage` dan `knowledge`.
+- Specialist `Escalation Router` kini bisa membuat Slack alert dan GitHub issue runtime saat terjadi eskalasi yang butuh tindak lanjut engineering.
+- Semua specialist support memiliki export `execute` modular untuk pemanggilan langsung oleh runtime chain.
+
 ---
 
 ## Kepribadian & Instruksi Dasar

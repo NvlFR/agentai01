@@ -3,13 +3,21 @@ import { join } from 'node:path'
 import type {
   AgentType,
   Agent_Message,
+  Approval_Gate,
+  Approval_Request,
   Approval_Response,
   ProjectRegistryEntry,
 } from '../../domain/types.js'
+import {
+  executeDepartmentHeadAgent,
+  registerAllSubAgentDepartments,
+  type DepartmentHeadAgentId,
+} from '../../agents/subagents/index.js'
 import type {
   OrchestratorShell,
   RuntimeWorkerDescriptor,
 } from '../../runtime/index.js'
+import { SubAgentRegistry } from '../../registry/subAgentRegistry.js'
 import {
   createDefaultAgentAdapters,
   makeApprovalResponseMessage,
@@ -24,12 +32,35 @@ import {
 import { RuntimeMessageBus, type RuntimeEvent } from './messageBus.js'
 import { CeoRuntime } from '../../agents/ceo/index.js'
 import { ProductRuntime } from '../../agents/product/index.js'
+import {
+  createSpecialistToolExecutor,
+  SubAgentSpecialistExecutor,
+  type SpecialistTextProvider,
+  type SpecialistToolExecutor,
+  type SubAgentExecutorMode,
+} from '../../runtime/subagents/index.js'
 
 export type RuntimeOperationalAppOptions = {
   shell?: OrchestratorShell
   workers?: RuntimeWorkerDescriptor[]
   workspaceBaseDir?: string
   now?: string
+  specialistProvider?: SpecialistTextProvider
+  specialistToolExecutor?: SpecialistToolExecutor
+  specialistMode?: SubAgentExecutorMode
+}
+
+export type DepartmentRunRecord = {
+  runId: string
+  headAgentId: DepartmentHeadAgentId
+  workflow: string
+  startedAt: string
+  completedAt: string
+  status: 'completed' | 'failed'
+  requiresApproval: boolean
+  summary: string
+  output: Record<string, unknown>
+  approvalRequestId?: string
 }
 
 export class RuntimeOperationalApp {
@@ -39,6 +70,12 @@ export class RuntimeOperationalApp {
   readonly stores: RuntimeAgentStores
   readonly adapters: Record<AgentType, AgentAdapter>
   readonly bus: RuntimeMessageBus
+  readonly subAgentRegistry: SubAgentRegistry
+  readonly departmentRuns: DepartmentRunRecord[] = []
+
+  private readonly specialistProvider?: SpecialistTextProvider
+  private readonly specialistToolExecutor: SpecialistToolExecutor
+  private readonly specialistMode: SubAgentExecutorMode
 
   constructor(options: RuntimeOperationalAppOptions = {}) {
     const now = options.now ?? new Date().toISOString()
@@ -74,6 +111,12 @@ export class RuntimeOperationalApp {
     }
     this.adapters = createDefaultAgentAdapters(this, this.stores)
     this.bus = new RuntimeMessageBus(this, this.adapters)
+    this.subAgentRegistry = new SubAgentRegistry()
+    registerAllSubAgentDepartments(this.subAgentRegistry)
+    this.specialistProvider = options.specialistProvider
+    this.specialistToolExecutor =
+      options.specialistToolExecutor ?? createSpecialistToolExecutor(readToolExecutorOptionsFromEnv())
+    this.specialistMode = options.specialistMode ?? 'auto'
     this.bus.events.push({
       kind: 'boot',
       timestamp: now,
@@ -171,6 +214,69 @@ export class RuntimeOperationalApp {
     }
   }
 
+  async runDepartmentWorkflow(args: {
+    headAgentId: DepartmentHeadAgentId
+    payload: unknown
+    workflow?: string
+    mode?: SubAgentExecutorMode
+    now?: string
+    requireApproval?: boolean
+    projectId?: string
+  }): Promise<DepartmentRunRecord> {
+    const now = args.now ?? new Date().toISOString()
+    const payload = withWorkflowPayload(args.payload, args.workflow)
+    const executor = new SubAgentSpecialistExecutor({
+      registry: this.subAgentRegistry,
+      mode: args.mode ?? this.specialistMode,
+      provider: this.specialistProvider,
+      toolExecutor: this.specialistToolExecutor,
+      now: () => now,
+    })
+
+    const result = await executeDepartmentHeadAgent(args.headAgentId, {
+      registry: this.subAgentRegistry,
+      payload,
+      mode: args.mode ?? this.specialistMode,
+      provider: this.specialistProvider,
+      toolExecutor: this.specialistToolExecutor,
+      executor,
+      now,
+    })
+
+    const output = structuredClone(result.output)
+    const status = output['status'] === 'failed' ? 'failed' : 'completed'
+    const workflow =
+      typeof output['workflow'] === 'string' ? output['workflow'] : args.workflow ?? 'default'
+    const record: DepartmentRunRecord = {
+      runId: `dept-run:${args.headAgentId}:${now}`,
+      headAgentId: args.headAgentId,
+      workflow,
+      startedAt: now,
+      completedAt: now,
+      status,
+      requiresApproval: args.requireApproval === true,
+      summary: result.summary,
+      output,
+    }
+
+    if (args.requireApproval && status === 'completed') {
+      const approval = buildDepartmentApprovalRequest(record, args.projectId)
+      this.shell.recordApprovalRequest(approval)
+      record.approvalRequestId = approval.request_id
+    }
+
+    this.departmentRuns.unshift(record)
+    this.bus.events.push({
+      kind: 'department_run',
+      timestamp: now,
+      head_agent_id: args.headAgentId,
+      workflow,
+      status,
+      requires_approval: args.requireApproval === true,
+    })
+    return record
+  }
+
   executeOwnerDirective(rawInput: string, now = new Date().toISOString()): string {
     const result = this.stores.ceo.executeOwnerDirective(
       rawInput,
@@ -234,4 +340,94 @@ export function createRuntimeOperationalApp(
   options: RuntimeOperationalAppOptions = {},
 ): RuntimeOperationalApp {
   return new RuntimeOperationalApp(options)
+}
+
+function withWorkflowPayload(payload: unknown, workflow?: string): unknown {
+  if (!workflow) {
+    return payload
+  }
+
+  const root =
+    typeof payload === 'object' && payload !== null
+      ? (payload as Record<string, unknown>)
+      : { payload }
+  return {
+    ...root,
+    workflow,
+  }
+}
+
+function readToolExecutorOptionsFromEnv() {
+  const env = process.env
+  return {
+    notionToken: env['NOTION_TOKEN'],
+    notionParentPageId: env['NOTION_PARENT_PAGE_ID'],
+    githubToken: env['GITHUB_TOKEN'],
+    githubDefaultOwner: env['GITHUB_OWNER'],
+    githubDefaultRepo: env['GITHUB_REPO'],
+    slackToken: env['SLACK_BOT_TOKEN'],
+    slackDefaultChannel: env['SLACK_DEFAULT_CHANNEL'],
+  }
+}
+
+function buildDepartmentApprovalRequest(
+  record: DepartmentRunRecord,
+  projectId?: string,
+): Approval_Request {
+  return {
+    request_id: `${record.runId}:approval`,
+    gate: mapHeadToApprovalGate(record.headAgentId),
+    from_agent: mapHeadToAgentType(record.headAgentId),
+    timestamp: record.completedAt,
+    project_id: projectId,
+    summary: record.summary,
+    recommendation: `Review ${record.workflow} output from ${record.headAgentId}.`,
+    risks: collectApprovalRisks(record),
+    options: ['approve', 'reject', 'revise'],
+    artifact_ref: `runtime://${record.runId}`,
+  }
+}
+
+function collectApprovalRisks(record: DepartmentRunRecord): string[] {
+  const risks = record.output['risks']
+  if (Array.isArray(risks)) {
+    return risks.filter((item): item is string => typeof item === 'string')
+  }
+  if (record.status === 'failed') {
+    const reason = record.output['reason']
+    return [typeof reason === 'string' ? reason : 'Department workflow failed.']
+  }
+  return [`Validate ${record.workflow} output before downstream execution.`]
+}
+
+function mapHeadToApprovalGate(headAgentId: DepartmentHeadAgentId): Approval_Gate {
+  switch (headAgentId) {
+    case 'sales-head':
+      return 'proposal_final'
+    case 'product-head':
+      return 'spec_final'
+    case 'engineering-head':
+      return 'delivery_final'
+    default:
+      return 'strategic_decision'
+  }
+}
+
+function mapHeadToAgentType(headAgentId: DepartmentHeadAgentId): AgentType {
+  switch (headAgentId) {
+    case 'ceo-agent':
+      return 'ceo_agent'
+    case 'marketing-head':
+      return 'marketing_agent'
+    case 'sales-head':
+      return 'sales_agent'
+    case 'product-head':
+      return 'product_agent'
+    case 'engineering-head':
+      return 'engineering_agent'
+    case 'pm-head':
+      return 'project_manager_agent'
+    case 'support-head':
+      return 'support_agent'
+  }
 }

@@ -2,6 +2,13 @@
 
 > **Role:** Menggerakkan pipeline penjualan dari lead generation hingga closing — termasuk kualifikasi prospek, penyusunan proposal, follow-up, dan pelacakan pipeline. Sales Agent berkoordinasi erat dengan Marketing Agent (untuk lead inbound) dan Product Agent (untuk positioning yang akurat).
 
+## Runtime Wiring Phase 7
+
+- Head runtime dieksekusi via `src/agents/subagents/sales/salesHead.ts` export `execute`.
+- Workflow yang tersedia: `qualification` dan `intelligence`.
+- Semua specialist sales menyediakan export `execute` modular agar bisa dipanggil langsung oleh runtime atau test harness.
+- Hasil workflow sales dapat dibungkus menjadi approval gate `proposal_final` saat owner sign-off diperlukan.
+
 ---
 
 ## Kepribadian & Instruksi Dasar

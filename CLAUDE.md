@@ -1,76 +1,150 @@
-# CLAUDE.md
+# CLAUDE.md — Context for Claude Agent
 
-Telegraph style. AI Company Runtime Platform — runtime platform untuk agen otonom.
+> File ini dibaca oleh Claude saat memulai session di repo ini.
+> Berisi orientasi cepat, prinsip kerja, dan panduan navigasi kode.
 
-## Commands
+---
 
-- Install: `npm install`
-- Dev Server: `npm run dev`
-- Typecheck: `npm run check`
-- Unit Tests: `bun test`
-- Smoke Test: `npm run runtime:smoke`
-- Worker: `npm run runtime:worker`
-- Scheduler: `npm run runtime:scheduler`
-- Telegram: `npm run runtime:telegram`
+## Apa Repo Ini?
 
-## Code Style
+`agentai01` adalah **AI Company Runtime Platform** — sistem di mana sebuah perusahaan dijalankan oleh tim agen AI dengan hierarki 4 tingkat:
 
-- **TypeScript ESM**: Strict mode, no `any`, no `@ts-nocheck`.
-- **Runtime Branching**: Prefer discriminated unions over freeform strings.
-- **Project Isolation**: Agents only cross via domain types & registry contracts.
-- **Provider**: OpenAI-compatible default. Adapter patterns for Anthropic/Google.
-- **Secrets**: Mask `AI_API_KEY`, use `.env.local` for credentials.
-- **File Size**: Split around ~700 LOC.
-- **Comments**: Concise, logic-only.
+```
+Human Operator → CEO Agent → Department Heads (7) → Sub-Agent Specialists (33)
+```
 
-## Testing
+Proyek ini dibangun secara kolaboratif oleh beberapa AI coding agent (Codex, Gemini, Kiro, Claude). Anda mungkin menemukan kode dari session sebelumnya — baca dulu, pahami, baru edit.
 
-- **Engine**: Bun test.
-- **Location**: Colocated `*.test.ts`.
-- **Strategy**: Behavior-driven, clean state (env/timers/mocks) per test.
-- **Mocks**: Narrow mocks, prefer injection.
+---
 
-## Aturan Global (berlaku untuk SEMUA task)
+## Bacaan Wajib Sebelum Kerja
 
-**Larangan keras di setiap task:**
-- Dilarang menghasilkan file yang hanya berisi `export type {}` atau type definitions tanpa runtime code
-- Dilarang menggunakan `throw new Error('not implemented')` sebagai implementasi final
-- Dilarang menggunakan `() => {}` sebagai body function yang seharusnya punya behavior
-- Dilarang meninggalkan `// TODO` di production code path — catat di `TODO.md` root jika benar-benar blocked
-- Dilarang menggunakan `any`; gunakan real types, `unknown`, atau narrow adapter
-- Dilarang import relatif tanpa suffix `.js` pada TypeScript ESM
-- Dilarang copy platform-specific OpenClaw code (iOS, macOS native, browser extension, product-specific glue)
-- Dilarang commit jika `npm run check` masih error
-- Dilarang commit jika `bun test` masih failing untuk file yang disentuh
+1. `AGENTS.md` — root rules, map direktori, commands
+2. `CODEX.md` — coding standards ketat
+3. `SECURITY.md` — security policy
+4. `.kiro/specs/detail-agent/` — spesifikasi tiap agent
+5. `.kiro/specs/subagent-hierarchy-infrastructure/` — specs hierarki sub-agent
 
-**Verifikasi wajib di setiap task:**
-1. `npm run check` — zero TypeScript errors
-2. `bun test <file>.test.ts` — semua test pass
-3. **AI smoke test** — jalankan `npm run runtime:smoke` dan pastikan output tidak ada error baru yang disebabkan oleh perubahan task ini. Smoke test memanggil AI provider nyata via `AI_BASE_URL` + `AI_API_KEY`.
+---
 
-**Test dan boundary rules:**
-- External boundary wajib pakai Zod atau schema helper yang sudah ada.
-- Module parse/serialize wajib punya round-trip behavior test.
-- Time-dependent behavior wajib pakai injected `now`, bukan `Date.now()` langsung di test.
-- Timer, env, globals, mocks, dan temp dirs wajib dibersihkan.
-- Filesystem test wajib pakai `createTempDirectory()` setelah tersedia.
-- Index barrel hanya re-export; implementasi tetap di sub-file.
+## Orientasi Cepat Codebase
 
-**Format bukti selesai:**
-Setiap task dianggap selesai hanya jika ada bukti nyata:
-- Output `npm run check` clean
-- Output `bun test` semua pass
-- Output `npm run runtime:smoke` tidak ada regression
+### File paling penting:
 
+```
+src/domain/types.ts           ← Lifecycle, messages, approval gates — sumber kebenaran
+src/domain/hierarchy.ts       ← AgentHierarchyConfig + Zod schema (4-tier hierarchy)
+src/registry/AgentRegistry.ts ← State, history, access control untuk domain agents
+src/registry/subAgentRegistry.ts ← SubAgentRegistry untuk pohon hierarki sub-agen
+src/runtime/scratchpad.ts     ← IntraDepartmentScratchpad (isolated dept memory)
+src/runtime/batonPassing.ts   ← BatonPassingOrchestrator (delegate→pass→fail)
+src/agents/subagents/         ← 33 sub-agent configs across 7 departments
+```
 
-## Project Map
+### Department sub-agents:
 
-- `src/domain/`: Core types, contracts, lifecycle.
-- `src/agents/`: Specialized agent implementations.
-- `src/runtime/`: Orchestrator core.
-- `src/runtime-app/`: Operator shell, HTTP server, storage, providers.
-- `src/registry/`: `AgentRegistry` (central state).
-- `src/app/`: Application-level read models/snapshots.
-- `.kiro/specs/`: Requirements, designs, and task lists.
+| Dept | Path | Jumlah Specialist |
+|------|------|-------------------|
+| CEO | `src/agents/subagents/ceo/` | 4 |
+| Marketing | `src/agents/subagents/marketing/` | 6 |
+| Engineering | `src/agents/subagents/engineering/` | 6 |
+| Product | `src/agents/subagents/product/` | 5 |
+| PM | `src/agents/subagents/pm/` | 5 |
+| Sales | `src/agents/subagents/sales/` | 5 |
+| Support | `src/agents/subagents/support/` | 6 |
 
-Refer to `AGENTS.md` for full policy and `VISION.md` for product roadmap.
+---
+
+## Prinsip Kerja Claude di Repo Ini
+
+### DO ✅
+- Baca specs di `.kiro/specs/` sebelum implementasi baru
+- Gunakan `validateIntegrity()` setelah batch register sub-agents
+- Tulis colocated `*.test.ts` untuk setiap modul baru
+- Gunakan `makeSpecialistConfig()` helper untuk sub-agent configs
+- Import dengan `.js` suffix (`import from './module.js'`)
+- Jalankan `npm run check` dan `bun test` sebelum selesai
+
+### DON'T ❌
+- Jangan tulis `throw new Error('not implemented')` sebagai implementasi final
+- Jangan gunakan `any` — pakai `unknown` atau narrow adapter
+- Jangan import tanpa `.js` suffix
+- Jangan hardcode API keys atau secrets
+- Jangan push langsung ke `main`
+- Jangan buat file kosong yang hanya berisi `export type {}`
+
+---
+
+## Cara Menambah Sub-Agent Baru
+
+```typescript
+// 1. Gunakan makeSpecialistConfig
+export const MY_SPECIALIST_CONFIG = makeSpecialistConfig({
+  agentId: 'dept-my-specialist',
+  parentAgentId: 'dept-head',
+  departmentName: 'dept',
+  allowedMcpTools: ['notion', 'web_search'],
+  roleDescription: 'Apa yang dilakukan specialist ini.',
+})
+
+// 2. Tambahkan ke array dept configs
+export const DEPT_CONFIGS = [...existingConfigs, MY_SPECIALIST_CONFIG]
+
+// 3. Update subAgentIds di Head config
+export const DEPT_HEAD_CONFIG = {
+  ...existingHead,
+  subAgentIds: [...existingHead.subAgentIds, 'dept-my-specialist'],
+}
+
+// 4. Jalankan validateIntegrity setelah register
+```
+
+---
+
+## Cara Menjalankan Baton Chain
+
+```typescript
+import { BatonPassingOrchestrator } from './src/runtime/batonPassing.js'
+import { IntraDepartmentScratchpad } from './src/runtime/scratchpad.js'
+import { MARKETING_CAMPAIGN_CHAIN } from './src/agents/subagents/marketing/index.js'
+
+const pad = new IntraDepartmentScratchpad('marketing')
+const orch = new BatonPassingOrchestrator(pad)
+
+// Delegate
+const { taskId } = orch.delegate({
+  delegatorId: 'marketing-head',
+  departmentName: 'marketing',
+  agentChain: [...MARKETING_CAMPAIGN_CHAIN],
+  payload: { brief: 'Q2 Campaign' },
+}) as { success: true; taskId: string }
+
+// Each sub-agent calls pass() after completion
+orch.pass({ taskId, agentId: 'marketing-content-creator', output: { draft: 'Article...' } })
+orch.pass({ taskId, agentId: 'marketing-seo-specialist', output: { keywords: ['ai'] } })
+orch.pass({ taskId, agentId: 'marketing-campaign-manager', output: { sent: 1000 } })
+
+// Final output
+const result = orch.getFinalOutput(taskId) // { sent: 1000 }
+```
+
+---
+
+## Session Checklist
+
+Sebelum mengakhiri session:
+
+- [ ] `npm run check` — zero TypeScript errors
+- [ ] `bun test` — semua test pass (atau failing test sudah didokumentasikan)
+- [ ] Tidak ada `// TODO` baru di production code path
+- [ ] Tidak ada secret yang terekspos
+- [ ] Commit sudah diformat dengan conventional-ish message
+
+---
+
+## Mission Control
+
+Jika ada Mission Control (JARVIS) di `localhost:3010`, laporkan task:
+- **Start**: `POST /api/external/task` dengan `action: "start"`
+- **Complete**: `POST /api/external/task` dengan `action: "complete"`
+- Hanya untuk task nyata — bukan diskusi/brainstorming
