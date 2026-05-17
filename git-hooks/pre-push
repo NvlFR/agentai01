@@ -6,7 +6,7 @@ set -e
 
 echo "⟳  pre-push: running tests (bun test)..."
 
-if ! bun test; then
+if ! bun run test; then
   echo ""
   echo "✖  pre-push: tests failed. Fix failing tests before pushing."
   echo "   To bypass (emergency only): git push --no-verify"

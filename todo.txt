@@ -1,0 +1,130 @@
+
+### 📚 Knowledge Base
+Baca file-file ini **sebelum mengerjakan task apapun**:
+
+| File | Isi |
+|------|-----|
+| `AGENTS.md` | Aturan dan konvensi agent |
+| `CODEX.md` | Dokumentasi project |
+| `SECURITY.md` | Security policy dan best practices |
+
+---
+
+### 🔒 Security Rules
+> **Jangan copy mentah dari `restored-src/`** — semua referensi harus **diadaptasikan** ke konvensi project ini.
+
+---
+
+### 📋 Referensi Source
+Semua referensi diambil dari `restored-src/` dan wajib diadaptasi sebelum diterapkan.
+
+---
+
+### ✅ Area yang Harus Diimplementasikan
+
+#### Core Modules
+| Path | Deskripsi |
+|------|-----------|
+| `src/context/*` | Context management |
+| `src/utils/*` | Utilitas lintas codebase (lihat detail di bawah) |
+| `src/suggestions/*` | Autocomplete & suggestion system |
+| `src/ultraplan/*` | Ultraplan feature |
+| `src/teleport/*` | Export/teleport environment |
+| `src/telemetry/*` | Logging & tracing |
+| `src/skills/*` | Sistem skill yang dapat dimuat ke agent |
+| `src/tasks/*` | Runtime task executor (async/background) |
+| `src/tools/*` | Katalog tool yang bisa dipanggil model/agent |
+| `src/model/*` | Model resolver, capability, fallback |
+| `src/message/*` | Transform & helper message |
+| `src/memory/*` | Memory management |
+| `src/github/*` | GitHub integration |
+| `src/git/*` | Git helper operations |
+| `src/filePersistence/*` | State/artefak yang disimpan ke disk |
+| `src/computerUse/*` | Computer use / UI automation |
+| `src/query/*` | Query pipeline, transform & normalisasi |
+| `src/upstreamproxy/*` | Proxy layer ke upstream service |
+| `src/voice/*` | Voice mode capability flag |
+
+#### Services Layer (`src/services/*`)
+| Subfolder | Deskripsi |
+|-----------|-----------|
+| `services/api` | Integrasi provider/model API, retry, parsing response |
+| `services/mcp` | Koneksi dan operasi MCP |
+| `services/analytics` | Event telemetry & analytics |
+| `services/compact` | Kompresi/summarization context |
+| `services/lsp` | Integrasi LSP/editor intelligence |
+| `services/plugins` | Operasi plugin di level service |
+| `services/settingsSync` | Sinkronisasi settings |
+| `services/remoteManagedSettings` | Settings dari remote/managed source |
+| `services/SessionMemory` | Memory management per session |
+| `services/teamMemorySync` | Sinkronisasi memory antar teammate |
+| `services/PromptSuggestion` | Prompt suggestion helper |
+| `services/MagicDocs` | Magic docs feature |
+| `services/toolUseSummary` | Summarization tool use |
+
+#### Tools Penting (`src/tools/*`)
+| Tool | Fungsi |
+|------|--------|
+| `BashTool` | Eksekusi bash |
+| `PowerShellTool` | Eksekusi PowerShell |
+| `FileReadTool`, `FileWriteTool`, `FileEditTool` | Akses & modifikasi file |
+| `GrepTool`, `GlobTool` | Search & discovery di codebase |
+| `MCPTool`, `ListMcpResourcesTool`, `ReadMcpResourceTool`, `McpAuthTool` | Interaksi MCP |
+| `AgentTool`, `SendMessageTool` | Interaksi antar agent/teammate |
+| `Task*` | Buat, lihat, update, stop task |
+| `SkillTool` | Eksekusi skill |
+| `WebFetchTool`, `WebSearchTool` | Akses web |
+| `LSPTool` | Code intelligence |
+| `NotebookEditTool` | Edit notebook |
+| `TodoWriteTool` | Tulis todo/state kerja |
+| `EnterPlanModeTool`, `ExitPlanModeTool` | Kontrol mode plan |
+| `EnterWorktreeTool`, `ExitWorktreeTool` | Kontrol worktree |
+
+#### Utils Detail (`src/utils/*`)
+| Subfolder | Fungsi |
+|-----------|--------|
+| `utils/plugins` | Loading, validasi & discovery plugin |
+| `utils/permissions` | Logika izin, classifier, allow/deny guard |
+| `utils/bash` | Parsing, validasi & keamanan command bash |
+| `utils/shell` | Integrasi shell lintas platform |
+| `utils/settings` | Baca/tulis/validasi settings & schema |
+| `utils/model` | Resolver model, capability, fallback & metadata |
+| `utils/computerUse` | Helper automation/computer-use |
+| `utils/swarm` | Mode swarm/teammate: spawn, permission sync, reconnect |
+| `utils/hooks` | Hook runtime non-React |
+| `utils/task` | Output task, formatting & progress |
+| `utils/telemetry` | Logger, tracing & exporter |
+| `utils/mcp` | MCP helper tambahan |
+| `utils/memory` | Memory helper |
+| `utils/messages` | Transform & helper message |
+| `utils/secureStorage` | Penyimpanan aman credential/token |
+| `utils/git` | Git operations helper |
+| `utils/suggestions` | Autocomplete & suggestion system |
+| `utils/teleport` | Export/teleport environment helper |
+| `utils/nativeInstaller` | Instalasi helper native |
+| `utils/processUserInput` | Preprocessing input user |
+
+file file di atas adalah referensi dari restored-src*
+yang dimana di project kita ini belum ada jadi harus di implementasikan
+dan disesuaikan dengan project kita
+
+---
+
+### 📤 Output Requirements
+1. **Implementasi nyata** — bukan deskripsi atau rencana
+2. **Kode rapi** — ikuti konvensi project (lihat `AGENTS.md`)
+3. **Summary file** — simpan di `summary/YYYY-MM-DD-task-X-Y-description.md`
+
+---
+
+### 🚀 Sub-Agent Launching
+Kamu diizinkan meluncurkan sub-agent untuk membantu menyelesaikan task.
+
+**Syarat sebelum launch sub-agent:**
+1. Buat folder `specs/` terlebih dahulu
+2. Definisikan task di dalamnya
+3. Setelah task terdefinisi → boleh launch sub-agent **sebanyak yang dibutuhkan**
+
+---
+
+Mau ada bagian yang disesuaikan lagi, Nov?

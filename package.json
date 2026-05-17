@@ -21,7 +21,7 @@
     "check": "tsc -p tsconfig.json --noEmit",
     "check:adaptation-final": "node scripts/check-adaptation-final.mjs",
     "build": "tsc -p tsconfig.json",
-    "test": "bun test --path-ignore-patterns 'referensi/**' --path-ignore-patterns 'src/runtime-app/ui/node_modules/**'",
+    "test": "bun test --path-ignore-patterns 'referensi/**' --path-ignore-patterns 'restored-src/**' --path-ignore-patterns 'src/runtime-app/ui/node_modules/**'",
     "postinstall": "node scripts/apply-patches.mjs"
   },
   "devDependencies": {

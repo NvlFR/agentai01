@@ -1,14 +1,16 @@
 import { describe, expect, it, mock } from 'bun:test'
 import { createPluginLoader } from './loader.js'
-import * as fs from '../infra/fs.js'
+import type { Result } from '../shared/index.js'
 import { ok, err } from '../shared/index.js'
 
-mock.module('../infra/fs.js', () => ({
-  readFileSafe: mock(),
-}))
-
 describe('createPluginLoader', () => {
-  const loader = createPluginLoader({ pluginDir: '/plugins' })
+  const readFile = mock(
+    async (_path: string): Promise<Result<string, string>> => err('File not found'),
+  )
+  const loader = createPluginLoader({
+    pluginDir: '/plugins',
+    readFile,
+  })
 
   it('loads and validates a valid manifest', async () => {
     const validManifest = {
@@ -18,9 +20,7 @@ describe('createPluginLoader', () => {
       description: 'A test plugin',
     }
 
-    const { readFileSafe } = await import('../infra/fs.js')
-    // @ts-ignore
-    readFileSafe.mockResolvedValue(ok(JSON.stringify(validManifest)))
+    readFile.mockResolvedValueOnce(ok(JSON.stringify(validManifest)))
 
     const manifest = await loader.loadManifest('test-plugin')
     expect(manifest).toEqual(validManifest)
@@ -34,9 +34,7 @@ describe('createPluginLoader', () => {
       description: 'A test plugin',
     }
 
-    const { readFileSafe } = await import('../infra/fs.js')
-    // @ts-ignore
-    readFileSafe.mockResolvedValue(ok(JSON.stringify(invalidManifest)))
+    readFile.mockResolvedValueOnce(ok(JSON.stringify(invalidManifest)))
 
     try {
       await loader.loadManifest('test-plugin')
@@ -47,9 +45,7 @@ describe('createPluginLoader', () => {
   })
 
   it('throws error if file read fails', async () => {
-    const { readFileSafe } = await import('../infra/fs.js')
-    // @ts-ignore
-    readFileSafe.mockResolvedValue(err('File not found'))
+    readFile.mockResolvedValueOnce(err('File not found'))
 
     try {
       await loader.loadManifest('test-plugin')

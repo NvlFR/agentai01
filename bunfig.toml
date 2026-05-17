@@ -1,2 +1,4 @@
 [test]
 preload = ["./test/setup.ts"]
+isolate = true
+pathIgnorePatterns = ["referensi/**", "restored-src/**", "src/runtime-app/ui/node_modules/**"]

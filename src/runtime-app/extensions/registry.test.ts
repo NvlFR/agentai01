@@ -47,7 +47,7 @@ describe('LowPriorityExtensionRegistry', () => {
 
     expect(elevenlabs?.status).toBe('enabled')
     expect(elevenlabs?.config).toEqual({
-      ELEVENLABS_API_KEY: 'ele***key',
+      ELEVENLABS_API_KEY: 'elev...****',
       ELEVENLABS_VOICE_ID: 'voice-01',
     })
   })

@@ -25,8 +25,18 @@ export type SendWhatsAppReactionParams = {
   emoji: string
 }
 
-export async function sendWhatsAppText(params: SendWhatsAppTextParams): Promise<{ messageId: string; jid: string }> {
-  const controller = getRegisteredWhatsAppConnectionController(params.accountId)
+type ConnectionControllerResolver = typeof getRegisteredWhatsAppConnectionController
+
+type SendOptions = {
+  getController?: ConnectionControllerResolver
+}
+
+export async function sendWhatsAppText(
+  params: SendWhatsAppTextParams,
+  options: SendOptions = {},
+): Promise<{ messageId: string; jid: string }> {
+  const controller =
+    (options.getController ?? getRegisteredWhatsAppConnectionController)(params.accountId)
   const active = controller?.getActiveListener()
   if (!active) {
     throw new Error(`No active WhatsApp connection for account: ${params.accountId}`)
@@ -53,8 +63,12 @@ export async function sendWhatsAppText(params: SendWhatsAppTextParams): Promise<
   return { messageId: result.key.id || 'unknown', jid }
 }
 
-export async function sendWhatsAppMedia(params: SendWhatsAppMediaParams): Promise<{ messageId: string; jid: string }> {
-  const controller = getRegisteredWhatsAppConnectionController(params.accountId)
+export async function sendWhatsAppMedia(
+  params: SendWhatsAppMediaParams,
+  options: SendOptions = {},
+): Promise<{ messageId: string; jid: string }> {
+  const controller =
+    (options.getController ?? getRegisteredWhatsAppConnectionController)(params.accountId)
   const active = controller?.getActiveListener()
   if (!active) {
     throw new Error(`No active WhatsApp connection for account: ${params.accountId}`)
@@ -83,8 +97,12 @@ export async function sendWhatsAppMedia(params: SendWhatsAppMediaParams): Promis
   return { messageId: result.key.id || 'unknown', jid }
 }
 
-export async function sendWhatsAppReaction(params: SendWhatsAppReactionParams): Promise<void> {
-  const controller = getRegisteredWhatsAppConnectionController(params.accountId)
+export async function sendWhatsAppReaction(
+  params: SendWhatsAppReactionParams,
+  options: SendOptions = {},
+): Promise<void> {
+  const controller =
+    (options.getController ?? getRegisteredWhatsAppConnectionController)(params.accountId)
   const active = controller?.getActiveListener()
   if (!active) {
     throw new Error(`No active WhatsApp connection for account: ${params.accountId}`)

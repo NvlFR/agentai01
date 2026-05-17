@@ -1,4 +1,4 @@
-import { describe, it, expect, mock, beforeEach, afterEach } from 'bun:test'
+import { describe, it, expect, mock } from 'bun:test'
 import { createWhatsAppConnectionController, registerWhatsAppConnectionController, getRegisteredWhatsAppConnectionController, unregisterWhatsAppConnectionController } from './connection-controller.js'
 
 // Mock dependencies
@@ -20,12 +20,6 @@ mock.module('baileys', () => ({
   }),
   fetchLatestBaileysVersion: async () => ({ version: [2, 3000, 1] }),
   DisconnectReason: { loggedOut: 401 }
-}))
-
-mock.module('./auth-store.js', () => ({
-  resolveWebCredsPath: () => 'mock-path',
-  enqueueCredsSave: async () => {},
-  restoreCredsFromBackupIfNeeded: async () => false
 }))
 
 describe('WhatsApp Connection Controller', () => {

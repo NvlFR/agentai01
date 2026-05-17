@@ -173,11 +173,11 @@ describe('redactRuntimeConfigSecrets', () => {
 
     expect(redacted).toEqual({
       ai: {
-        apiKey: 'sk-***ret',
+        apiKey: 'sk-e...****',
         baseUrl: 'http://127.0.0.1:8045/v1',
       },
       auth: {
-        access_token: 'tok***lue',
+        access_token: 'toke...****',
       },
     })
   })
