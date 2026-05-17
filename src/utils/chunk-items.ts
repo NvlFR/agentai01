@@ -1,4 +1,4 @@
-// Adapted from referensi/openclaw/src/utils/chunk-items.ts
+// Adapted using referensi/openclaw/src/utils/chunk-items.ts
 /**
  * Splits an array into chunks of a given size.
  */

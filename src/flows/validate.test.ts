@@ -1,4 +1,4 @@
-// Adapted from referensi/openclaw/src/flows/validate.test.ts
+// Adapted using referensi/openclaw/src/flows/validate.test.ts
 import { describe, expect, test } from 'bun:test'
 import { validateFlowDefinition } from './validate.js'
 

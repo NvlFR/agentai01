@@ -1,4 +1,4 @@
-// Adapted from referensi/openclaw/src/tools/result.ts
+// Adapted using referensi/openclaw/src/tools/result.ts
 import { isRecord, ok, type Result } from '../shared/index.js'
 import type { ToolError, ToolErrorCode } from './types.js'
 

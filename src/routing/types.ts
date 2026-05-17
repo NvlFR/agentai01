@@ -1,4 +1,6 @@
-// Adapted from referensi/openclaw/src/routing/types.ts
+// Adapted using referensi/openclaw/src/routing/types.ts
+
+export const DEAD_LETTER_REASONS = ['invalid-message', 'no-route'] as const
 
 export type RoutedMessage = {
   readonly id: string
@@ -26,10 +28,14 @@ export type RouteResolution = {
 
 export type DeadLetterMessage = {
   readonly message: RoutedMessage
-  readonly reason: 'invalid-message' | 'no-route'
+  readonly reason: (typeof DEAD_LETTER_REASONS)[number]
   readonly detail: string
 }
 
 export type RoutingTable = {
   readonly routes: readonly RouteRule[]
+}
+
+export function isDeadLetterReason(value: unknown): value is (typeof DEAD_LETTER_REASONS)[number] {
+  return typeof value === 'string' && DEAD_LETTER_REASONS.includes(value as (typeof DEAD_LETTER_REASONS)[number])
 }

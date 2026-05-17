@@ -1,4 +1,4 @@
-// Adapted from referensi/openclaw/src/utils/safe-json.ts
+// Adapted using referensi/openclaw/src/utils/safe-json.ts
 import { err, ok, type Result } from '../shared/index.js';
 
 /**

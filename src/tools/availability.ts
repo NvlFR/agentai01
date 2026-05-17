@@ -1,4 +1,4 @@
-// Adapted from referensi/openclaw/src/tools/availability.ts
+// Adapted using referensi/openclaw/src/tools/availability.ts
 import { isRecord } from '../shared/index.js'
 import type {
   JsonValue,

@@ -1,4 +1,4 @@
-// Adapted from referensi/openclaw/src/routing/resolve.test.ts
+// Adapted using referensi/openclaw/src/routing/resolve.test.ts
 import { describe, expect, test } from 'bun:test'
 import { DeadLetterQueue } from './dead-letter.js'
 import { resolveRoute, routeOrDeadLetter, validateRoutedMessage } from './resolve.js'

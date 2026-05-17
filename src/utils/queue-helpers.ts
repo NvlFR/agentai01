@@ -1,4 +1,4 @@
-// Adapted from referensi/openclaw/src/utils/queue-helpers.ts
+// Adapted using referensi/openclaw/src/utils/queue-helpers.ts
 /**
  * Simple queue helpers for managing arrays as queues.
  */

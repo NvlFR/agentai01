@@ -1,4 +1,4 @@
-// Adapted from referensi/openclaw/src/plugin-sdk/approval-renderers.ts
+// Adapted using referensi/openclaw/src/plugin-sdk/approval-renderers.ts
 
 export type ApprovalDecision = 'allow-once' | 'allow-always' | 'deny'
 

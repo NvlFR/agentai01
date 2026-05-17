@@ -1,7 +1,10 @@
-// Adapted from referensi/openclaw/src/flows/types.ts
+// Adapted using referensi/openclaw/src/flows/types.ts
 
-export type FlowStepStatus = 'pending' | 'running' | 'succeeded' | 'failed' | 'skipped'
-export type FlowStatus = 'pending' | 'running' | 'succeeded' | 'failed' | 'recovering'
+export const FLOW_STEP_STATUSES = ['pending', 'running', 'succeeded', 'failed', 'skipped'] as const
+export type FlowStepStatus = (typeof FLOW_STEP_STATUSES)[number]
+
+export const FLOW_STATUSES = ['pending', 'running', 'succeeded', 'failed', 'recovering'] as const
+export type FlowStatus = (typeof FLOW_STATUSES)[number]
 
 export type FlowStepContext<TState = Record<string, unknown>> = {
   readonly flow_id: string
@@ -40,4 +43,12 @@ export type FlowError = {
   readonly code: 'step_failed' | 'definition_invalid'
   readonly message: string
   readonly step_id?: string
+}
+
+export function isFlowStepStatus(value: unknown): value is FlowStepStatus {
+  return typeof value === 'string' && FLOW_STEP_STATUSES.includes(value as FlowStepStatus)
+}
+
+export function isFlowStatus(value: unknown): value is FlowStatus {
+  return typeof value === 'string' && FLOW_STATUSES.includes(value as FlowStatus)
 }

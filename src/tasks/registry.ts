@@ -1,4 +1,4 @@
-// Adapted from referensi/openclaw/src/tasks/registry.ts
+// Adapted using referensi/openclaw/src/tasks/registry.ts
 import { err, ok, type Result } from '../shared/index.js'
 import { wouldCreateCycle } from './graph.js'
 import { canTransition } from './transitions.js'

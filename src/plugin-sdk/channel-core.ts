@@ -352,6 +352,12 @@ export function createChannelPluginBase<TResolvedAccount>(params: {
   gatewayMethods?: ChannelPlugin<TResolvedAccount>['gatewayMethods']
   send?: ChannelPlugin<TResolvedAccount>['send']
 }): ChannelPlugin<TResolvedAccount> {
+  const send: ChannelPlugin<TResolvedAccount>['send'] =
+    params.send ??
+    (async () => {
+      throw new Error(`Channel plugin "${params.id}" does not implement send().`)
+    })
+
   return {
     kind: 'channel',
     id: params.id,
@@ -376,6 +382,6 @@ export function createChannelPluginBase<TResolvedAccount>(params: {
     streaming: params.streaming,
     reload: params.reload,
     gatewayMethods: params.gatewayMethods,
-    send: params.send ?? (async () => {}),
+    send,
   } as ChannelPlugin<TResolvedAccount>
 }

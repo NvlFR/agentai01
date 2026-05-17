@@ -1,4 +1,4 @@
-// Adapted from referensi/openclaw/src/tools/descriptor.test.ts
+// Adapted using referensi/openclaw/src/tools/descriptor.test.ts
 import { describe, expect, test } from 'bun:test'
 import { validateToolDescriptor } from './descriptor.js'
 import type { ToolDescriptor } from './types.js'

@@ -1,94 +1,223 @@
-// src/runtime-app/memory/lancedb/lancedbMemoryBackend.ts
-// LanceDB memory backend — vector similarity search via LanceDB.
-// Falls back to memory-core when lancedb package is not installed.
-//
-// isAvailable() checks for the lancedb package at runtime without hard import.
-// Config: LANCEDB_URI (default: ./runtime/.lancedb), LANCEDB_TABLE (default: memory)
+// Adapted using referensi/openclaw/src/memory-host-sdk/host/embeddings.ts
+
+import { z } from 'zod'
 
 import type { MemoryBackend, MemoryBackendFactory } from '../memoryBackend.js'
 
-// Bypass TypeScript module resolution for optional dependency.
-// At runtime this is equivalent to import(specifier) but tsc never checks it.
+export type FetchLike = (
+  input: string | URL | Request,
+  init?: RequestInit,
+) => Promise<Response>
+
+export type EmbeddingFunction = (text: string) => Promise<number[]>
+
+type EmbeddingResponse = {
+  data: Array<{
+    embedding: number[]
+  }>
+}
+
+type LanceDbTableRow = {
+  key: string
+  value: string
+  vector: number[]
+}
+
+type LanceDbSearchRow = {
+  key: string
+  value: string
+  _distance: number
+}
+
+type LanceDbTable = {
+  delete: (filter: string) => Promise<void>
+  add: (rows: LanceDbTableRow[]) => Promise<void>
+  filter: (expr: string) => { toArray: () => Promise<Array<{ key: string; value: string }>> }
+  search: (vector: number[]) => { limit: (n: number) => { toArray: () => Promise<LanceDbSearchRow[]> } }
+}
+
+type LanceDbDatabase = {
+  tableNames: () => Promise<string[]>
+  openTable: (name: string) => Promise<LanceDbTable>
+  createTable: (name: string, data: LanceDbTableRow[]) => Promise<LanceDbTable>
+}
+
+export type LanceDbMemoryBackendOptions = {
+  uri?: string
+  tableName?: string
+  env?: Record<string, string | undefined>
+  timeoutMs?: number
+  fetchFn?: FetchLike
+  embeddingFunction?: EmbeddingFunction
+  connectDb?: (uri: string) => Promise<LanceDbDatabase>
+}
+
+export type CreateEmbeddingFunctionOptions = {
+  baseUrl?: string
+  apiKey?: string
+  model?: string
+  timeoutMs?: number
+  fetchFn?: FetchLike
+}
+
+const embeddingResponseSchema = z.object({
+  data: z.array(
+    z.object({
+      embedding: z.array(z.number()),
+    }),
+  ).min(1),
+})
+
 const dynamicImport: (specifier: string) => Promise<unknown> =
-  new Function('specifier', 'return import(specifier)') as (s: string) => Promise<unknown>
+  new Function('specifier', 'return import(specifier)') as (specifier: string) => Promise<unknown>
 
 const LANCEDB_DEFAULT_URI = './runtime/.lancedb'
 const LANCEDB_DEFAULT_TABLE = 'memory'
-// Embedding dimension for simple hash-based placeholder embeddings.
-// Replace with real embedding model when available.
-const EMBEDDING_DIM = 64
+const DEFAULT_EMBEDDING_TIMEOUT_MS = 30_000
+const DEFAULT_EMBEDDING_MODEL = 'text-embedding-3-small'
+
+export function createEmbeddingFunction(
+  options: CreateEmbeddingFunctionOptions,
+): EmbeddingFunction {
+  const fetchFn = options.fetchFn ?? fetch
+  const baseUrl = options.baseUrl?.trim()
+  const apiKey = options.apiKey?.trim()
+  const model = options.model?.trim()
+  const timeoutMs = options.timeoutMs ?? DEFAULT_EMBEDDING_TIMEOUT_MS
+
+  if (!baseUrl || !apiKey) {
+    return async () => {
+      throw new Error(
+        'memory-lancedb: embedding provider is not configured. Set AI_BASE_URL and AI_API_KEY.',
+      )
+    }
+  }
+
+  if (!model) {
+    return async () => {
+      throw new Error(
+        'memory-lancedb: embedding model is not configured. Set AI_EMBEDDING_MODEL or AI_MODEL.',
+      )
+    }
+  }
+
+  const endpoint = `${baseUrl.replace(/\/$/, '')}/embeddings`
+
+  return async (text: string): Promise<number[]> => {
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), timeoutMs)
+
+    try {
+      const response = await fetchFn(endpoint, {
+        method: 'POST',
+        signal: controller.signal,
+        headers: {
+          'content-type': 'application/json',
+          authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model,
+          input: text,
+        }),
+      })
+
+      if (!response.ok) {
+        const responseBody = await response.text()
+        throw new Error(
+          `memory-lancedb: embedding provider responded with HTTP ${response.status}${responseBody ? `: ${responseBody}` : ''}`,
+        )
+      }
+
+      const parsed = embeddingResponseSchema.safeParse(await response.json())
+      if (!parsed.success) {
+        throw new Error('memory-lancedb: embedding provider returned an invalid response payload.')
+      }
+
+      return parsed.data.data[0].embedding
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new Error(
+          `memory-lancedb: embedding request timed out after ${timeoutMs}ms.`,
+          { cause: error },
+        )
+      }
+
+      if (error instanceof Error) {
+        throw new Error(`memory-lancedb: embedding request failed. ${error.message}`, {
+          cause: error,
+        })
+      }
+
+      throw new Error('memory-lancedb: embedding request failed with an unknown error.')
+    } finally {
+      clearTimeout(timeout)
+    }
+  }
+}
 
 export class LanceDbMemoryBackend implements MemoryBackend {
   readonly id = 'memory-lancedb'
 
-  // lancedb connection — typed as unknown because import is dynamic/optional.
-  private db: unknown = null
-  private table: unknown = null
+  private db: LanceDbDatabase | null = null
+  private table: LanceDbTable | null = null
   private readonly uri: string
   private readonly tableName: string
+  private readonly embeddingFunction: EmbeddingFunction
+  private readonly connectDb: (uri: string) => Promise<LanceDbDatabase>
 
-  constructor() {
-    this.uri = process.env['LANCEDB_URI'] ?? LANCEDB_DEFAULT_URI
-    this.tableName = process.env['LANCEDB_TABLE'] ?? LANCEDB_DEFAULT_TABLE
+  constructor(options: LanceDbMemoryBackendOptions = {}) {
+    const env = options.env ?? process.env
+
+    this.uri = options.uri ?? env['LANCEDB_URI'] ?? LANCEDB_DEFAULT_URI
+    this.tableName = options.tableName ?? env['LANCEDB_TABLE'] ?? LANCEDB_DEFAULT_TABLE
+    this.embeddingFunction = options.embeddingFunction ?? createEmbeddingFunction({
+      baseUrl: env['AI_BASE_URL'],
+      apiKey: env['AI_API_KEY'],
+      model: env['AI_EMBEDDING_MODEL'] ?? env['AI_MODEL'] ?? DEFAULT_EMBEDDING_MODEL,
+      timeoutMs: options.timeoutMs ?? readTimeoutMs(env['AI_TIMEOUT_MS']),
+      fetchFn: options.fetchFn,
+    })
+    this.connectDb = options.connectDb ?? loadLanceDbConnection
   }
 
   private async ensureConnected(): Promise<void> {
-    if (this.db !== null) return
-
-    // Dynamic import — fails gracefully if lancedb not installed.
-    // Use a runtime-only import path to avoid TypeScript resolving optional dep at compile time.
-    const lancedb: unknown = await dynamicImport('vectordb').catch(() => null)
-    if (!lancedb) {
-      throw new Error('memory-lancedb: vectordb package not installed. Run: npm install vectordb')
+    if (this.db !== null && this.table !== null) {
+      return
     }
 
-    this.db = await (lancedb as { connect: (uri: string) => Promise<unknown> }).connect(this.uri)
-    const dbTyped = this.db as {
-      tableNames: () => Promise<string[]>
-      openTable: (name: string) => Promise<unknown>
-      createTable: (name: string, data: unknown[]) => Promise<unknown>
-    }
+    this.db = await this.connectDb(this.uri)
+    const tables = await this.db.tableNames()
 
-    const tables = await dbTyped.tableNames()
     if (tables.includes(this.tableName)) {
-      this.table = await dbTyped.openTable(this.tableName)
-    } else {
-      // Create table with initial schema row (will be deleted).
-      this.table = await dbTyped.createTable(this.tableName, [
-        { key: '__init__', value: '', vector: placeholderEmbedding('') },
-      ])
-      const tableTyped = this.table as {
-        delete: (filter: string) => Promise<void>
-      }
-      await tableTyped.delete("key = '__init__'")
+      this.table = await this.db.openTable(this.tableName)
+      return
     }
+
+    const initialVector = await this.embeddingFunction('')
+    this.table = await this.db.createTable(this.tableName, [
+      { key: '__init__', value: '', vector: initialVector },
+    ])
+    await this.table.delete("key = '__init__'")
   }
 
   async store(key: string, value: unknown): Promise<void> {
-    await this.ensureConnected()
-    const tableTyped = this.table as {
-      delete: (filter: string) => Promise<void>
-      add: (rows: unknown[]) => Promise<void>
-    }
-    // Delete existing entry for idempotency.
-    await tableTyped.delete(`key = '${escapeFilter(key)}'`)
+    const table = await this.getTable()
     const valueStr = typeof value === 'string' ? value : JSON.stringify(value)
-    await tableTyped.add([{
-      key,
-      value: valueStr,
-      vector: placeholderEmbedding(valueStr),
-    }])
+    const vector = await this.embeddingFunction(valueStr)
+
+    await table.delete(`key = '${escapeFilter(key)}'`)
+    await table.add([{ key, value: valueStr, vector }])
   }
 
   async retrieve(key: string): Promise<unknown | null> {
-    await this.ensureConnected()
-    const tableTyped = this.table as {
-      filter: (expr: string) => { toArray: () => Promise<Array<{ key: string; value: string }>> }
-    }
-    const rows = await tableTyped.filter(`key = '${escapeFilter(key)}'`).toArray()
-    if (rows.length === 0) return null
+    const table = await this.getTable()
+    const rows = await table.filter(`key = '${escapeFilter(key)}'`).toArray()
     const row = rows[0]
-    if (!row) return null
+
+    if (!row) {
+      return null
+    }
+
     try {
       return JSON.parse(row.value)
     } catch {
@@ -97,57 +226,78 @@ export class LanceDbMemoryBackend implements MemoryBackend {
   }
 
   async search(query: string): Promise<unknown[]> {
-    await this.ensureConnected()
-    const tableTyped = this.table as {
-      search: (vector: number[]) => { limit: (n: number) => { toArray: () => Promise<Array<{ key: string; value: string; _distance: number }>> } }
-    }
-    const queryVector = placeholderEmbedding(query)
-    const rows = await tableTyped.search(queryVector).limit(10).toArray()
-    return rows.map(r => ({
-      key: r.key,
-      value: (() => {
-        try { return JSON.parse(r.value) } catch { return r.value }
-      })(),
-      score: r._distance,
+    const table = await this.getTable()
+    const queryVector = await this.embeddingFunction(query)
+    const rows = await table.search(queryVector).limit(10).toArray()
+
+    return rows.map(row => ({
+      key: row.key,
+      value: parseStoredValue(row.value),
+      score: row._distance,
     }))
   }
 
   async delete(key: string): Promise<void> {
+    const table = await this.getTable()
+    await table.delete(`key = '${escapeFilter(key)}'`)
+  }
+
+  private async getTable(): Promise<LanceDbTable> {
     await this.ensureConnected()
-    const tableTyped = this.table as {
-      delete: (filter: string) => Promise<void>
+
+    if (this.table === null) {
+      throw new Error('memory-lancedb: table was not initialized after connection.')
     }
-    await tableTyped.delete(`key = '${escapeFilter(key)}'`)
+
+    return this.table
   }
 }
 
-/**
- * Placeholder embedding: simple hash-based fixed-dimension vector.
- * Replace with real embedding model (voyage, openai, etc.) in production.
- */
-function placeholderEmbedding(text: string): number[] {
-  const vec = new Array<number>(EMBEDDING_DIM).fill(0)
-  for (let i = 0; i < text.length; i++) {
-    vec[i % EMBEDDING_DIM] = (vec[i % EMBEDDING_DIM] ?? 0) + text.charCodeAt(i) / 256
+async function loadLanceDbConnection(uri: string): Promise<LanceDbDatabase> {
+  const lancedb = await dynamicImport('vectordb').catch(() => null)
+  if (!lancedb) {
+    throw new Error('memory-lancedb: vectordb package not installed. Run: npm install vectordb')
   }
-  // Normalize
-  const magnitude = Math.sqrt(vec.reduce((sum, v) => sum + v * v, 0)) || 1
-  return vec.map(v => v / magnitude)
+
+  const connect = (lancedb as { connect?: (targetUri: string) => Promise<LanceDbDatabase> }).connect
+  if (typeof connect !== 'function') {
+    throw new Error('memory-lancedb: vectordb package does not expose a connect(uri) function.')
+  }
+
+  return connect(uri)
+}
+
+function parseStoredValue(value: string): unknown {
+  try {
+    return JSON.parse(value)
+  } catch {
+    return value
+  }
 }
 
 function escapeFilter(value: string): string {
   return value.replace(/'/g, "''")
 }
 
+function readTimeoutMs(value: string | undefined): number {
+  if (!value) {
+    return DEFAULT_EMBEDDING_TIMEOUT_MS
+  }
+
+  const parsed = Number(value)
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_EMBEDDING_TIMEOUT_MS
+}
+
 export const lanceDbMemoryBackendFactory: MemoryBackendFactory = {
   id: 'memory-lancedb',
   isAvailable: (): boolean => {
-    // We can't use require.resolve in ESM; attempt a sync check via globalThis.require if available.
     try {
       const req = (globalThis as Record<string, unknown>)['require'] as
         | ((id: string) => unknown)
         | undefined
-      if (req) req.call(globalThis, 'vectordb')
+      if (req) {
+        req.call(globalThis, 'vectordb')
+      }
       return true
     } catch {
       return false

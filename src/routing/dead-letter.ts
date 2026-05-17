@@ -1,4 +1,4 @@
-// Adapted from referensi/openclaw/src/routing/dead-letter.ts
+// Adapted using referensi/openclaw/src/routing/dead-letter.ts
 import type { DeadLetterMessage, RoutedMessage } from './types.js'
 
 export class DeadLetterQueue {

@@ -22,6 +22,10 @@ const allChecks = [
     name: 'dependency-pins',
     command: ['node', 'scripts/check-dependency-pins.mjs'],
   },
+  {
+    name: 'adaptation-final',
+    command: ['node', 'scripts/check-adaptation-final.mjs'],
+  },
 ]
 
 const args = process.argv.slice(2)

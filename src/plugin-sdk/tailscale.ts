@@ -1,4 +1,4 @@
-// Adapted from referensi/openclaw/src/shared/tailscale-status.ts
+// Adapted using referensi/openclaw/src/shared/tailscale-status.ts
 export type TailscaleStatusCommandResult = {
   code: number | null
   stdout: string

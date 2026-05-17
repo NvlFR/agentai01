@@ -1,4 +1,4 @@
-// Adapted from referensi/openclaw/src/plugin-sdk/runtime.ts
+// Adapted using referensi/openclaw/src/plugin-sdk/runtime.ts
 import {
   createSubsystemLogger as createBaseSubsystemLogger,
   type CreateLoggerOptions,

@@ -1,4 +1,4 @@
-// Adapted from referensi/openclaw/src/hooks/registry.ts
+// Adapted using referensi/openclaw/src/hooks/registry.ts
 import { createAuditTrail, type RecordedAuditEvent } from '../security/index.js'
 import { executeHook, type HookEvent, type HookExecutionRecord, type HookRegistration } from './handler.js'
 

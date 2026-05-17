@@ -1,4 +1,4 @@
-// Adapted from referensi/openclaw/src/tasks/transitions.test.ts
+// Adapted using referensi/openclaw/src/tasks/transitions.test.ts
 import { describe, expect, test } from 'bun:test'
 import { canTransition } from './transitions.js'
 

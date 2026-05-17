@@ -1,4 +1,9 @@
-// Adapted from referensi/openclaw/src/tools/types.ts
+// Adapted using referensi/openclaw/src/tools/types.ts
+
+export const TOOL_OWNER_KINDS = ['core', 'plugin', 'channel', 'mcp'] as const
+export const TOOL_EXECUTOR_KINDS = ['core', 'plugin', 'channel', 'mcp'] as const
+export const TOOL_AVAILABILITY_SIGNAL_KINDS = ['always', 'auth', 'env', 'plugin-enabled', 'context', 'config'] as const
+export const TOOL_ERROR_CODES = ['availability_failed', 'execution_failed', 'invalid_input', 'not_found', 'timeout'] as const
 
 export type JsonPrimitive = string | number | boolean | null
 export type JsonValue = JsonPrimitive | readonly JsonValue[] | { readonly [key: string]: JsonValue }
@@ -102,4 +107,20 @@ export type ToolError = {
   readonly message: string
   readonly retryable: boolean
   readonly details?: Record<string, unknown>
+}
+
+export function isToolOwnerKind(value: unknown): value is (typeof TOOL_OWNER_KINDS)[number] {
+  return typeof value === 'string' && TOOL_OWNER_KINDS.includes(value as (typeof TOOL_OWNER_KINDS)[number])
+}
+
+export function isToolExecutorKind(value: unknown): value is (typeof TOOL_EXECUTOR_KINDS)[number] {
+  return typeof value === 'string' && TOOL_EXECUTOR_KINDS.includes(value as (typeof TOOL_EXECUTOR_KINDS)[number])
+}
+
+export function isToolAvailabilitySignalKind(value: unknown): value is (typeof TOOL_AVAILABILITY_SIGNAL_KINDS)[number] {
+  return typeof value === 'string' && TOOL_AVAILABILITY_SIGNAL_KINDS.includes(value as (typeof TOOL_AVAILABILITY_SIGNAL_KINDS)[number])
+}
+
+export function isToolErrorCode(value: unknown): value is (typeof TOOL_ERROR_CODES)[number] {
+  return typeof value === 'string' && TOOL_ERROR_CODES.includes(value as (typeof TOOL_ERROR_CODES)[number])
 }

@@ -1,4 +1,4 @@
-// Adapted from referensi/openclaw/src/plugin-state/store.test.ts
+// Adapted using referensi/openclaw/src/plugin-state/store.test.ts
 import { describe, expect, test } from 'bun:test'
 import { InMemoryPluginStateStore, stateKey } from './store.js'
 

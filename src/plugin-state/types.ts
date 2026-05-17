@@ -1,5 +1,7 @@
-// Adapted from referensi/openclaw/src/plugin-state/types.ts
+// Adapted using referensi/openclaw/src/plugin-state/types.ts
 import type { JsonObject } from '../tools/index.js'
+
+export const PLUGIN_STATE_ERROR_CODES = ['not-found', 'migration-missing'] as const
 
 export type PluginStateKey = {
   readonly plugin_id: string
@@ -22,3 +24,7 @@ export type PluginStateMigration = {
 export type PluginStateError =
   | { readonly code: 'not-found'; readonly message: string }
   | { readonly code: 'migration-missing'; readonly message: string }
+
+export function isPluginStateErrorCode(value: unknown): value is (typeof PLUGIN_STATE_ERROR_CODES)[number] {
+  return typeof value === 'string' && PLUGIN_STATE_ERROR_CODES.includes(value as (typeof PLUGIN_STATE_ERROR_CODES)[number])
+}

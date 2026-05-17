@@ -1,4 +1,4 @@
-// Adapted from referensi/openclaw/src/plugin-sdk/secret-file-runtime.ts
+// Adapted using referensi/openclaw/src/plugin-sdk/secret-file-runtime.ts
 import { readFileSync, statSync } from 'node:fs'
 import { resolve as resolvePath } from 'node:path'
 

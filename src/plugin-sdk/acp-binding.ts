@@ -1,4 +1,4 @@
-// Adapted from referensi/openclaw/src/plugin-sdk/acp-binding-resolve-runtime.ts
+// Adapted using referensi/openclaw/src/plugin-sdk/acp-binding-resolve-runtime.ts
 export type ResolvedConfiguredAcpBinding = {
   sessionKey: string
   channel: string

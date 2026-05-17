@@ -1,4 +1,4 @@
-// Adapted from referensi/openclaw/src/agents/tools/common.ts
+// Adapted using referensi/openclaw/src/agents/tools/common.ts
 export type ActionGate<T extends Record<string, boolean | undefined>> = (
   key: keyof T,
   defaultValue?: boolean,

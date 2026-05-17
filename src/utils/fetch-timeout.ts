@@ -1,4 +1,4 @@
-// Adapted from referensi/openclaw/src/utils/fetch-timeout.ts
+// Adapted using referensi/openclaw/src/utils/fetch-timeout.ts
 import { createSubsystemLogger } from '../logging/index.js';
 
 const log = createSubsystemLogger('fetch-timeout');

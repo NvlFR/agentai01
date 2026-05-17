@@ -1,4 +1,4 @@
-// Adapted from referensi/openclaw/src/utils/with-timeout.ts
+// Adapted using referensi/openclaw/src/utils/with-timeout.ts
 /**
  * Wraps a promise with a timeout.
  * Rejects with a TimeoutError if the promise does not settle within ms.

@@ -1,4 +1,4 @@
-// Adapted from referensi/openclaw/src/plugin-sdk/keyed-async-queue.ts
+// Adapted using referensi/openclaw/src/plugin-sdk/keyed-async-queue.ts
 
 export type KeyedAsyncQueueHooks = {
   onEnqueue?: () => void

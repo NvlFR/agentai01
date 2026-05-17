@@ -1,4 +1,4 @@
-// Adapted from referensi/openclaw/src/plugin-state/store.ts
+// Adapted using referensi/openclaw/src/plugin-state/store.ts
 import { err, ok, type Result } from '../shared/index.js'
 import type { JsonObject } from '../tools/index.js'
 import { migrateRecord } from './migrate.js'

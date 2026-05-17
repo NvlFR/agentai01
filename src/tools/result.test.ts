@@ -1,4 +1,4 @@
-// Adapted from referensi/openclaw/src/tools/result.test.ts
+// Adapted using referensi/openclaw/src/tools/result.test.ts
 import { describe, expect, test } from 'bun:test'
 import { createToolError, isToolError, normalizeToolError, normalizeToolResult } from './result.js'
 

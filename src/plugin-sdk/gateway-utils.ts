@@ -1,4 +1,4 @@
-// Adapted from referensi/openclaw/src/plugin-sdk/core.ts and referensi/openclaw/src/shared/gateway-bind-url.ts
+// Adapted using referensi/openclaw/src/plugin-sdk/core.ts and referensi/openclaw/src/shared/gateway-bind-url.ts
 export const DEFAULT_ACCOUNT_ID = 'default'
 
 export type GatewayBindUrlResult =

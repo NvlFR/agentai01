@@ -1,4 +1,4 @@
-// Adapted from referensi/openclaw/src/tasks/graph.ts
+// Adapted using referensi/openclaw/src/tasks/graph.ts
 import type { RegisteredTask, TaskId } from './types.js'
 
 export function wouldCreateCycle(

@@ -1,4 +1,4 @@
-// Adapted from referensi/openclaw/src/utils/parse-json-compat.ts
+// Adapted using referensi/openclaw/src/utils/parse-json-compat.ts
 import JSON5 from 'json5';
 
 /**

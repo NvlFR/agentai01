@@ -72,6 +72,7 @@ Struktur utama repo saat ini:
 ├── src/
 │   ├── agents/
 │   ├── app/
+│   ├── channels/        # channel adapters (WhatsApp, Telegram, dll)
 │   ├── domain/
 │   ├── registry/
 │   ├── runtime/

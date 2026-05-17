@@ -1,4 +1,4 @@
-// Adapted from referensi/openclaw/src/tools/descriptor.ts
+// Adapted using referensi/openclaw/src/tools/descriptor.ts
 import { err, isRecord, ok, type Result } from '../shared/index.js'
 import { createToolError } from './result.js'
 import type { ToolDescriptor, ToolError } from './types.js'

@@ -1,4 +1,4 @@
-// Adapted from referensi/openclaw/src/hooks/registry.test.ts
+// Adapted using referensi/openclaw/src/hooks/registry.test.ts
 import { describe, expect, test } from 'bun:test'
 import { createHookRegistry } from './registry.js'
 

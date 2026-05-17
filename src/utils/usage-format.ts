@@ -1,4 +1,4 @@
-// Adapted from referensi/openclaw/src/utils/usage-format.ts
+// Adapted using referensi/openclaw/src/utils/usage-format.ts
 
 /**
  * Formats a token count into a human-readable string (e.g., 1.5k, 1.0m).

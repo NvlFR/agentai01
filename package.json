@@ -18,8 +18,9 @@
     "qa:lab": "node qa/lab-runner.mjs",
     "qa:matrix": "node qa/matrix.mjs",
     "check": "tsc -p tsconfig.json --noEmit",
+    "check:adaptation-final": "node scripts/check-adaptation-final.mjs",
     "build": "tsc -p tsconfig.json",
-    "test": "bun test",
+    "test": "bun test --path-ignore-patterns 'referensi/**' --path-ignore-patterns 'src/runtime-app/ui/node_modules/**'",
     "postinstall": "node scripts/apply-patches.mjs"
   },
   "devDependencies": {

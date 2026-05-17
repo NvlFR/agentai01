@@ -1,4 +1,4 @@
-// Adapted from referensi/openclaw/src/plugin-sdk/secure-random-runtime.ts
+// Adapted using referensi/openclaw/src/plugin-sdk/secure-random-runtime.ts
 import { randomBytes, randomUUID } from 'node:crypto'
 import { readFile, writeFile } from 'node:fs/promises'
 import { resolve as resolvePath } from 'node:path'

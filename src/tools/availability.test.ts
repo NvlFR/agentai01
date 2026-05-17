@@ -1,4 +1,4 @@
-// Adapted from referensi/openclaw/src/tools/availability.test.ts
+// Adapted using referensi/openclaw/src/tools/availability.test.ts
 import { describe, expect, test } from 'bun:test'
 import { evaluateToolAvailability } from './availability.js'
 

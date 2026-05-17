@@ -10,6 +10,16 @@ export type PluginContext = {
   readonly logger?: PluginLogger
 }
 
+export type PluginManifest = {
+  readonly id: string
+  readonly name: string
+  readonly version: string
+  readonly description: string
+  readonly author?: string
+  readonly tools?: readonly string[]
+  readonly skills?: readonly string[]
+}
+
 export type PluginLogger = {
   info(message: string, context?: Record<string, unknown>): void
   warn(message: string, context?: Record<string, unknown>): void

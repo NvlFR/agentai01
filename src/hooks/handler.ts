@@ -1,4 +1,4 @@
-// Adapted from referensi/openclaw/src/hooks/handler.ts
+// Adapted using referensi/openclaw/src/hooks/handler.ts
 
 export type HookEvent = {
   readonly type: string

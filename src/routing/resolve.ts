@@ -1,4 +1,4 @@
-// Adapted from referensi/openclaw/src/routing/resolve.ts
+// Adapted using referensi/openclaw/src/routing/resolve.ts
 import { err, ok, type Result } from '../shared/index.js'
 import { deadLetter, type DeadLetterQueue } from './dead-letter.js'
 import type {

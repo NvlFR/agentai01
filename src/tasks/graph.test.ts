@@ -1,4 +1,4 @@
-// Adapted from referensi/openclaw/src/tasks/graph.test.ts
+// Adapted using referensi/openclaw/src/tasks/graph.test.ts
 import { describe, expect, test } from 'bun:test'
 import { sortTasksTopologically, wouldCreateCycle } from './graph.js'
 import type { RegisteredTask } from './types.js'

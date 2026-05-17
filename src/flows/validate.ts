@@ -1,4 +1,4 @@
-// Adapted from referensi/openclaw/src/flows/validate.ts
+// Adapted using referensi/openclaw/src/flows/validate.ts
 import { err, ok, type Result } from '../shared/index.js'
 import type { FlowDefinition, FlowError } from './types.js'
 

@@ -1,4 +1,4 @@
-// Adapted from referensi/openclaw/src/plugin-sdk/runtime.ts and referensi/openclaw/src/infra/plugin-install-path-warnings.ts
+// Adapted using referensi/openclaw/src/plugin-sdk/runtime.ts and referensi/openclaw/src/infra/plugin-install-path-warnings.ts
 import { access, mkdir, writeFile } from 'node:fs/promises'
 import { dirname, resolve as resolvePath } from 'node:path'
 

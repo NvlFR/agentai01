@@ -1,4 +1,4 @@
-// Adapted from referensi/openclaw/src/tools/plan.test.ts
+// Adapted using referensi/openclaw/src/tools/plan.test.ts
 import { describe, expect, test } from 'bun:test'
 import { buildToolPlan } from './plan.js'
 import type { ToolDescriptor } from './types.js'

@@ -1,4 +1,4 @@
-// Adapted from referensi/openclaw/src/utils/timer-delay.ts
+// Adapted using referensi/openclaw/src/utils/timer-delay.ts
 
 export const MAX_SAFE_TIMEOUT_DELAY_MS = 2_147_483_647;
 

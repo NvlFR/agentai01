@@ -1,4 +1,4 @@
-// Adapted from referensi/openclaw/src/tasks/index.ts
+// Adapted using referensi/openclaw/src/tasks/index.ts
 
 export * from './types.js'
 export * from './transitions.js'

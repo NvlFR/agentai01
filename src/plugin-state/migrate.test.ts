@@ -1,4 +1,4 @@
-// Adapted from referensi/openclaw/src/plugin-state/migrate.test.ts
+// Adapted using referensi/openclaw/src/plugin-state/migrate.test.ts
 import { describe, expect, test } from 'bun:test'
 import { migrateRecord } from './migrate.js'
 import type { PluginStateRecord } from './types.js'

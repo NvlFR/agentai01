@@ -1,4 +1,4 @@
-// Adapted from referensi/openclaw/src/plugin-sdk/runtime.ts and referensi/openclaw/src/infra/unhandled-rejections.ts
+// Adapted using referensi/openclaw/src/plugin-sdk/runtime.ts and referensi/openclaw/src/infra/unhandled-rejections.ts
 type RuntimeEventMap = {
   uncaughtException: (error: unknown) => void
   unhandledRejection: (reason: unknown) => void

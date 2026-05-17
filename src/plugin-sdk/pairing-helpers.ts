@@ -1,4 +1,4 @@
-// Adapted from referensi/openclaw/src/channels/plugins/helpers.ts
+// Adapted using referensi/openclaw/src/channels/plugins/helpers.ts
 export function formatPairingApproveHint(channelId: string): string {
   const normalizedChannelId = channelId.trim() || 'channel'
   return `Approve via: pairing list ${normalizedChannelId} / pairing approve ${normalizedChannelId} <code>`

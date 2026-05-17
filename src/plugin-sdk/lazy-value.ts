@@ -1,4 +1,4 @@
-// Adapted from referensi/openclaw/src/plugin-sdk/lazy-value.ts
+// Adapted using referensi/openclaw/src/plugin-sdk/lazy-value.ts
 export type LazyValue<T> = T | (() => T)
 
 export function createCachedLazyValueGetter<T>(value: LazyValue<T>): () => T

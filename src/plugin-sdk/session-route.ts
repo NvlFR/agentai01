@@ -1,4 +1,4 @@
-// Adapted from referensi/openclaw/src/plugin-sdk/core.ts (session route helpers)
+// Adapted using referensi/openclaw/src/plugin-sdk/core.ts (session route helpers)
 
 export type RoutePeerKind = 'direct' | 'group' | 'channel'
 

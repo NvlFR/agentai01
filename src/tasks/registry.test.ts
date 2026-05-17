@@ -1,4 +1,4 @@
-// Adapted from referensi/openclaw/src/tasks/registry.test.ts
+// Adapted using referensi/openclaw/src/tasks/registry.test.ts
 import { describe, expect, test } from 'bun:test'
 import { TaskRegistry } from './registry.js'
 

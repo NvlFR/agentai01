@@ -1,4 +1,4 @@
-// Adapted from referensi/openclaw/src/tasks/transitions.ts
+// Adapted using referensi/openclaw/src/tasks/transitions.ts
 import type { TaskState } from './types.js'
 
 export function canTransition(current: TaskState, next: TaskState): boolean {

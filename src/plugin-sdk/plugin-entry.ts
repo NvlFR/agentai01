@@ -1,5 +1,5 @@
 import type { JsonObject } from '../tools/index.js'
-import type { ChannelPlugin } from './types.js'
+import type { ChannelPlugin, ProviderPlugin, ToolPlugin } from './types.js'
 
 export const EMPTY_PLUGIN_CONFIG_SCHEMA = Object.freeze({}) as JsonObject
 
@@ -11,6 +11,8 @@ export type PluginConfigSchemaResolver = () => PluginConfigSchema
 export type PluginRegistrationApi = {
   readonly registrationMode: PluginRegistrationMode
   registerChannel?(registration: { readonly plugin: ChannelPlugin }): void
+  registerProvider?(registration: { readonly plugin: ProviderPlugin }): void
+  registerTool?(registration: { readonly plugin: ToolPlugin }): void
 }
 
 export type PluginRegistrationHook<TApi extends PluginRegistrationApi = PluginRegistrationApi> = (

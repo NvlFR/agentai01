@@ -1,4 +1,4 @@
-// Adapted from referensi/openclaw/src/flows/engine.ts
+// Adapted using referensi/openclaw/src/flows/engine.ts
 import { err, ok, type Result } from '../shared/index.js'
 import { InMemoryFlowStateStore, type FlowStateStore } from './store.js'
 import type {

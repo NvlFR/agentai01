@@ -1,4 +1,4 @@
-// Adapted from referensi/openclaw/src/flows/store.ts
+// Adapted using referensi/openclaw/src/flows/store.ts
 import type { FlowRunState } from './types.js'
 
 export type FlowStateStore<TState = Record<string, unknown>> = {

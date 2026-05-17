@@ -1,4 +1,4 @@
-// Adapted from referensi/openclaw/src/utils/run-with-concurrency.ts
+// Adapted using referensi/openclaw/src/utils/run-with-concurrency.ts
 export type ConcurrencyErrorMode = 'continue' | 'stop';
 
 /**

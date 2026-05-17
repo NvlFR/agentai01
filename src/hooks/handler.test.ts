@@ -1,4 +1,4 @@
-// Adapted from referensi/openclaw/src/hooks/handler.test.ts
+// Adapted using referensi/openclaw/src/hooks/handler.test.ts
 import { describe, expect, test } from 'bun:test'
 import { executeHook } from './handler.js'
 

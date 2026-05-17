@@ -1,4 +1,4 @@
-// Adapted from referensi/openclaw/src/plugin-state/migrate.ts
+// Adapted using referensi/openclaw/src/plugin-state/migrate.ts
 import { err, ok, type Result } from '../shared/index.js'
 import type { JsonObject } from '../tools/index.js'
 import type { PluginStateError, PluginStateKey, PluginStateMigration, PluginStateRecord } from './types.js'

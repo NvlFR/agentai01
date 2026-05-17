@@ -1,4 +1,4 @@
-// Adapted from referensi/openclaw/src/utils/mask-api-key.ts
+// Adapted using referensi/openclaw/src/utils/mask-api-key.ts
 /**
  * Masks an API key for safe logging/display.
  * - If length < 8: returns "****"

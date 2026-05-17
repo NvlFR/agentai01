@@ -1,4 +1,4 @@
-// Adapted from referensi/openclaw/src/plugin-sdk/core.ts and referensi/openclaw/src/config/dangerous-name-matching.ts
+// Adapted using referensi/openclaw/src/plugin-sdk/core.ts and referensi/openclaw/src/config/dangerous-name-matching.ts
 import ipaddr from 'ipaddr.js'
 
 export type DangerousNameMatchingScope = {

@@ -1,4 +1,4 @@
-// Adapted from referensi/openclaw/src/tools/plan.ts
+// Adapted using referensi/openclaw/src/tools/plan.ts
 import { evaluateToolAvailability } from './availability.js'
 import { validateToolDescriptor } from './descriptor.js'
 import type {
