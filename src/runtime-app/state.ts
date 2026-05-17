@@ -231,6 +231,10 @@ export class RuntimeAppState {
     }
   }
 
+  recordOperatorAction(action: string, detail: string): void {
+    this.audit(action, 'operator-ui', this.shell.runtime.runtime_id, detail)
+  }
+
   submitDirective(input: DirectiveSubmission): ActionResult {
     const trimmed = input.input.trim()
     if (!trimmed) {

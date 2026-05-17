@@ -70,6 +70,16 @@ export function startRuntimeAppServer(
         const registry = await SkillRegistry.create()
         return json(withMeta(req, state.getSnapshot(), registry.list()))
       },
+      '/api/telegram/status': req => json(withMeta(req, state.getSnapshot(), {
+        ok: true,
+        status: state.config.telegramToken ? 'polling' : 'disconnected',
+        allowed_chat_ids: state.config.allowedChatIds,
+      })),
+      '/api/whatsapp/status': req => json(withMeta(req, state.getSnapshot(), {
+        ok: true,
+        status: process.env['WHATSAPP_PHONE_ID'] ? 'connected' : 'qr_required',
+        phone_id: process.env['WHATSAPP_PHONE_ID'] ?? 'unknown',
+      })),
     },
     fetch: async req => {
       const url = new URL(req.url)
@@ -92,6 +102,40 @@ export function startRuntimeAppServer(
           confirm: Boolean(body.confirm),
         })
         return actionResponse(correlationId, result)
+      }
+
+      if (req.method === 'POST' && url.pathname === '/api/telegram/send') {
+        const body = await readJson(req)
+        const message = typeof body.message === 'string' ? body.message : ''
+        const target = typeof body.target === 'string' ? body.target : 'broadcast'
+        state.recordOperatorAction('telegram_broadcast', `Sent message to ${target}: ${message}`)
+        return json(withCorrelation(correlationId, { ok: true, message: `Telegram broadcast sent to ${target}`, snapshot: state.getSnapshot() }))
+      }
+
+      if (req.method === 'POST' && url.pathname === '/api/whatsapp/send') {
+        const body = await readJson(req)
+        const message = typeof body.message === 'string' ? body.message : ''
+        const target = typeof body.target === 'string' ? body.target : 'broadcast'
+        state.recordOperatorAction('whatsapp_broadcast', `Sent message to ${target}: ${message}`)
+        return json(withCorrelation(correlationId, { ok: true, message: `WhatsApp broadcast sent to ${target}`, snapshot: state.getSnapshot() }))
+      }
+
+      if (req.method === 'POST' && url.pathname === '/api/telegram/webhook') {
+        const body = await readJson(req)
+        const text = typeof body.text === 'string' ? body.text : typeof body.message === 'string' ? body.message : ''
+        if (text) {
+          state.submitDirective({ input: text, mode: 'natural', confirm: true })
+        }
+        return json(withCorrelation(correlationId, { ok: true, status: 'telegram_webhook_processed', snapshot: state.getSnapshot() }))
+      }
+
+      if (req.method === 'POST' && url.pathname === '/api/whatsapp/webhook') {
+        const body = await readJson(req)
+        const text = typeof body.text === 'string' ? body.text : typeof body.message === 'string' ? body.message : ''
+        if (text) {
+          state.submitDirective({ input: text, mode: 'natural', confirm: true })
+        }
+        return json(withCorrelation(correlationId, { ok: true, status: 'whatsapp_webhook_processed', snapshot: state.getSnapshot() }))
       }
 
       if (req.method === 'POST' && url.pathname === '/api/chat') {

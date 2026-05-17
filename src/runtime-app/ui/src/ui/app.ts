@@ -7,6 +7,8 @@ import './views/messages.js'
 import './views/audit.js'
 import './views/directive.js'
 import './views/chat.js'
+import './views/extensions.js'
+import './views/skills.js'
 import type { ApprovalRespondDetail } from './views/approvals.js'
 import type { JobRetryDetail } from './views/jobs.js'
 import type { MessageRetryDetail } from './views/messages.js'
@@ -15,7 +17,7 @@ import type { ChatSendDetail, OperatorChatMessage } from './views/chat.js'
 import type { ActionResult, RuntimeAppSnapshot } from '../types/snapshot.js'
 
 type ThemeMode = 'system' | 'light' | 'dark'
-type ActiveTab = 'chat' | 'dashboard' | 'projects' | 'approvals' | 'jobs' | 'messages' | 'audit' | 'directive'
+type ActiveTab = 'chat' | 'dashboard' | 'projects' | 'approvals' | 'jobs' | 'messages' | 'audit' | 'directive' | 'extensions' | 'skills'
 
 type OperatorSettings = {
   theme: 'dark' | 'light'
@@ -45,6 +47,8 @@ const TABS: Array<{ id: ActiveTab; label: string; group: 'control' | 'operations
   { id: 'messages', label: 'Messages', group: 'operations' },
   { id: 'audit', label: 'Audit', group: 'operations' },
   { id: 'directive', label: 'Directive', group: 'operations' },
+  { id: 'extensions', label: 'Extensions', group: 'operations' },
+  { id: 'skills', label: 'Skills', group: 'operations' },
 ]
 
 export class AgentRuntimeShell extends LitElement {
@@ -588,6 +592,10 @@ export class AgentRuntimeShell extends LitElement {
             .lastResult=${this.directiveResult}
           ></agent-view-directive>
         `
+      case 'extensions':
+        return html`<agent-view-extensions .snapshot=${this.snapshot}></agent-view-extensions>`
+      case 'skills':
+        return html`<agent-view-skills .snapshot=${this.snapshot}></agent-view-skills>`
     }
   }
 

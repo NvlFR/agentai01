@@ -14,6 +14,20 @@ const BUILTIN_EXTENSIONS: ExtensionContract[] = [
     optionalEnv: ['SKILLS_ROOT'],
   }),
   createExtension({
+    id: 'telegram',
+    kind: 'channel_bridge',
+    description: 'Telegram bot bridge for bidirectional agent messaging and operator alerts.',
+    requiredEnv: ['TOKEN_TELE'],
+    optionalEnv: ['TELEGRAM_ALLOWED_CHAT_IDS', 'TELEGRAM_AUTOMATION_MODE', 'TELEGRAM_POLLING_INTERVAL_MS'],
+  }),
+  createExtension({
+    id: 'whatsapp',
+    kind: 'channel_bridge',
+    description: 'WhatsApp Baileys socket bridge for enterprise agent messaging and auto-replies.',
+    requiredEnv: ['WHATSAPP_PHONE_ID'],
+    optionalEnv: ['WHATSAPP_AUTH_FOLDER', 'WHATSAPP_AUTO_REPLY_ENABLED'],
+  }),
+  createExtension({
     id: 'elevenlabs',
     kind: 'tts_provider',
     description: 'Premium TTS provider using ElevenLabs voices.',

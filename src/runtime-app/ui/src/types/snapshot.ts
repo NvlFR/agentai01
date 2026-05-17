@@ -319,6 +319,7 @@ export type ExtensionKind =
   | 'operator_tool'
   | 'qa_tool'
   | 'authoring_tool'
+  | 'channel_bridge'
 
 export type ExtensionRiskProfile = 'low' | 'medium' | 'high'
 export type ExtensionAvailability = 'enabled' | 'disabled' | 'misconfigured'
