@@ -54,7 +54,7 @@ Setiap task dianggap selesai hanya jika ada bukti nyata:
 | :--- | :--- | :--- | :---: |
 | **2.1** | `IntraDepartmentScratchpad`| Implementasikan `IntraDepartmentScratchpad` di `src/runtime/scratchpad.ts` sebagai antrean pesan terisolasi per departemen dengan batas TTL dan kapasitas. | [ ] |
 | **2.2** | `BatonPassingProtocol` | Buat class `BatonPassingOrchestrator` di `src/runtime/batonPassing.ts` yang mengelola transisi status `delegate`, `pass`, dan `return` antar sub-agen. | [ ] |
-| **2.3** | `BatonPassingTest` | Buat pengujian `src/runtime/batonPassing.test.ts` untuk mensimulasikan serah terima berantai dari `Lead Hunter` hingga `Promotion Agent`. | [ ] |
+| **2.3** | `BatonPassingTest` | Buat pengujian `src/runtime/batonPassing.test.ts` untuk mensimulasikan serah terima berantai antar sub-agen. | [ ] |
 
 ---
 
@@ -64,23 +64,26 @@ Setiap task dianggap selesai hanya jika ada bukti nyata:
 
 | Task ID | Nama Task | Deskripsi & Kontrak Implementasi | Status |
 | :--- | :--- | :--- | :---: |
-| **3.1** | `LeadHunterAgent` | Implementasikan `LeadHunterSpecialist` di `src/agents/subagents/leadHunter.ts` dengan *binding* ke alat pemindai web dan direktori. | [ ] |
-| **3.2** | `ContentAnalystAgent` | Implementasikan `ContentAnalystSpecialist` di `src/agents/subagents/contentAnalyst.ts` untuk analisis tren dan sentimen prospek. | [ ] |
-| **3.3** | `ContentCreatorAgent` | Implementasikan `ContentCreatorSpecialist` di `src/agents/subagents/contentCreator.ts` untuk pembuatan *copywriting* dan aset visual. | [ ] |
-| **3.4** | `PromotionAgent` | Implementasikan `PromotionSpecialist` di `src/agents/subagents/promotionAgent.ts` untuk distribusi pesan dan pelacakan balasan. | [ ] |
-| **3.5** | `MarketingSubAgentsTest`| Buat pengujian integrasi `src/agents/subagents/marketingSubAgents.test.ts` untuk memvalidasi kolaborasi penuh departemen marketing. | [ ] |
+| **3.1** | `ContentCreatorAgent` | Implementasikan `ContentCreatorSpecialist` di `src/agents/subagents/marketing/contentCreator.ts` dengan *binding* ke Canva dan Notion. | [ ] |
+| **3.2** | `SEOSpecialistAgent` | Implementasikan `SEOSpecialist` di `src/agents/subagents/marketing/seoSpecialist.ts` untuk riset kata kunci dan audit SEO. | [ ] |
+| **3.3** | `CampaignManagerAgent` | Implementasikan `CampaignManagerSpecialist` di `src/agents/subagents/marketing/campaignManager.ts` untuk kampanye dan WA blast. | [ ] |
+| **3.4** | `AnalyticsReaderAgent` | Implementasikan `AnalyticsReaderSpecialist` di `src/agents/subagents/marketing/analyticsReader.ts` untuk analisis performa. | [ ] |
+| **3.5** | `SocialSchedulerAgent` | Implementasikan `SocialSchedulerSpecialist` di `src/agents/subagents/marketing/socialScheduler.ts` untuk penjadwalan konten. | [ ] |
+| **3.6** | `TrendWatcherAgent` | Implementasikan `TrendWatcherSpecialist` di `src/agents/subagents/marketing/trendWatcher.ts` untuk memantau tren viral. | [ ] |
+| **3.7** | `MarketingSubAgentsTest`| Buat pengujian integrasi `src/agents/subagents/marketing/marketingSubAgents.test.ts` untuk memvalidasi kolaborasi penuh departemen marketing. | [ ] |
 
 ---
 
 ## Phase 4 — Extension to Other Departments & Final Verification
 
-> Fokus: Memperluas topologi ke departemen Sales, Product, Engineering, Support, dan Project Manager, serta verifikasi akhir.
+> Fokus: Memperluas topologi ke departemen CEO, Sales, Product, Engineering, PM, dan Support, serta verifikasi akhir.
 
 | Task ID | Nama Task | Deskripsi & Kontrak Implementasi | Status |
 | :--- | :--- | :--- | :---: |
-| **4.1** | `SalesSubAgents` | Implementasikan spesialis `LeadQualification`, `ProposalArchitect`, dan `ObjectionHandler` di `src/agents/subagents/sales/`. | [ ] |
-| **4.2** | `ProductSubAgents` | Implementasikan spesialis `UserResearch`, `PRDScaffolder`, dan `UIUXConceptor` di `src/agents/subagents/product/`. | [ ] |
-| **4.3** | `EngineeringSubAgents`| Implementasikan spesialis `CoderAgent`, `QAAgent`, `DevSecOpsAgent`, dan `DeploymentAgent` di `src/agents/subagents/engineering/`. | [ ] |
-| **4.4** | `ProjectManagerSubAgents`| Implementasikan spesialis `SprintTracker`, `RiskAnalyst`, dan `ResourceAllocator` di `src/agents/subagents/pm/`. | [ ] |
-| **4.5** | `SupportSubAgents` | Implementasikan spesialis `TicketTriage`, `KnowledgeBaseNavigator`, `TroubleshootingAgent`, dan `EscalationAgent` di `src/agents/subagents/support/`. | [ ] |
-| **4.6** | `FinalSystemVerification`| Jalankan `npm run check`, `bun test`, dan `npm run runtime:smoke` untuk memastikan tidak ada regresi pada sistem orkestrasi utama. | [ ] |
+| **4.1** | `CEOAgentSubAgents` | Implementasikan spesialis `StrategyAnalyst`, `ReportSummarizer`, `DecisionLogger`, dan `OKRTracker` di `src/agents/subagents/ceo/`. | [ ] |
+| **4.2** | `SalesSubAgents` | Implementasikan spesialis `LeadQualifier`, `ProposalGenerator`, `FollowUpDrafter`, `PipelineTracker`, dan `CompetitorWatcher` di `src/agents/subagents/sales/`. | [ ] |
+| **4.3** | `ProductSubAgents` | Implementasikan spesialis `UserResearcher`, `FeaturePrioritizer`, `PRDWriter`, `RoadmapBuilder`, dan `FeedbackAnalyzer` di `src/agents/subagents/product/`. | [ ] |
+| **4.4** | `EngineeringSubAgents`| Implementasikan spesialis `CodeReviewer`, `BugHunter`, `DocsWriter`, `InfraMonitor`, `TestGenerator`, dan `PRSummarizer` di `src/agents/subagents/engineering/`. | [ ] |
+| **4.5** | `ProjectManagerSubAgents`| Implementasikan spesialis `TaskCoordinator`, `RiskAnalyzer`, `SprintPlanner`, `ProgressReporter`, dan `DeadlineWatcher` di `src/agents/subagents/pm/`. | [ ] |
+| **4.6** | `SupportSubAgents` | Implementasikan spesialis `TicketClassifier`, `FAQResponder`, `EscalationRouter`, `CSATAnalyzer`, `KnowledgeBuilder`, dan `WABotHandler` di `src/agents/subagents/support/`. | [ ] |
+| **4.7** | `FinalSystemVerification`| Jalankan `npm run check`, `bun test`, dan `npm run runtime:smoke` untuk memastikan tidak ada regresi pada sistem orkestrasi utama. | [ ] |

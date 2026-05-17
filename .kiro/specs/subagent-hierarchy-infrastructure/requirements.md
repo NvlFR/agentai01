@@ -2,9 +2,9 @@
 
 ## Introduction
 
-Fitur ini merancang dan mendefinisikan spesifikasi arsitektur untuk **Hierarchical Sub-Agent Infrastructure (Tree of Agents)** di dalam ekosistem `agentai01` (AI Company Runtime Platform). Saat ini, agen utama (seperti `Marketing Agent`, `Sales Agent`, `Product Agent`, `Engineering Agent`, `Project Manager Agent`, dan `Support Agent`) beroperasi secara monolitik dan langsung memanggil AI Provider untuk seluruh cakupan tugas mereka.
+Fitur ini merancang dan mendefinisikan spesifikasi arsitektur untuk **Hierarchical Sub-Agent Infrastructure (Tree of Agents)** di dalam ekosistem `agentai01` (AI Company Runtime Platform). Saat ini, agen utama (seperti `CEO Agent`, `Marketing Agent`, `Sales Agent`, `Product Agent`, `Engineering Agent`, `Project Manager Agent`, dan `Support Agent`) beroperasi secara monolitik dan langsung memanggil AI Provider untuk seluruh cakupan tugas mereka.
 
-Tujuan utama dari spesifikasi ini adalah memecah struktur monolitik tersebut menjadi topologi hierarkis 4 tingkat (4-tier hierarchy) yang terdiri dari: **Owner (Human Operator)** di puncak pimpinan, **CEO Agent (AI Agent Orchestrator)** sebagai pemimpin eksekutif AI, **Department Heads (AI Agents)** sebagai manajer departemen, dan **Sub-Agents (AI Specialists)** sebagai eksekutor teknis di bawah komando Department Head. Semua sub-agen harus beroperasi secara terisolasi dengan *scratchpad* memori lokal dan alat bantu (MCP tools) yang sangat terfokus.
+Tujuan utama dari spesifikasi ini adalah memecah struktur monolitik tersebut menjadi topologi hierarkis 4 tingkat (4-tier hierarchy) yang terdiri dari: **Owner (Human Operator)** di puncak pimpinan, **CEO Agent (AI Agent Orchestrator)** sebagai pemimpin eksekutif AI, **Department Heads (AI Agents)** sebagai manajer departemen, dan **Sub-Agents (AI Specialists)** sebagai eksekutor teknis di bawah komando Department Head. Semua sub-agen harus beroperasi secara terisolasi dengan *scratchpad* memori lokal dan alat bantu (MCP tools) yang sangat terfokus sesuai dengan spesifikasi detail agen di `.kiro/specs/detail-agent/`.
 
 Semua implementasi modul yang diusulkan nantinya harus mematuhi standar proyek: colocated `*.test.ts`, lulus typecheck TypeScript ESM strict tanpa `any`, dan terintegrasi mulus dengan `AgentRegistry` serta `OperatorEventBus`.
 
@@ -33,13 +33,15 @@ Semua implementasi modul yang diusulkan nantinya harus mematuhi standar proyek: 
 - Departemen harus memiliki mekanisme isolasi memori (`IntraDepartmentScratchpad`) agar komunikasi internal antar sub-agen tidak membanjiri `OperatorEventBus` tingkat perusahaan.
 - Sistem harus menyediakan primitif alur kerja `delegateTask(subAgentId, payload)` dan `returnBaton(parentAgentId, result)` untuk memfasilitasi serah terima tugas otonom.
 
-### 3. Spesialisasi Sub-Agen per Departemen
-- **Marketing Department**: Harus memiliki sub-agen spesialis `Lead Hunter Agent`, `Content Analyst Agent`, `Content Creator Agent`, dan `Promotion Agent`.
-- **Sales Department**: Harus memiliki sub-agen spesialis `Lead Qualification Agent`, `Proposal Architect Agent`, dan `Objection Handler Agent`.
-- **Product Department**: Harus memiliki sub-agen spesialis `User Research Agent`, `PRD Scaffolder Agent`, dan `UI/UX Conceptor Agent`.
-- **Engineering Department**: Harus memiliki sub-agen spesialis `Coder Agent`, `QA & Fuzzing Agent`, `DevSecOps Agent`, dan `Deployment Cloud Agent`.
-- **Project Manager Department**: Harus memiliki sub-agen spesialis `Sprint Tracker Agent`, `Risk Analyst Agent`, dan `Resource Allocator Agent`.
-- **Support Department**: Harus memiliki sub-agen spesialis `Ticket Triage Agent`, `Knowledge Base Navigator Agent`, `Troubleshooting Agent`, dan `Escalation & Communication Agent`.
+### 3. Spesialisasi Sub-Agen per Departemen (Berdasarkan Detail Agent Specs)
+- **CEO Agent**: Harus memiliki sub-agen spesialis `Strategy Analyst`, `Report Summarizer`, `Decision Logger`, dan `OKR Tracker`.
+- **Marketing Department**: Harus memiliki sub-agen spesialis `Content Creator`, `SEO Specialist`, `Campaign Manager`, `Analytics Reader`, `Social Scheduler`, dan `Trend Watcher`.
+- **Sales Department**: Harus memiliki sub-agen spesialis `Lead Qualifier`, `Proposal Generator`, `Follow-up Drafter`, `Pipeline Tracker`, dan `Competitor Watcher`.
+- **Product Department**: Harus memiliki sub-agen spesialis `User Researcher`, `Feature Prioritizer`, `PRD Writer`, `Roadmap Builder`, dan `Feedback Analyzer`.
+- **Engineering Department**: Harus memiliki sub-agen spesialis `Code Reviewer`, `Bug Hunter`, `Docs Writer`, `Infra Monitor`, `Test Generator`, dan `PR Summarizer`.
+- **Project Manager Department**: Harus memiliki sub-agen spesialis `Task Coordinator`, `Risk Analyzer`, `Sprint Planner`, `Progress Reporter`, dan `Deadline Watcher`.
+- **Support Department**: Harus memiliki sub-agen spesialis `Ticket Classifier`, `FAQ Responder`, `Escalation Router`, `CSAT Analyzer`, `Knowledge Builder`, dan `WA Bot Handler`.
 
-### 4. Binding MCP Tools Eksklusif
+### 4. Binding MCP Tools Eksklusif & Master List
 - Sub-agen hanya boleh dibekali dengan MCP tools yang relevan dengan domain spesialisasi mereka untuk menjaga efisiensi penggunaan token dan mencegah halusinasi pemanggilan alat.
+- Master list alat bantu yang didukung mencakup: `anthropic_api`, `notion`, `google_sheets`, `google_drive`, `gmail`, `slack`, `google_calendar`, `github`, `web_search`, `bash_tool`, `figma_mcp`, `canva_mcp`, dan `whatsapp_api`.
