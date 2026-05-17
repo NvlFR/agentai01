@@ -9,6 +9,7 @@
     "runtime:worker": "bun run src/runtime-app/worker.ts",
     "runtime:scheduler": "bun run src/runtime-app/scheduler.ts",
     "runtime:smoke": "bun run src/runtime-app/smoke.ts",
+    "runtime:real": "bun run src/runtime-app/run-real-project.ts",
     "runtime:telegram": "bun run src/runtime-app/telegramBot.ts",
     "ui:dev": "cd src/runtime-app/ui && npm run dev",
     "ui:build": "cd src/runtime-app/ui && npm run build",
