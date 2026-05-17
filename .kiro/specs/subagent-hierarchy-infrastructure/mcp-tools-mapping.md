@@ -1,12 +1,27 @@
 # MCP Tools & Repositories Mapping for Sub-Agents
 
-Dokumen ini memetakan daftar repositori eksternal, pustaka otomatisasi, dan server **Model Context Protocol (MCP)** resmi/komunitas ke masing-masing sub-agen spesialis di 6 departemen utama platform `agentai01`.
+Dokumen ini memetakan daftar repositori eksternal, pustaka otomatisasi, dan server **Model Context Protocol (MCP)** resmi/komunitas ke masing-masing sub-agen spesialis di bawah **CEO Agent** dan 6 departemen utama platform `agentai01`.
 
-Setiap sub-agen dibekali dengan alat dan pustaka yang sangat terfokus untuk memastikan eksekusi tugas otonom yang efisien dan mencegah halusinasi pemanggilan alat.
+Setiap agen dan sub-agen dibekali dengan alat dan pustaka yang sangat terfokus untuk memastikan eksekusi tugas otonom yang efisien dan mencegah halusinasi pemanggilan alat.
 
 ---
 
-## 📢 1. Marketing Department
+## 👑 1. CEO Agent (Executive Orchestration)
+
+### 👔 CEO Orchestrator & Strategist
+- **Fokus**: Perumusan strategi perusahaan, analisis pasar makro, alokasi anggaran token/keuangan, dan komando tingkat tinggi ke *Department Heads*.
+- **Pustaka & Repositori Terkait**:
+  - [modelcontextprotocol/brave-search](https://github.com/modelcontextprotocol/servers/tree/main/src/brave-search) — Pencarian intelijen pasar makro dan riset lanskap kompetitor secara *real-time*.
+  - [modelcontextprotocol/notion](https://github.com/modelcontextprotocol/servers/tree/main/src/notion) — Pembacaan dan pembaruan dokumen strategi OKR (*Objectives and Key Results*) perusahaan.
+  - [modelcontextprotocol/slack](https://github.com/modelcontextprotocol/servers/tree/main/src/slack) — Penyiaran (*broadcasting*) target eksekutif ke saluran komunikasi para *Department Head*.
+  - [modelcontextprotocol/postgres](https://github.com/modelcontextprotocol/servers/tree/main/src/postgres) — Kueri analitik pembukuan finansial, tingkat pembakaran kas (*burn rate*), dan tabel konsumsi token LLM.
+  - [modelcontextprotocol/memory](https://github.com/modelcontextprotocol/servers/tree/main/src/memory) — Penyimpanan memori jangka panjang terkait visi inti perusahaan dan rekam jejak keputusan strategis masa lalu.
+  - [modelcontextprotocol/github](https://github.com/modelcontextprotocol/servers/tree/main/src/github) — Pemantauan pencapaian peta jalan (*roadmap*) tingkat tinggi dan persetujuan rilis utama (*major release approvals*).
+  - [sickn33/antigravity-awesome-skills](https://github.com/sickn33/antigravity-awesome-skills) — Pustaka *skills* eksekutif tingkat lanjut (termasuk simulasi pemikiran eksekutif `sam-altman`, `steve-jobs`, `elon-musk`, `startup-analyst`, `pricing-strategy`, dan `market-sizing-analysis`).
+
+---
+
+## 📢 2. Marketing Department
 
 ### 🕵️ Lead Hunter Agent
 - **Fokus**: Pencarian prospek, ekstraksi kontak, dan pemindaian direktori bisnis.
@@ -40,7 +55,7 @@ Setiap sub-agen dibekali dengan alat dan pustaka yang sangat terfokus untuk mema
 
 ---
 
-## 💼 2. Sales Department
+## 💼 3. Sales Department
 
 ### 🔍 Lead Qualification Agent
 - **Fokus**: Verifikasi kecocokan anggaran, BANT, dan validasi entitas bisnis.
@@ -62,7 +77,7 @@ Setiap sub-agen dibekali dengan alat dan pustaka yang sangat terfokus untuk mema
 
 ---
 
-## 📦 3. Product Department
+## 📦 4. Product Department
 
 ### 🔬 User Research Agent
 - **Fokus**: Analisis *pain points*, pengumpulan masukan pengguna, dan pembentukan persona.
@@ -84,7 +99,7 @@ Setiap sub-agen dibekali dengan alat dan pustaka yang sangat terfokus untuk mema
 
 ---
 
-## ⚙️ 4. Engineering Department
+## ⚙️ 5. Engineering Department
 
 ### 💻 Implementation / Coder Agent
 - **Fokus**: Penulisan kode aplikasi, refaktoring, dan pemeliharaan logika bisnis.
@@ -111,7 +126,7 @@ Setiap sub-agen dibekali dengan alat dan pustaka yang sangat terfokus untuk mema
 
 ---
 
-## 📋 5. Project Manager Department
+## 📋 6. Project Manager Department
 
 ### ⏱️ Sprint Tracker Agent
 - **Fokus**: Pemantauan *burndown chart*, tenggat waktu, dan status tiket kerja.
@@ -132,7 +147,7 @@ Setiap sub-agen dibekali dengan alat dan pustaka yang sangat terfokus untuk mema
 
 ---
 
-## 🎫 6. Support Department
+## 🎫 7. Support Department
 
 ### 🎫 Ticket Triage Agent
 - **Fokus**: Klasifikasi tiket (bug/incident/question) dan penentuan tingkat urgensi.
