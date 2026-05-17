@@ -74,7 +74,7 @@ Setiap task dianggap selesai hanya jika ada bukti nyata:
 
 ## Phase 4 — Extension to Other Departments & Final Verification
 
-> Fokus: Memperluas topologi ke departemen Sales, Product, Engineering, dan Project Manager, serta verifikasi akhir.
+> Fokus: Memperluas topologi ke departemen Sales, Product, Engineering, Support, dan Project Manager, serta verifikasi akhir.
 
 | Task ID | Nama Task | Deskripsi & Kontrak Implementasi | Status |
 | :--- | :--- | :--- | :---: |
@@ -82,4 +82,5 @@ Setiap task dianggap selesai hanya jika ada bukti nyata:
 | **4.2** | `ProductSubAgents` | Implementasikan spesialis `UserResearch`, `PRDScaffolder`, dan `UIUXConceptor` di `src/agents/subagents/product/`. | [ ] |
 | **4.3** | `EngineeringSubAgents`| Implementasikan spesialis `CoderAgent`, `QAAgent`, `DevSecOpsAgent`, dan `DeploymentAgent` di `src/agents/subagents/engineering/`. | [ ] |
 | **4.4** | `ProjectManagerSubAgents`| Implementasikan spesialis `SprintTracker`, `RiskAnalyst`, dan `ResourceAllocator` di `src/agents/subagents/pm/`. | [ ] |
-| **4.5** | `FinalSystemVerification`| Jalankan `npm run check`, `bun test`, dan `npm run runtime:smoke` untuk memastikan tidak ada regresi pada sistem orkestrasi utama. | [ ] |
+| **4.5** | `SupportSubAgents` | Implementasikan spesialis `TicketTriage`, `KnowledgeBaseNavigator`, `TroubleshootingAgent`, dan `EscalationAgent` di `src/agents/subagents/support/`. | [ ] |
+| **4.6** | `FinalSystemVerification`| Jalankan `npm run check`, `bun test`, dan `npm run runtime:smoke` untuk memastikan tidak ada regresi pada sistem orkestrasi utama. | [ ] |

@@ -83,3 +83,7 @@ Alur kerja otonom antar sub-agen diatur melalui mesin status (state machine) ser
 | | `QA & Fuzzing Agent` | Pembuatan unit test dan pengujian otomatis | `bun_test_runner`, `fuzzer` |
 | | `DevSecOps Agent` | Pemindaian kerentanan dan audit SAST | `sast_scanner`, `dep_auditor` |
 | | `Deployment Agent` | Orkestrasi kontainer dan CI/CD cloud | `docker_mcp`, `cloud_deployer` |
+| **Support** | `Ticket Triage Agent`| Klasifikasi tiket (bug, incident, question) & prioritas | `crm_tickets`, `known_issues_db` |
+| | `Knowledge Base Navigator`| Pencarian solusi di dokumen basis pengetahuan internal | `kb_search`, `vector_mcp` |
+| | `Troubleshooting Agent`| Analisis log sistem, metrik, dan diagnostik awal | `log_viewer`, `metrics_mcp` |
+| | `Escalation Agent` | Komunikasi klien, draf resolusi, dan eskalasi ke Eng/PM | `email_outreach`, `jira_mcp` |
