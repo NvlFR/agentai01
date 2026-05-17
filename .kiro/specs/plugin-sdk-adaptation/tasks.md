@@ -649,7 +649,7 @@ src/plugin-sdk/tailscale.ts          — resolveTailnetHostWithRunner
 
 ---
 
-### Task 3.6 — Implementasi Plugin Registry, Loader, dan Hot Reload
+### Task 3.6 [x] — Implementasi Plugin Registry, Loader, dan Hot Reload
 
 **Requirements:** Req 80, 45
 **Referensi:** pola plugin system di `referensi/openclaw/`
@@ -684,7 +684,7 @@ src/plugin-sdk/hot-reload.ts — watchExtensions menggunakan chokidar
 
 ---
 
-### Task 4.1 — Implementasi Telegram Token, Transport, Normalize, Offset, Status, dan Error Policy
+### Task 4.1 [x] — Implementasi Telegram Token, Transport, Normalize, Offset, Status, dan Error Policy
 
 **Requirements:** Req 46, 47, 48, 49, 50, 51, 70
 **Referensi:** `referensi/openclaw/extensions/telegram/src/token.ts`, `fetch.ts`, `normalize.ts`, `update-offset-store.ts`, `polling-status.ts`, `error-policy.ts`
@@ -717,7 +717,7 @@ src/channels/telegram/error-policy.ts
 
 ---
 
-### Task 4.2 — Implementasi Telegram Draft, Updates, Send, dan Index
+### Task 4.2 [x] — Implementasi Telegram Draft, Updates, Send, dan Index
 
 **Requirements:** Req 52, 53, 54, 55, 56, 70
 **Referensi:** `referensi/openclaw/extensions/telegram/src/draft-chunking.ts`, `draft-stream.ts`, `bot-updates.ts`, `send.ts`, `../index.ts`
@@ -749,7 +749,7 @@ src/channels/telegram/index.ts
 
 ---
 
-### Task 4.3 — Implementasi WhatsApp Normalize, Timing, Reconnect, Group Route, Inbound Extract/Access/Dedupe
+### Task 4.3 [x] — Implementasi WhatsApp Normalize, Timing, Reconnect, Group Route, Inbound Extract/Access/Dedupe
 
 **Requirements:** Req 57, 58, 59, 60, 61, 62, 63, 71
 **Referensi:** `referensi/openclaw/extensions/whatsapp/src/normalize-target.ts`, `normalize.ts`, `socket-timing.ts`, `reconnect.ts`, `group-session-key.ts`, `inbound/extract.ts`, `inbound/access-control.ts`, `inbound/dedupe.ts`
@@ -824,7 +824,7 @@ src/channels/whatsapp/index.ts
 
 ---
 
-### Task 5.1 — Implementasi `src/web-fetch/`
+### Task 5.1 [x] — Implementasi `src/web-fetch/`
 
 **Requirements:** Req 75
 **Referensi:** `referensi/openclaw/src/web-fetch/runtime.ts`, `content-extractors.runtime.ts`
@@ -852,7 +852,7 @@ src/web-fetch/index.ts              — re-exports only
 
 ---
 
-### Task 5.2 — Implementasi `src/web-search/`
+### Task 5.2 [x] — Implementasi `src/web-search/`
 
 **Requirements:** Req 76
 **Referensi:** `referensi/openclaw/src/web-search/runtime.ts`, `runtime-types.ts`
@@ -888,7 +888,7 @@ src/web-search/index.ts
 
 ---
 
-### Task 6.1 — Ganti LanceDB Placeholder Embedding dengan Real Embedding Function
+### Task 6.1 [x] — Ganti LanceDB Placeholder Embedding dengan Real Embedding Function
 
 **Requirements:** Req 72
 **Target:** `src/runtime-app/memory/lancedb/lancedbMemoryBackend.ts`
@@ -913,7 +913,7 @@ src/runtime-app/memory/lancedb/lancedbMemoryBackend.ts — createEmbeddingFuncti
 
 ---
 
-### Task 6.2 — Implementasi Runtime App Speech Layer
+### Task 6.2 [x] — Implementasi Runtime App Speech Layer
 
 **Requirements:** Req 77
 **Referensi:** `referensi/openclaw/src/tts/tts-types.ts`, `openai-compatible-speech-provider.ts`, `tts-core.ts`, `provider-registry.ts`
@@ -942,7 +942,7 @@ src/runtime-app/speech/index.ts
 
 ---
 
-### Task 6.3 — Implementasi Runtime App Generation Layer
+### Task 6.3 [x] — Implementasi Runtime App Generation Layer
 
 **Requirements:** Req 78
 **Referensi:** pola `referensi/openclaw/src/video-generation/` dan image generation patterns
