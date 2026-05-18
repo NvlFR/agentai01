@@ -6,6 +6,7 @@ import { getCorrelationId, jsonResponse, textResponse } from '../web/index.js'
 import { RuntimeAppState } from './state.js'
 import { loadRuntimeAppConfig } from './config.js'
 import { SkillRegistry } from './skills/SkillRegistry.js'
+import { AgentCreationService } from './agent-creation/index.js'
 import {
   createOpenAICompatibleProvider,
   ProviderRequestError,
@@ -46,6 +47,7 @@ export function startRuntimeAppServer(
 ): RuntimeAppServer {
   const config = state.config
   const staticDir = options.staticDir ?? DEFAULT_STATIC_DIR
+  const agentCreation = new AgentCreationService({ config })
 
   return Bun.serve({
     hostname: config.host,
@@ -70,6 +72,11 @@ export function startRuntimeAppServer(
         const registry = await SkillRegistry.create()
         return json(withMeta(req, state.getSnapshot(), registry.list()))
       },
+      '/api/agents/wizard/schema': req =>
+        json(withMeta(req, state.getSnapshot(), {
+          memoryEnabled: true,
+          steps: agentCreation.buildStepDefinitions(state.config.ai.model),
+        })),
       '/api/telegram/status': req => json(withMeta(req, state.getSnapshot(), {
         ok: true,
         status: state.config.telegramToken ? 'polling' : 'disconnected',
@@ -199,6 +206,74 @@ export function startRuntimeAppServer(
             latencyMs: Date.now() - startedAt,
           }), status >= 400 && status < 600 ? status : 502)
         }
+      }
+
+      if (req.method === 'POST' && url.pathname === '/api/agents/wizard/generate') {
+        const body = await readJson(req)
+        const prompt = typeof body.prompt === 'string' ? body.prompt : ''
+        if (!prompt.trim()) {
+          return json(withCorrelation(correlationId, {
+            ok: false,
+            message: 'prompt is required.',
+          }), 400)
+        }
+
+        try {
+          const generated = await agentCreation.generateFields(
+            prompt,
+            Array.isArray(body.existingAgentIds)
+              ? body.existingAgentIds.filter((value): value is string => typeof value === 'string')
+              : undefined,
+          )
+          return json(withCorrelation(correlationId, {
+            ok: true,
+            generated,
+          }))
+        } catch (error) {
+          return json(withCorrelation(correlationId, {
+            ok: false,
+            message: error instanceof Error ? error.message : 'Agent generation failed.',
+          }), 400)
+        }
+      }
+
+      if (req.method === 'POST' && url.pathname === '/api/agents/wizard/validate') {
+        const body = await readJson(req)
+        const draft = typeof body.draft === 'object' && body.draft !== null ? body.draft : {}
+        const result = await agentCreation.validateDraft(draft)
+        return json(withCorrelation(correlationId, {
+          ok: result.isValid,
+          result,
+        }), result.isValid ? 200 : 400)
+      }
+
+      if (req.method === 'POST' && url.pathname === '/api/agents/wizard/save') {
+        const body = await readJson(req)
+        const draft = typeof body.draft === 'object' && body.draft !== null ? body.draft : {}
+        try {
+          const artifact = await agentCreation.saveDraft(draft)
+          return json(withCorrelation(correlationId, {
+            ok: true,
+            artifact,
+          }), 201)
+        } catch (error) {
+          return json(withCorrelation(correlationId, {
+            ok: false,
+            message: error instanceof Error ? error.message : 'Agent draft save failed.',
+          }), 400)
+        }
+      }
+
+      if (req.method === 'GET' && url.pathname === '/api/agents/drafts') {
+        const locationParam = url.searchParams.get('location')
+        const location = locationParam === 'project' || locationParam === 'runtime' || locationParam === 'user'
+          ? locationParam
+          : 'project'
+        const items = await agentCreation.listSavedDrafts(location)
+        return json(withCorrelation(correlationId, {
+          ok: true,
+          items,
+        }))
       }
 
       if (req.method === 'POST' && url.pathname.endsWith('/respond') && url.pathname.startsWith('/api/approvals/')) {
