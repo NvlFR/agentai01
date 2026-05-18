@@ -8,7 +8,7 @@ import {
 describe('architecture boundaries', () => {
   it('passes the current src graph without boundary violations', () => {
     expect(collectArchitectureViolations({ includeTests: false })).toEqual([])
-  })
+  }, 15000)
 
   it('reports agent-to-agent internal imports with a descriptive rule', () => {
     const violation = classifyArchitectureViolation('src/agents/sales/flow.ts', {

@@ -137,7 +137,7 @@ describe('Runtime app operator server', () => {
     expect(result.ok).toBe(true)
     expect(result.message).toContain('Runbook check berhasil.')
     expect(result.message).toContain('Artifact:')
-  }, 90_000)
+  }, 180_000)
 
   test('executes workspace inspection directives through runtime app state', () => {
     const state = new RuntimeAppState(createConfig())

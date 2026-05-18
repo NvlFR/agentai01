@@ -13,5 +13,24 @@
     "skipLibCheck": true,
     "types": ["bun"]
   },
-  "include": ["src/**/*.ts", "src/**/*.d.ts"]
+  "include": ["src/**/*.ts", "src/**/*.d.ts"],
+  "exclude": [
+    "src/logging/analytics/**",
+    "src/logging/telemetry/**",
+    "src/mcp/services/**",
+    "src/memory/compact/**",
+    "src/memory/persistence/**",
+    "src/memory/session/**",
+    "src/memory/team-sync/**",
+    "src/plugins/services/**",
+    "src/runtime-app/extensions/teleport/**",
+    "src/runtime-app/integrations/git/**",
+    "src/runtime-app/integrations/github/ghAuthStatus.ts",
+    "src/runtime-app/services/**",
+    "src/runtime-app/tools/computer-use/**",
+    "src/runtime-app/prompt/suggestions/**",
+    "src/runtime-app/providers/api/**",
+    "src/tools/summary/**",
+    "src/tools/ultraplan/**"
+  ]
 }

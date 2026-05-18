@@ -33,6 +33,10 @@ export type McpChannelBridge = {
   toToolInput(message: unknown): Result<McpToolInput, string>
 }
 
+export * from './service.js'
+export * from './repositories.js'
+export * from './projectConfig.js'
+
 export function createMcpServer(tools: readonly McpTool[]): McpServerContract {
   const byName = new Map(tools.map(tool => [tool.name, tool]))
 

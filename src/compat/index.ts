@@ -62,6 +62,12 @@ export type {
   LegacyServiceStopper,
   LegacyShutdownFn,
 } from './legacy-adapters.js'
+export type {
+  AdaptationClassification,
+  LandingPath,
+  RestoredSrcAdaptationEntry,
+  RestoredSrcCapabilityId,
+} from './restored-src-adaptation.js'
 
 export {
   bridgeBootHealthToStatus,
@@ -71,3 +77,11 @@ export {
   legacyShutdownAdapter,
   legacyStatusAdapter,
 } from './legacy-adapters.js'
+export {
+  collectLandingPaths,
+  findRestoredSrcAdaptationEntry,
+  listContextFabricSourcePatterns,
+  listMandatoryCapabilityCoverage,
+  REQUIRED_RESTORED_SRC_CAPABILITIES,
+  RESTORED_SRC_ADAPTATION_BASELINE,
+} from './restored-src-adaptation.js'

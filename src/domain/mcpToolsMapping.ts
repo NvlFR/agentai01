@@ -23,6 +23,7 @@ export const MCP_SERVER_IDS = [
   'postgres',
   'memory',
   'github',
+  'git',
   'fetch',
   'filesystem',
   'puppeteer',
@@ -70,6 +71,11 @@ export const MCP_SERVER_CATALOG: Record<McpServerId, McpServerDescriptor> = {
     upstreamPath: 'src/github',
     description: 'Issues, PR, CI/CD, Dependabot, GitHub Projects.',
   },
+  git: {
+    id: 'git',
+    upstreamPath: 'src/git',
+    description: 'Operasi Git otonom untuk diff, branch, commit, dan inspeksi repo.',
+  },
   fetch: {
     id: 'fetch',
     upstreamPath: 'src/fetch',
@@ -110,7 +116,7 @@ export const LOGICAL_TOOL_TO_MCP_SERVERS: Record<McpToolId, readonly McpServerId
   google_calendar: ['notion'],
   github: ['github'],
   web_search: ['brave-search', 'fetch'],
-  bash_tool: ['filesystem', 'github'],
+  bash_tool: ['filesystem', 'git', 'github'],
   figma_mcp: ['puppeteer'],
   canva_mcp: ['filesystem'],
   whatsapp_api: ['slack'],
