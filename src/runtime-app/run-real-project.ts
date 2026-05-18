@@ -3,14 +3,31 @@ import { createOpenAICompatibleProvider } from './providers/openaiCompatibleProv
 import { createRuntimeOperationalApp } from './orchestration/runtimeApp.js'
 import { createFileRuntimePersistence } from './storage/fileRuntimeStorage.js'
 
+const scenario = {
+  clientName: 'PT Siloam International Hospitals Tbk',
+  clientShortName: 'Siloam Hospitals',
+  clientId: 'siloam',
+  projectName: 'Sistem Orkestrasi Agen AI Operasional Rumah Sakit (SILOAM-AI)',
+  projectId: 'proj-siloam-ai',
+  leadId: 'lead-siloam',
+  campaignId: 'cmp-siloam-ai',
+  segmentId: 'healthcare-enterprise',
+  contactName: 'dr. Maya Pratama (Director of Digital Transformation)',
+  contactEmail: 'maya.pratama@siloamhospitals.com',
+  serviceChannel: 'enterprise_sales',
+  businessNeed:
+    'Sistem orkestrasi agen AI untuk koordinasi layanan pasien, ringkasan operasional klinis, dan integrasi workflow rumah sakit.',
+  valueRange: '$85,000 - $135,000',
+} as const
+
 async function runRealLifeProject() {
   process.stdout.write(`
 ================================================================================
 🚀 AGENTAI01 — REAL-LIFE ENTERPRISE PROJECT EXECUTION SIMULATION
 ================================================================================
-🏢 Client      : PT Bank Rakyat Indonesia (Persero) Tbk (BRI)
-🎯 Project     : Sistem Orkestrasi Agen AI Perbankan (BRI-AI)
-🔑 Project ID  : proj-bri-ai
+🏢 Client      : ${scenario.clientName} (${scenario.clientShortName})
+🎯 Project     : ${scenario.projectName}
+🔑 Project ID  : ${scenario.projectId}
 📅 Start Time  : 2026-05-17T09:00:00Z
 ================================================================================
 `)
@@ -31,7 +48,10 @@ async function runRealLifeProject() {
 
   process.stdout.write(`[⚡] Menghubungi AI Provider untuk pesan motivasi tim proyek...\n`)
   const providerResult = await provider.generateText({
-    messages: [{ role: 'user', content: 'Tuliskan satu kalimat motivasi pendek dan profesional untuk tim AI Bank Rakyat Indonesia (BRI) dalam membangun sistem perbankan cerdas.' }],
+    messages: [{
+      role: 'user',
+      content: `Tuliskan satu kalimat motivasi pendek dan profesional untuk tim AI ${scenario.clientShortName} dalam membangun sistem operasional rumah sakit yang cerdas dan aman.`,
+    }],
     temperature: 0.7,
     maxTokens: 64,
   })
@@ -51,12 +71,11 @@ async function runRealLifeProject() {
   process.stdout.write(`--------------------------------------------------------------------------------
 [Langkah 1] 📢 Marketing Agent: Menangkap Inbound Lead Enterprise & Analisis Prospek
 --------------------------------------------------------------------------------
-- Lead ID       : lead-bri
-- Company       : PT Bank Rakyat Indonesia (Persero) Tbk
-- Contact       : Budi Santoso (VP of Digital Banking)
-- Channel       : enterprise_sales
-- Kebutuhan     : Sistem orkestrasi agen AI perbankan untuk otomatisasi layanan
-                  nasabah prioritas dan integrasi core banking.
+- Lead ID       : ${scenario.leadId}
+- Company       : ${scenario.clientName}
+- Contact       : ${scenario.contactName}
+- Channel       : ${scenario.serviceChannel}
+- Kebutuhan     : ${scenario.businessNeed}
 
 [⚡] Menghubungi AI Provider (Marketing Agent Persona)...
 `)
@@ -64,7 +83,7 @@ async function runRealLifeProject() {
   const marketingAI = await provider.generateText({
     messages: [{
       role: 'user',
-      content: `Bertindaklah sebagai Senior Marketing Agent di sebuah perusahaan AI. Anda baru saja menerima prospek (inbound lead) dari PT Bank Rakyat Indonesia (Persero) Tbk (BRI) untuk proyek 'Sistem Orkestrasi Agen AI Perbankan (BRI-AI)'. Buatlah analisis singkat 2-3 kalimat mengenai peluang strategis integrasi core banking dan otomatisasi layanan nasabah prioritas untuk diserahkan ke tim Sales.`,
+      content: `Bertindaklah sebagai Senior Marketing Agent di sebuah perusahaan AI. Anda baru saja menerima prospek (inbound lead) dari ${scenario.clientName} (${scenario.clientShortName}) untuk proyek '${scenario.projectName}'. Buatlah analisis singkat 2-3 kalimat mengenai peluang strategis koordinasi layanan pasien, ringkasan operasional klinis, dan integrasi workflow rumah sakit untuk diserahkan ke tim Sales.`,
     }],
     temperature: 0.7,
     maxTokens: 150,
@@ -75,17 +94,17 @@ async function runRealLifeProject() {
     'marketing_agent',
     'capture_inbound_lead',
     {
-      lead_id: 'lead-bri',
-      company_name: 'PT Bank Rakyat Indonesia (Persero) Tbk',
-      contact_name: 'Budi Santoso (VP of Digital Banking)',
-      contact_email: 'budi.santoso@bri.co.id',
+      lead_id: scenario.leadId,
+      company_name: scenario.clientName,
+      contact_name: scenario.contactName,
+      contact_email: scenario.contactEmail,
       contact_channel: 'email',
-      source_channel: 'enterprise_sales',
-      campaign_id: 'cmp-bri-ai',
-      segment_id: 'banking-enterprise',
-      project_id: 'proj-bri-ai',
+      source_channel: scenario.serviceChannel,
+      campaign_id: scenario.campaignId,
+      segment_id: scenario.segmentId,
+      project_id: scenario.projectId,
       initial_need_summary: marketingAI.content.trim(),
-      tags: ['banking', 'enterprise', 'ai-orchestration', 'priority-banking'],
+      tags: ['healthcare', 'enterprise', 'ai-orchestration', 'hospital-operations'],
     },
     '2026-05-17T09:00:00Z',
   )
@@ -97,8 +116,8 @@ async function runRealLifeProject() {
 [Langkah 2] 💼 Sales Agent: Kualifikasi Lead, Penyusunan Proposal Komersial & Request Approval
 --------------------------------------------------------------------------------
 - Pipeline Stage: qualified
-- Scope Outline : Lead intake automation, Runtime orchestration, Delivery dashboard
-- Price Range   : $75,000 - $120,000
+- Scope Outline : Patient service coordination, Runtime orchestration, Delivery dashboard
+- Price Range   : ${scenario.valueRange}
 
 [⚡] Menghubungi AI Provider (Sales Agent Persona)...
 `)
@@ -106,7 +125,7 @@ async function runRealLifeProject() {
   const salesAI = await provider.generateText({
     messages: [{
       role: 'user',
-      content: `Bertindaklah sebagai Senior Enterprise Sales Agent. Berdasarkan prospek dari PT Bank Rakyat Indonesia (BRI) untuk proyek BRI-AI (Sistem Orkestrasi Agen AI Perbankan), susunlah ringkasan eksekutif proposal komersial singkat (2-3 kalimat) yang menyoroti estimasi nilai proyek ($75k - $120k) dan justifikasi ROI untuk diajukan kepada CEO/Owner.`,
+      content: `Bertindaklah sebagai Senior Enterprise Sales Agent. Berdasarkan prospek dari ${scenario.clientShortName} untuk proyek ${scenario.projectName}, susunlah ringkasan eksekutif proposal komersial singkat (2-3 kalimat) yang menyoroti estimasi nilai proyek (${scenario.valueRange}) dan justifikasi ROI untuk diajukan kepada CEO/Owner.`,
     }],
     temperature: 0.7,
     maxTokens: 150,
@@ -120,15 +139,15 @@ async function runRealLifeProject() {
 [Langkah 3] 👑 CEO / Owner: Menyetujui Proposal (Proposal Approval Gate)
 --------------------------------------------------------------------------------
 - Keputusan     : APPROVE
-- Catatan Owner : Proposal disetujui. Sesuai dengan roadmap transformasi digital BRI.
+- Catatan Owner : Proposal disetujui. Selaras dengan roadmap transformasi layanan digital rumah sakit.
 `)
 
   await app.respondToPendingApproval(
-    'proj-bri-ai',
+    scenario.projectId,
     'proposal_final',
     'approve',
     '2026-05-17T09:15:00Z',
-    'Proposal disetujui. Sesuai dengan roadmap transformasi digital BRI.',
+    'Proposal disetujui. Selaras dengan roadmap transformasi layanan digital rumah sakit.',
   )
 
   process.stdout.write(`✔ Proposal disetujui. Sales Agent melakukan handoff proyek ke Product Agent.\n`)
@@ -138,7 +157,7 @@ async function runRealLifeProject() {
 [Langkah 4] 📦 Product Agent: Menerima Handoff, Penyusunan Discovery Spec & Request Approval
 --------------------------------------------------------------------------------
 - Spec Version  : v1
-- Pain Points   : Silo data antar divisi, lambatnya koordinasi manual agen CS
+- Pain Points   : Silo data antar unit layanan, lambatnya koordinasi manual pasien dan staf
 
 [⚡] Menghubungi AI Provider (Product Agent Persona)...
 `)
@@ -146,7 +165,7 @@ async function runRealLifeProject() {
   const productAI = await provider.generateText({
     messages: [{
       role: 'user',
-      content: `Bertindaklah sebagai Lead Product Manager (Product Agent). Anda baru saja menerima handoff proyek BRI-AI yang telah disetujui CEO. Susunlah ringkasan spesifikasi penemuan produk (Discovery Spec v1) singkat dalam 2-3 kalimat yang berfokus pada penyelesaian pain points integrasi core banking dan otomatisasi layanan nasabah prioritas.`,
+      content: `Bertindaklah sebagai Lead Product Manager (Product Agent). Anda baru saja menerima handoff proyek ${scenario.projectName} yang telah disetujui CEO. Susunlah ringkasan spesifikasi penemuan produk (Discovery Spec v1) singkat dalam 2-3 kalimat yang berfokus pada penyelesaian pain points koordinasi layanan pasien, ringkasan operasional klinis, dan integrasi workflow rumah sakit.`,
     }],
     temperature: 0.7,
     maxTokens: 150,
@@ -160,15 +179,15 @@ async function runRealLifeProject() {
 [Langkah 5] 👑 CEO / Owner: Menyetujui Spesifikasi (Spec Approval Gate)
 --------------------------------------------------------------------------------
 - Keputusan     : APPROVE
-- Catatan Owner : Spesifikasi teknis sangat jelas dan memenuhi standar keamanan perbankan.
+- Catatan Owner : Spesifikasi teknis sangat jelas dan memenuhi standar keamanan serta kepatuhan operasional rumah sakit.
 `)
 
   await app.respondToPendingApproval(
-    'proj-bri-ai',
+    scenario.projectId,
     'spec_final',
     'approve',
     '2026-05-17T09:30:00Z',
-    'Spesifikasi teknis sangat jelas dan memenuhi standar keamanan perbankan.',
+    'Spesifikasi teknis sangat jelas dan memenuhi standar keamanan serta kepatuhan operasional rumah sakit.',
   )
 
   process.stdout.write(`✔ Spesifikasi disetujui. Product Agent melakukan handoff ke Engineering Agent.\n`)
@@ -187,7 +206,7 @@ async function runRealLifeProject() {
   const engineeringAI = await provider.generateText({
     messages: [{
       role: 'user',
-      content: `Bertindaklah sebagai Lead AI Systems Architect (Engineering Agent) dalam sebuah SIMULASI PELATIHAN ORKESTRASI (Roleplay Demonstrator). Dalam skenario simulasi ini, sistem BRI-AI (Sistem Orkestrasi Agen AI Perbankan) diasumsikan telah melewati 100% pengujian staging terisolasi. Buatlah draf/template laporan kesiapan rilis (delivery readiness) fiktif untuk keperluan demonstrasi simulasi dalam 2-3 kalimat yang menyoroti keberhasilan unit test dan kepatuhan sistem sebelum simulasi deployment akhir.`,
+      content: `Bertindaklah sebagai Lead AI Systems Architect (Engineering Agent) dalam sebuah SIMULASI PELATIHAN ORKESTRASI (Roleplay Demonstrator). Dalam skenario simulasi ini, sistem ${scenario.projectName} diasumsikan telah melewati 100% pengujian staging terisolasi. Buatlah draf/template laporan kesiapan rilis (delivery readiness) fiktif untuk keperluan demonstrasi simulasi dalam 2-3 kalimat yang menyoroti keberhasilan unit test dan kepatuhan sistem sebelum simulasi deployment akhir.`,
     }],
     temperature: 0.7,
     maxTokens: 150,
@@ -202,15 +221,15 @@ async function runRealLifeProject() {
 --------------------------------------------------------------------------------
 - Keputusan     : APPROVE
 - Catatan Owner : Paket pengiriman dan hasil QA telah divalidasi. Siap untuk deployment
-                  ke production BRI.
+                  ke production ${scenario.clientShortName}.
 `)
 
   await app.respondToPendingApproval(
-    'proj-bri-ai',
+    scenario.projectId,
     'delivery_final',
     'approve',
     '2026-05-17T09:45:00Z',
-    'Paket pengiriman dan hasil QA telah divalidasi. Siap untuk deployment ke production BRI.',
+    `Paket pengiriman dan hasil QA telah divalidasi. Siap untuk deployment ke production ${scenario.clientShortName}.`,
   )
 
   process.stdout.write(`✔ Pengiriman disetujui. Engineering Agent melakukan handoff ke Project Manager.\n`)
@@ -225,7 +244,7 @@ async function runRealLifeProject() {
   const pmAI = await provider.generateText({
     messages: [{
       role: 'user',
-      content: `Bertindaklah sebagai Senior Project Manager Agent. Proyek BRI-AI telah mendapatkan persetujuan pengiriman akhir dari CEO dan statusnya kini resmi 'DELIVERED'. Tuliskan catatan penutupan proyek (project closing memo) dan ucapan selamat singkat dalam 2-3 kalimat kepada seluruh tim agen AI dan pemangku kepentingan di Bank Rakyat Indonesia (BRI).`,
+      content: `Bertindaklah sebagai Senior Project Manager Agent. Proyek ${scenario.projectName} telah mendapatkan persetujuan pengiriman akhir dari CEO dan statusnya kini resmi 'DELIVERED'. Tuliskan catatan penutupan proyek (project closing memo) dan ucapan selamat singkat dalam 2-3 kalimat kepada seluruh tim agen AI dan pemangku kepentingan di ${scenario.clientShortName}.`,
     }],
     temperature: 0.7,
     maxTokens: 150,
@@ -235,7 +254,7 @@ async function runRealLifeProject() {
   process.stdout.write(`✔ Project Manager memperbarui status siklus hidup proyek menjadi "delivered".\n`)
 
   const dashboard = app.shell.readDashboard('2026-05-17T10:00:00Z')
-  const project = dashboard.projects.find(p => p.project_id === 'proj-bri-ai')
+  const project = dashboard.projects.find(p => p.project_id === scenario.projectId)
 
   process.stdout.write(`
 ================================================================================
@@ -250,7 +269,7 @@ async function runRealLifeProject() {
 - Total Peristiwa Bus   : ${app.events.length} communication events recorded
 - Pending Approvals     : ${dashboard.approvals.pending_count}
 ================================================================================
-🎉 PROYEK NYATA "SISTEM ORKESTRASI AGEN AI PERBANKAN (BRI-AI)" SELESAI DENGAN SUKSES!
+🎉 PROYEK NYATA "${scenario.projectName.toUpperCase()}" SELESAI DENGAN SUKSES!
 ================================================================================
 `)
 }

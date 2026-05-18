@@ -92,7 +92,7 @@ export class RuntimeQueueBackend {
   async fail(jobId: string, error: string, now = new Date().toISOString()): Promise<RuntimeJob> {
     const job = await this.mustGetJob(jobId)
     const shouldRetry = job.attempts < job.max_attempts
-    const nextStatus: RuntimeJobStatus = shouldRetry ? 'retrying' : 'failed'
+    const nextStatus: RuntimeJobStatus = shouldRetry ? 'retrying' : 'dead_lettered'
     const retryAt = shouldRetry ? computeRetryAt(job, this.retryPolicy, now) : undefined
 
     const failed: RuntimeJob = {
@@ -147,7 +147,7 @@ export class RuntimeQueueBackend {
       const shouldRetry = job.attempts < job.max_attempts
       const recovered: RuntimeJob = {
         ...job,
-        status: shouldRetry ? 'retrying' : 'failed',
+        status: shouldRetry ? 'retrying' : 'dead_lettered',
         claimed_by: undefined,
         updated_at: now,
         retry_at: shouldRetry ? now : undefined,
@@ -180,13 +180,14 @@ export class RuntimeQueueBackend {
       if (job.status === 'retrying') metrics.retrying_jobs += 1
       if (job.status === 'completed') metrics.completed_jobs += 1
       if (job.status === 'failed') metrics.failed_jobs += 1
+      if (job.status === 'dead_lettered') metrics.dead_lettered_jobs += 1
     }
 
     return metrics
   }
 
   async summarizeFailedJobIds(): Promise<string[]> {
-    const jobs = await this.repository.listJobs({ statuses: ['failed'] })
+    const jobs = await this.repository.listJobs({ statuses: ['failed', 'dead_lettered'] })
     return jobs.map(job => job.job_id)
   }
 

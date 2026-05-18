@@ -14,6 +14,7 @@ export type RuntimeJobStatus =
   | 'completed'
   | 'failed'
   | 'retrying'
+  | 'dead_lettered'
 
 export type RetryStrategy = 'fixed' | 'exponential'
 
@@ -94,6 +95,7 @@ export type RuntimeQueueMetrics = {
   retrying_jobs: number
   completed_jobs: number
   failed_jobs: number
+  dead_lettered_jobs: number
   queue_depth_by_kind: Record<RuntimeJobKind, number>
 }
 
@@ -178,6 +180,7 @@ export function createEmptyQueueMetrics(): RuntimeQueueMetrics {
     retrying_jobs: 0,
     completed_jobs: 0,
     failed_jobs: 0,
+    dead_lettered_jobs: 0,
     queue_depth_by_kind: {
       message_dispatch: 0,
       handoff_retry: 0,

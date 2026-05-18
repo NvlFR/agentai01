@@ -8,10 +8,14 @@ Kebijakan keamanan repo `agentai01`.
 - `.env` hanya untuk default non-secret
 - secret lokal taruh di `.env.local` atau env runtime
 - output operator/TUI/web tidak boleh menampilkan raw secret
+- `OPERATOR_TOKEN`, `OWNER_TOKEN`, `OBSERVER_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`, dan `WHATSAPP_WEBHOOK_SECRET` hanya boleh berasal dari env/runtime secret source
 
 ## Access Control
 
 - endpoint mutating harus terlindungi operator auth
+- production tidak boleh memakai fallback `dev-owner-token`
+- approval, retry, dan aksi high-risk harus memakai role `owner`
+- role header hanya boleh down-scope token; tidak boleh menaikkan token operator menjadi owner
 - approval/retry/directive flows harus eksplisit
 - jangan anggap session label sebagai auth boundary
 
@@ -26,6 +30,7 @@ Kebijakan keamanan repo `agentai01`.
 - shell / workspace actions
 - provider API calls
 - Telegram / WhatsApp outbound
+- **Telegram / WhatsApp webhook endpoints** (wajib HMAC signature, timestamp replay window, dan event id dedupe sebelum mutasi)
 - MCP config merge dan bootstrap
 - operator TUI actions yang memicu side effects
 

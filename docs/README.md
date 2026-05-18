@@ -29,6 +29,7 @@ Dokumentasi repo ini sengaja dipecah per topik agar tidak menumpuk dalam satu fi
 - [project/08-architecture-and-registries.md](./project/08-architecture-and-registries.md)
 - [project/09-development-workflow.md](./project/09-development-workflow.md)
 - [project/10-troubleshooting.md](./project/10-troubleshooting.md)
+- [project/11-production-readiness-hardening.md](./project/11-production-readiness-hardening.md)
 
 ## OpenClaw Reference Breakdown
 

@@ -95,14 +95,14 @@ describe('Runtime app operator server', () => {
     const baseUrl = `http://${server.hostname}:${server.port}`
     const approvalAttempt = await fetch(`${baseUrl}/api/approvals/apr-delivery-001/respond`, {
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
+      headers: ownerHeaders(),
       body: JSON.stringify({ decision: 'revise', notes: 'Need one more QA pass.' }),
     })
 
     expect(approvalAttempt.status).toBe(409)
     const approvalRetry = await fetch(`${baseUrl}/api/approvals/apr-delivery-001/respond`, {
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
+      headers: ownerHeaders(),
       body: JSON.stringify({ decision: 'revise', notes: 'Need one more QA pass.', confirm: true }),
     }).then(response => response.json())
 
@@ -111,19 +111,36 @@ describe('Runtime app operator server', () => {
 
     const jobAttempt = await fetch(`${baseUrl}/api/jobs/job-retry-001/retry`, {
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
+      headers: ownerHeaders(),
       body: JSON.stringify({}),
     })
     expect(jobAttempt.status).toBe(409)
 
     const jobRetry = await fetch(`${baseUrl}/api/jobs/job-retry-001/retry`, {
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
+      headers: ownerHeaders(),
       body: JSON.stringify({ confirm: true }),
     }).then(response => response.json())
 
     expect(jobRetry.ok).toBe(true)
     expect(jobRetry.snapshot.jobs.find((job: { job_id: string }) => job.job_id === 'job-retry-001').status).toBe('completed')
+  })
+
+  test('rejects live mutation endpoints without operator auth', async () => {
+    const state = new RuntimeAppState(createConfig())
+    const server = startRuntimeAppServer(state)
+    servers.push(server)
+
+    const baseUrl = `http://${server.hostname}:${server.port}`
+    const response = await fetch(`${baseUrl}/api/directives`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ input: 'apa status runtime?' }),
+    })
+    const payload = await response.json()
+
+    expect(response.status).toBe(401)
+    expect(payload.code).toBe('unauthorized')
   })
 
   test('executes real runbook directives through runtime app state', () => {
@@ -208,6 +225,8 @@ function createConfig(): RuntimeAppConfig {
     baseUrl: 'http://127.0.0.1:0',
     runtimeId: 'runtime-test',
     operatorToken: 'test-owner-token',
+    ownerToken: 'test-owner-token-owner',
+    observerToken: 'test-owner-token-observer',
     telegramToken: 'telegram-test-token',
     allowedChatIds: ['123456'],
     ai: {
@@ -232,6 +251,14 @@ function createConfig(): RuntimeAppConfig {
       reasons: [],
       checklist: ['test readiness'],
     },
+  }
+}
+
+function ownerHeaders(): HeadersInit {
+  return {
+    'content-type': 'application/json',
+    authorization: 'Bearer test-owner-token-owner',
+    'x-operator-id': 'owner-test',
   }
 }
 

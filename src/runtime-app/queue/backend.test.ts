@@ -49,7 +49,8 @@ describe('RuntimeQueueBackend', () => {
       'still failing',
       '2026-05-14T09:00:04.000Z',
     )
-    expect(failed.status).toBe('failed')
+    expect(failed.status).toBe('dead_lettered')
+    expect((await queue.getMetrics()).dead_lettered_jobs).toBe(1)
   })
 
   it('recovers stale running jobs on restart', async () => {

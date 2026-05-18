@@ -31,6 +31,8 @@ function makeConfig(root: string): RuntimeAppConfig {
     baseUrl: 'http://127.0.0.1',
     runtimeId: 'runtime-test',
     operatorToken: 'token-test',
+    ownerToken: 'owner-token-test',
+    observerToken: 'observer-token-test',
     telegramToken: null,
     allowedChatIds: [],
     ai: {
@@ -83,7 +85,7 @@ describe('runtime app agent creation routes', () => {
 
       const validateResponse = await fetch(`${baseUrl}/api/agents/wizard/validate`, {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
+        headers: operatorHeaders(),
         body: JSON.stringify({ draft }),
       })
       const validatePayload = await validateResponse.json() as any
@@ -92,14 +94,19 @@ describe('runtime app agent creation routes', () => {
 
       const saveResponse = await fetch(`${baseUrl}/api/agents/wizard/save`, {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
+        headers: operatorHeaders(),
         body: JSON.stringify({ draft }),
       })
       const savePayload = await saveResponse.json() as any
       expect(saveResponse.status).toBe(201)
       expect(savePayload.artifact.agentType).toBe(uniqueAgentType)
 
-      const listResponse = await fetch(`${baseUrl}/api/agents/drafts?location=runtime`)
+      const listResponse = await fetch(`${baseUrl}/api/agents/drafts?location=runtime`, {
+        headers: {
+          authorization: 'Bearer observer-token-test',
+          'x-operator-id': 'observer-test',
+        },
+      })
       const listPayload = await listResponse.json() as any
       expect(Array.isArray(listPayload.items)).toBe(true)
       expect(
@@ -107,6 +114,14 @@ describe('runtime app agent creation routes', () => {
       ).toBe(true)
     } finally {
       server.stop(true)
-    }
+}
+
+function operatorHeaders(): HeadersInit {
+  return {
+    'content-type': 'application/json',
+    authorization: 'Bearer token-test',
+    'x-operator-id': 'operator-test',
+  }
+}
   })
 })

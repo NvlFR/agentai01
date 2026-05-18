@@ -46,6 +46,7 @@ describe('parseRuntimeAppConfig', () => {
       mode: 'production',
       env: {
         AI_API_KEY: 'process-env-key',
+        OPERATOR_TOKEN: 'operator-token-prod',
       },
       readEnvFiles: true,
     })
@@ -75,6 +76,7 @@ describe('parseRuntimeAppConfig', () => {
         AI_RETRY_LIMIT: 'bad',
         QUEUE_CONCURRENCY: 'nah',
         QUEUE_RETRY_LIMIT: 'nope',
+        OPERATOR_TOKEN: 'operator-token-dev',
       },
     })
 
@@ -103,6 +105,7 @@ describe('parseRuntimeAppConfig', () => {
       env: {
         AI_BASE_URL: 'http://127.0.0.1:8045/v1',
         AI_MODEL: 'gpt-4.1-mini',
+        OPERATOR_TOKEN: 'operator-token-test',
       },
     })
 
@@ -114,6 +117,27 @@ describe('parseRuntimeAppConfig', () => {
     expect(result.config.readiness.ready).toBe(false)
     expect(result.config.readiness.reasons).toEqual(['AI_API_KEY is not set.'])
     expect(result.config.ai.apiKey).toBeNull()
+  })
+
+  it('rejects production config without OPERATOR_TOKEN fallback', () => {
+    const result = parseRuntimeAppConfig({
+      mode: 'production',
+      env: {
+        AI_BASE_URL: 'http://127.0.0.1:8045/v1',
+        AI_MODEL: 'gpt-4.1-mini',
+        AI_API_KEY: 'sk-test',
+      },
+    })
+
+    expect(result.ok).toBe(false)
+    if (result.ok) {
+      return
+    }
+
+    expect(result.errors).toContainEqual({
+      field: 'OPERATOR_TOKEN',
+      message: 'OPERATOR_TOKEN is required in staging and production; no development fallback is allowed.',
+    })
   })
 })
 
@@ -145,6 +169,15 @@ describe('loadRuntimeConfig', () => {
       loadRuntimeAppConfig({
         env: {
           APP_ENV: 'staging',
+          OPERATOR_TOKEN: 'operator-token-staging',
+        },
+      }),
+    ).not.toThrow()
+
+    expect(() =>
+      loadRuntimeAppConfig({
+        env: {
+          APP_ENV: 'qa',
         },
       }),
     ).toThrow(RuntimeConfigError)
@@ -153,6 +186,15 @@ describe('loadRuntimeConfig', () => {
       loadRuntimeAppConfig({
         env: {
           APP_ENV: 'staging',
+          OPERATOR_TOKEN: 'operator-token-staging',
+        },
+      }),
+    ).not.toThrow()
+
+    expect(() =>
+      loadRuntimeAppConfig({
+        env: {
+          APP_ENV: 'qa',
         },
       }),
     ).toThrow('Runtime app config validation failed.')

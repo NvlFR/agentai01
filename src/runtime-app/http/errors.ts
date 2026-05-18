@@ -7,6 +7,11 @@ export type ErrorCode =
   | 'conflict'
   | 'method_not_allowed'
   | 'internal_error'
+  | 'rate_limited'
+  | 'webhook_unconfigured'
+  | 'webhook_verification_failed'
+  | 'webhook_replay_rejected'
+  | 'channel_unconfigured'
 
 export class HttpError extends Error {
   constructor(

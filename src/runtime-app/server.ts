@@ -13,6 +13,20 @@ import {
   type ProviderMessage,
 } from './providers/openaiCompatibleProvider.js'
 import { buildOperatorRuntimePrompt } from './prompt/promptPlumbing.js'
+import {
+  extractOperatorIdentity,
+  requireAuth,
+  createAuthMiddlewareConfig,
+  type AuthMiddlewareConfig,
+  type OperatorRole,
+  type RuntimeOperatorIdentity,
+} from './auth/index.js'
+import { InMemoryRateLimiter, type RateLimitPolicy } from './auth/rateLimit.js'
+import { verifySignedWebhook, type WebhookProvider } from './channels/webhookGuard.js'
+import { HttpError, isHttpError } from './http/errors.js'
+import { sendTelegramText } from '../channels/telegram/send.js'
+import { sendWhatsAppText } from '../channels/whatsapp/send.js'
+import { globalDiagnostics } from './diagnostics/index.js'
 
 export type RuntimeAppServer = ReturnType<typeof Bun.serve>
 
@@ -26,6 +40,10 @@ type ChatRequestBody = {
 }
 
 const DEFAULT_STATIC_DIR = fileURLToPath(new URL('./ui/dist/', import.meta.url))
+const MUTATION_RATE_LIMIT: RateLimitPolicy = {
+  limit: 60,
+  windowMs: 60_000,
+}
 
 const STATIC_CONTENT_TYPES: Record<string, string> = {
   '.css': 'text/css; charset=utf-8',
@@ -48,6 +66,8 @@ export function startRuntimeAppServer(
   const config = state.config
   const staticDir = options.staticDir ?? DEFAULT_STATIC_DIR
   const agentCreation = new AgentCreationService({ config })
+  const authConfig = createAuthMiddlewareConfig(config)
+  const rateLimiter = new InMemoryRateLimiter()
 
   return Bun.serve({
     hostname: config.host,
@@ -91,7 +111,50 @@ export function startRuntimeAppServer(
     fetch: async req => {
       const url = new URL(req.url)
       const correlationId = getCorrelationId(req)
+      const startedAt = Date.now()
 
+      // Wrap all handlers with error handling for HttpError
+      try {
+        const response = await handleRequest(req, url, correlationId, state, authConfig, rateLimiter, agentCreation, staticDir)
+        globalDiagnostics.recordMetric('runtime_http_request_latency_ms', Date.now() - startedAt, {
+          method: req.method,
+          route: url.pathname,
+          status: String(response.status),
+        })
+        return response
+      } catch (error) {
+        if (isHttpError(error)) {
+          globalDiagnostics.recordMetric('runtime_http_request_latency_ms', Date.now() - startedAt, {
+            method: req.method,
+            route: url.pathname,
+            status: String(error.status),
+          })
+          return json(
+            withCorrelation(correlationId, {
+              ok: false,
+              code: error.code,
+              message: error.message,
+              ...(error.details ? { details: error.details } : {}),
+            }),
+            error.status,
+          )
+        }
+        throw error
+      }
+    },
+  })
+}
+
+async function handleRequest(
+  req: Request,
+  url: URL,
+  correlationId: string,
+  state: RuntimeAppState,
+  authConfig: AuthMiddlewareConfig,
+  rateLimiter: InMemoryRateLimiter,
+  agentCreation: AgentCreationService,
+  staticDir: string,
+): Promise<Response> {
       if (req.method === 'GET' && url.pathname.startsWith('/api/projects/')) {
         const snapshot = state.getSnapshot()
         const projectId = decodeURIComponent(url.pathname.slice('/api/projects/'.length))
@@ -102,50 +165,113 @@ export function startRuntimeAppServer(
       }
 
       if (req.method === 'POST' && url.pathname === '/api/directives') {
+        const identity = authorizeMutation(req, state, authConfig, rateLimiter, 'operator', 'directive_submit')
+        
         const body = await readJson(req)
         const result = state.submitDirective({
           input: typeof body.input === 'string' ? body.input : typeof body.directive === 'string' ? body.directive : '',
           mode: body.mode === 'structured' ? 'structured' : 'natural',
           confirm: Boolean(body.confirm),
         })
+        state.recordOperatorAction('directive_submit', `${identity.actor_id} submitted directive.`)
         return actionResponse(correlationId, result)
       }
 
       if (req.method === 'POST' && url.pathname === '/api/telegram/send') {
+        const identity = authorizeMutation(req, state, authConfig, rateLimiter, 'operator', 'telegram_send')
+        
         const body = await readJson(req)
         const message = typeof body.message === 'string' ? body.message : ''
         const target = typeof body.target === 'string' ? body.target : 'broadcast'
-        state.recordOperatorAction('telegram_broadcast', `Sent message to ${target}: ${message}`)
-        return json(withCorrelation(correlationId, { ok: true, message: `Telegram broadcast sent to ${target}`, snapshot: state.getSnapshot() }))
+        if (!message.trim()) {
+          throw new HttpError(400, 'bad_request', 'Telegram message is required.')
+        }
+        if (!state.config.telegramToken) {
+          throw new HttpError(503, 'channel_unconfigured', 'Telegram token is not configured.')
+        }
+
+        const targets = target === 'broadcast' ? state.config.allowedChatIds : [target]
+        if (targets.length === 0) {
+          throw new HttpError(400, 'bad_request', 'Telegram target is required when no broadcast chat ids are configured.')
+        }
+
+        const deliveries = []
+        for (const chatId of targets) {
+          const delivery = await sendTelegramText(chatId, message, {
+            cfg: {},
+            token: state.config.telegramToken,
+          })
+          deliveries.push({
+            provider: 'telegram',
+            target: delivery.chatId,
+            message_id: delivery.messageId,
+            status: 'sent',
+          })
+        }
+
+        state.recordOperatorAction('telegram_send', `${identity.actor_id} sent Telegram message to ${target}.`)
+        return json(withCorrelation(correlationId, { ok: true, deliveries, snapshot: state.getSnapshot() }))
       }
 
       if (req.method === 'POST' && url.pathname === '/api/whatsapp/send') {
+        const identity = authorizeMutation(req, state, authConfig, rateLimiter, 'operator', 'whatsapp_send')
+        
         const body = await readJson(req)
         const message = typeof body.message === 'string' ? body.message : ''
         const target = typeof body.target === 'string' ? body.target : 'broadcast'
-        state.recordOperatorAction('whatsapp_broadcast', `Sent message to ${target}: ${message}`)
-        return json(withCorrelation(correlationId, { ok: true, message: `WhatsApp broadcast sent to ${target}`, snapshot: state.getSnapshot() }))
+        const accountId = typeof body.accountId === 'string'
+          ? body.accountId
+          : process.env['WHATSAPP_ACCOUNT_ID'] ?? 'default'
+        if (!message.trim()) {
+          throw new HttpError(400, 'bad_request', 'WhatsApp message is required.')
+        }
+        if (target === 'broadcast' || !target.trim()) {
+          throw new HttpError(400, 'bad_request', 'WhatsApp target is required.')
+        }
+
+        const delivery = await sendWhatsAppText({
+          accountId,
+          to: target,
+          text: message,
+          convertMarkdown: true,
+        })
+
+        state.recordOperatorAction('whatsapp_send', `${identity.actor_id} sent WhatsApp message to ${target}.`)
+        return json(withCorrelation(correlationId, {
+          ok: true,
+          deliveries: [{
+            provider: 'whatsapp',
+            target: delivery.jid,
+            message_id: delivery.messageId,
+            status: 'sent',
+          }],
+          snapshot: state.getSnapshot(),
+        }))
       }
 
       if (req.method === 'POST' && url.pathname === '/api/telegram/webhook') {
-        const body = await readJson(req)
+        const { body, verified } = await readVerifiedWebhook(req, 'telegram', authConfig, state)
         const text = typeof body.text === 'string' ? body.text : typeof body.message === 'string' ? body.message : ''
         if (text) {
           state.submitDirective({ input: text, mode: 'natural', confirm: true })
         }
-        return json(withCorrelation(correlationId, { ok: true, status: 'telegram_webhook_processed', snapshot: state.getSnapshot() }))
+        state.recordOperatorAction('telegram_webhook_accepted', `Accepted Telegram webhook event ${verified.event_id}.`)
+        return json(withCorrelation(correlationId, { ok: true, status: 'telegram_webhook_processed', event_id: verified.event_id, snapshot: state.getSnapshot() }))
       }
 
       if (req.method === 'POST' && url.pathname === '/api/whatsapp/webhook') {
-        const body = await readJson(req)
+        const { body, verified } = await readVerifiedWebhook(req, 'whatsapp', authConfig, state)
         const text = typeof body.text === 'string' ? body.text : typeof body.message === 'string' ? body.message : ''
         if (text) {
           state.submitDirective({ input: text, mode: 'natural', confirm: true })
         }
-        return json(withCorrelation(correlationId, { ok: true, status: 'whatsapp_webhook_processed', snapshot: state.getSnapshot() }))
+        state.recordOperatorAction('whatsapp_webhook_accepted', `Accepted WhatsApp webhook event ${verified.event_id}.`)
+        return json(withCorrelation(correlationId, { ok: true, status: 'whatsapp_webhook_processed', event_id: verified.event_id, snapshot: state.getSnapshot() }))
       }
 
       if (req.method === 'POST' && url.pathname === '/api/chat') {
+        authorizeMutation(req, state, authConfig, rateLimiter, 'operator', 'operator_chat')
+        
         const body = parseChatBody(await readJson(req))
         if (body.message.length === 0) {
           return json(withCorrelation(correlationId, {
@@ -209,6 +335,8 @@ export function startRuntimeAppServer(
       }
 
       if (req.method === 'POST' && url.pathname === '/api/agents/wizard/generate') {
+        authorizeMutation(req, state, authConfig, rateLimiter, 'operator', 'agent_wizard_generate')
+        
         const body = await readJson(req)
         const prompt = typeof body.prompt === 'string' ? body.prompt : ''
         if (!prompt.trim()) {
@@ -238,6 +366,8 @@ export function startRuntimeAppServer(
       }
 
       if (req.method === 'POST' && url.pathname === '/api/agents/wizard/validate') {
+        authorizeMutation(req, state, authConfig, rateLimiter, 'operator', 'agent_wizard_validate')
+        
         const body = await readJson(req)
         const draft = typeof body.draft === 'object' && body.draft !== null ? body.draft : {}
         const result = await agentCreation.validateDraft(draft)
@@ -248,6 +378,8 @@ export function startRuntimeAppServer(
       }
 
       if (req.method === 'POST' && url.pathname === '/api/agents/wizard/save') {
+        authorizeMutation(req, state, authConfig, rateLimiter, 'operator', 'agent_wizard_save')
+        
         const body = await readJson(req)
         const draft = typeof body.draft === 'object' && body.draft !== null ? body.draft : {}
         try {
@@ -265,6 +397,9 @@ export function startRuntimeAppServer(
       }
 
       if (req.method === 'GET' && url.pathname === '/api/agents/drafts') {
+        const identity = extractOperatorIdentity(req, authConfig)
+        requireAuth(identity, 'observer')
+        
         const locationParam = url.searchParams.get('location')
         const location = locationParam === 'project' || locationParam === 'runtime' || locationParam === 'user'
           ? locationParam
@@ -277,6 +412,7 @@ export function startRuntimeAppServer(
       }
 
       if (req.method === 'POST' && url.pathname.endsWith('/respond') && url.pathname.startsWith('/api/approvals/')) {
+        const identity = authorizeMutation(req, state, authConfig, rateLimiter, 'owner', 'approval_response')
         const requestId = decodeURIComponent(url.pathname.slice('/api/approvals/'.length, -'/respond'.length))
         const body = await readJson(req)
         const result = state.respondToApproval(requestId, {
@@ -286,20 +422,25 @@ export function startRuntimeAppServer(
           notes: typeof body.notes === 'string' ? body.notes : undefined,
           confirm: Boolean(body.confirm),
         })
+        state.recordOperatorAction('approval_response_requested', `${identity.actor_id} responded to approval ${requestId}.`)
         return actionResponse(correlationId, result)
       }
 
       if (req.method === 'POST' && url.pathname.endsWith('/retry') && url.pathname.startsWith('/api/jobs/')) {
+        const identity = authorizeMutation(req, state, authConfig, rateLimiter, 'owner', 'job_retry')
         const jobId = decodeURIComponent(url.pathname.slice('/api/jobs/'.length, -'/retry'.length))
         const body = await readJson(req)
         const result = state.retryJob(jobId, Boolean(body.confirm))
+        state.recordOperatorAction('job_retry_requested', `${identity.actor_id} requested retry for job ${jobId}.`)
         return actionResponse(correlationId, result)
       }
 
       if (req.method === 'POST' && url.pathname.endsWith('/retry') && url.pathname.startsWith('/api/messages/')) {
+        const identity = authorizeMutation(req, state, authConfig, rateLimiter, 'owner', 'message_retry')
         const logId = decodeURIComponent(url.pathname.slice('/api/messages/'.length, -'/retry'.length))
         const body = await readJson(req)
         const result = state.retryMessage(logId, Boolean(body.confirm))
+        state.recordOperatorAction('message_retry_requested', `${identity.actor_id} requested retry for message ${logId}.`)
         return actionResponse(correlationId, result)
       }
 
@@ -312,8 +453,6 @@ export function startRuntimeAppServer(
       }
 
       return json(withCorrelation(correlationId, { ok: false, message: `Route not found: ${url.pathname}` }), 404)
-    },
-  })
 }
 
 function withMeta(
@@ -325,6 +464,72 @@ function withMeta(
     correlation_id: getCorrelationId(req),
     generated_at: snapshot.generated_at,
     data,
+  }
+}
+
+function authorizeMutation(
+  req: Request,
+  state: RuntimeAppState,
+  authConfig: AuthMiddlewareConfig,
+  rateLimiter: InMemoryRateLimiter,
+  requiredRole: OperatorRole,
+  action: string,
+): Extract<RuntimeOperatorIdentity, { authenticated: true }> {
+  const identity = extractOperatorIdentity(req, authConfig)
+  try {
+    requireAuth(identity, requiredRole)
+    rateLimiter.assertAllowed(`${identity.actor_id}:${action}`, MUTATION_RATE_LIMIT)
+    globalDiagnostics.recordMetric('runtime_mutation_accepted_total', 1, {
+      action,
+      role: identity.role,
+    })
+    return identity
+  } catch (error) {
+    globalDiagnostics.recordMetric('runtime_mutation_rejected_total', 1, {
+      action,
+      reason: isHttpError(error) ? error.code : 'internal_error',
+    })
+    state.recordOperatorAction(
+      'mutation_rejected',
+      `${identity.actor_id} rejected for ${action}: ${error instanceof Error ? error.message : String(error)}`,
+    )
+    throw error
+  }
+}
+
+async function readVerifiedWebhook(
+  req: Request,
+  provider: WebhookProvider,
+  authConfig: AuthMiddlewareConfig,
+  state: RuntimeAppState,
+): Promise<{
+  body: Record<string, unknown>
+  verified: ReturnType<typeof verifySignedWebhook>
+}> {
+  const rawBody = await req.text()
+  const secret = provider === 'telegram'
+    ? authConfig.webhook?.telegramSecret
+    : authConfig.webhook?.whatsappSecret
+
+  try {
+    const verified = verifySignedWebhook(req, rawBody, { provider, secret })
+    globalDiagnostics.recordMetric('runtime_webhook_accepted_total', 1, {
+      provider,
+    })
+    return {
+      body: parseJsonObject(rawBody),
+      verified,
+    }
+  } catch (error) {
+    globalDiagnostics.recordMetric('runtime_webhook_rejected_total', 1, {
+      provider,
+      reason: isHttpError(error) ? error.code : 'internal_error',
+    })
+    state.recordOperatorAction(
+      `${provider}_webhook_rejected`,
+      error instanceof Error ? error.message : String(error),
+    )
+    throw error
   }
 }
 
@@ -372,6 +577,17 @@ async function readJson(req: Request): Promise<Record<string, unknown>> {
   return typeof body === 'object' && body !== null && !Array.isArray(body)
     ? body as Record<string, unknown>
     : {}
+}
+
+function parseJsonObject(rawBody: string): Record<string, unknown> {
+  try {
+    const body = JSON.parse(rawBody)
+    return typeof body === 'object' && body !== null && !Array.isArray(body)
+      ? body as Record<string, unknown>
+      : {}
+  } catch {
+    throw new HttpError(400, 'bad_request', 'Request body must be valid JSON.')
+  }
 }
 
 function parseChatBody(body: Record<string, unknown>): {

@@ -6,7 +6,7 @@ import {
   redactSensitiveValue,
 } from '../../secrets/index.js'
 
-export type RuntimeEnvironment = 'development' | 'test' | 'production'
+export type RuntimeEnvironment = 'development' | 'test' | 'staging' | 'production'
 
 export type RuntimeAppConfig = {
   env: RuntimeEnvironment
@@ -15,6 +15,8 @@ export type RuntimeAppConfig = {
   baseUrl: string
   runtimeId: string
   operatorToken: string
+  ownerToken?: string | null
+  observerToken?: string | null
   telegramToken: string | null
   allowedChatIds: string[]
   ai: {
@@ -33,6 +35,10 @@ export type RuntimeAppConfig = {
   queue: {
     concurrency: number
     retryLimit: number
+  }
+  webhook?: {
+    telegramSecret: string | null
+    whatsappSecret: string | null
   }
   readiness: {
     ready: boolean
@@ -178,6 +184,11 @@ export function parseRuntimeAppConfig(
   }
 
   const env = modeResult.value
+  const operatorToken = readOperatorToken(secrets, env, errors, warnings)
+  const ownerToken = readStringValue(mergedEnv['OWNER_TOKEN']) ?? null
+  const observerToken = readStringValue(mergedEnv['OBSERVER_TOKEN']) ?? null
+  const telegramWebhookSecret = readStringValue(mergedEnv['TELEGRAM_WEBHOOK_SECRET']) ?? null
+  const whatsappWebhookSecret = readStringValue(mergedEnv['WHATSAPP_WEBHOOK_SECRET']) ?? null
   const artifactsRoot = resolveStoragePath(
     cwd,
     readStringValue(mergedEnv['STORAGE_ARTIFACTS_ROOT']) ??
@@ -224,7 +235,9 @@ export function parseRuntimeAppConfig(
       port,
       baseUrl,
       runtimeId,
-      operatorToken: readOperatorToken(secrets),
+      operatorToken,
+      ownerToken,
+      observerToken,
       telegramToken: readTelegramToken(secrets),
       allowedChatIds: parseAllowedChatIds(mergedEnv['ID_CHAT']),
       ai: {
@@ -243,6 +256,10 @@ export function parseRuntimeAppConfig(
       queue: {
         concurrency: queueConcurrency,
         retryLimit: queueRetryLimit,
+      },
+      webhook: {
+        telegramSecret: telegramWebhookSecret,
+        whatsappSecret: whatsappWebhookSecret,
       },
       readiness: {
         ready: readinessReasons.length === 0,
@@ -375,7 +392,12 @@ function resolveRuntimeEnvironment(
   env: Record<string, string | undefined>,
 ): { ok: true; value: RuntimeEnvironment } | { ok: false; error: RuntimeAppConfigIssue } {
   const candidate = requestedMode ?? env['APP_ENV'] ?? env['RUNTIME_ENV'] ?? env['NODE_ENV'] ?? 'development'
-  if (candidate === 'development' || candidate === 'test' || candidate === 'production') {
+  if (
+    candidate === 'development' ||
+    candidate === 'test' ||
+    candidate === 'staging' ||
+    candidate === 'production'
+  ) {
     return {
       ok: true,
       value: candidate,
@@ -518,9 +540,25 @@ function parseAllowedChatIds(value: string | undefined): string[] {
 
 function readOperatorToken(
   secrets: ReturnType<typeof createSecretsAccessor>,
+  env: RuntimeEnvironment,
+  errors: RuntimeAppConfigIssue[],
+  warnings: string[],
 ): string {
   const result = secrets.getOperatorToken()
-  return result.ok ? result.value : DEFAULT_OPERATOR_TOKEN
+  if (result.ok) {
+    return result.value
+  }
+
+  if (env === 'production' || env === 'staging') {
+    errors.push({
+      field: 'OPERATOR_TOKEN',
+      message: 'OPERATOR_TOKEN is required in staging and production; no development fallback is allowed.',
+    })
+    return ''
+  }
+
+  warnings.push('OPERATOR_TOKEN is missing. Using development-only fallback token outside staging/production.')
+  return DEFAULT_OPERATOR_TOKEN
 }
 
 function readTelegramToken(
