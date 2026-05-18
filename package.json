@@ -10,6 +10,7 @@
     "runtime:scheduler": "bun run src/runtime-app/scheduler.ts",
     "runtime:smoke": "bun run src/runtime-app/smoke.ts",
     "runtime:real": "bun run src/runtime-app/run-real-project.ts",
+    "runtime:tui": "bun run src/runtime-app/tui.ts",
     "runtime:telegram": "bun run src/runtime-app/telegramBot.ts",
     "mcp:bootstrap": "bun run src/mcp/bootstrap.ts",
     "mcp:plan": "bun run src/mcp/bootstrap.ts --plan",

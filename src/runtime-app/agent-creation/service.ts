@@ -1,4 +1,4 @@
-import { mkdir, open, readdir, readFile, stat } from 'node:fs/promises'
+import { mkdir, open, readdir, readFile, stat, unlink } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import path from 'node:path'
 import { MCP_TOOL_IDS, type McpToolId } from '../../domain/hierarchy.js'
@@ -436,6 +436,22 @@ export class AgentCreationService {
       }
       throw error
     }
+  }
+
+  async deleteDraft(location: AgentCreationLocation, agentType: string): Promise<void> {
+    const trimmed = agentType.trim()
+    if (!trimmed) {
+      throw new Error('Agent type is required for delete.')
+    }
+    const directory = this.resolveLocationDirectory(location)
+    await Promise.all([
+      unlink(path.join(directory, `${trimmed}.md`)).catch(error => {
+        if (!isNotFound(error)) throw error
+      }),
+      unlink(path.join(directory, `${trimmed}.json`)).catch(error => {
+        if (!isNotFound(error)) throw error
+      }),
+    ])
   }
 
   private buildPreview(args: {

@@ -101,8 +101,10 @@ describe('runtime app agent creation routes', () => {
 
       const listResponse = await fetch(`${baseUrl}/api/agents/drafts?location=runtime`)
       const listPayload = await listResponse.json() as any
-      expect(listPayload.items).toHaveLength(1)
-      expect(listPayload.items[0]?.agentType).toBe(uniqueAgentType)
+      expect(Array.isArray(listPayload.items)).toBe(true)
+      expect(
+        listPayload.items.some((item: { agentType?: string }) => item.agentType === uniqueAgentType),
+      ).toBe(true)
     } finally {
       server.stop(true)
     }

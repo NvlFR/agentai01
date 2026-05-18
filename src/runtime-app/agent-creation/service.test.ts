@@ -91,5 +91,9 @@ describe('AgentCreationService', () => {
     const duplicate = await service.validateDraft(draft)
     expect(duplicate.isValid).toBe(false)
     expect(duplicate.errors[0]).toContain('ops-health-auditor')
+
+    await service.deleteDraft('project', 'ops-health-auditor')
+    const afterDelete = await service.listSavedDrafts('project')
+    expect(afterDelete).toHaveLength(0)
   })
 })

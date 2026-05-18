@@ -1,74 +1,50 @@
-# SECURITY.md — Security Policy
+# SECURITY.md
 
-## Prinsip Utama
+Kebijakan keamanan repo `agentai01`.
 
-AgentAI01 memperlakukan semua credentials, API keys, dan tokens sebagai secret class-1. Tidak ada pengecualian.
+## Secret Handling
 
-## Aturan Wajib
+- jangan commit API key, token, credential, cookie, atau private cert
+- `.env` hanya untuk default non-secret
+- secret lokal taruh di `.env.local` atau env runtime
+- output operator/TUI/web tidak boleh menampilkan raw secret
 
-### Secrets & Credentials
-- **TIDAK PERNAH** commit `AI_API_KEY`, `OPERATOR_TOKEN`, atau credential apapun ke repo
-- Gunakan `.env.local` (tidak di-commit) untuk secret lokal development
-- `.env` hanya boleh berisi default non-secret (base URL, model name, timeout)
-- Environment variable wajib divalidasi saat startup — fail fast jika tidak ada
-- UI **harus** mask `AI_API_KEY`; jangan tampilkan raw value ke operator
+## Access Control
 
-### Access Control
-- `OPERATOR_TOKEN` wajib untuk semua endpoint `/api/*` yang mengubah state
-- `/health` dan `/ready` boleh tanpa auth
-- Implementasi token comparison harus constant-time untuk mencegah timing attack
-- Jangan log request body yang berisi credentials
+- endpoint mutating harus terlindungi operator auth
+- approval/retry/directive flows harus eksplisit
+- jangan anggap session label sebagai auth boundary
 
-### Agent Isolation
-- Sub-agen **tidak boleh** mengakses data departemen lain melalui scratchpad
-- `IntraDepartmentScratchpad` hanya boleh diakses oleh Head dan specialist dalam departemen yang sama
-- `SubAgentRegistry.validateIntegrity()` wajib dipanggil setelah setiap batch registration
-- MCP tools yang tidak ada dalam `allowedMcpTools` tidak boleh dipanggil oleh agen apapun
+## Agent Isolation
 
-### Project Isolation
-- Setiap agen hanya boleh akses artifact project yang sedang aktif (`current_project_id`)
-- Cross-project access harus divalidasi oleh `AgentRegistry.validateAgentProjectAccess()`
-- Dashboard hanya menampilkan data agregat — tidak expose raw artifact project lain
-- Semua pelanggaran isolation dicatat di audit log
+- sub-agent hanya boleh memakai `allowedMcpTools`
+- departemen tidak boleh bocor memory lintas scratchpad
+- cross-project access harus lewat validasi registry
 
-### Data Handling
-- Credentials klien (API key, password) tidak boleh disimpan di Notion, spec, proposal, atau source code
-- Log tidak boleh berisi PII tanpa masking
-- Scratchpad entries memiliki TTL default 30 menit dan bersifat ephemeral
-- Tidak ada persistent storage untuk conversation history di luar provider yang ditentukan
+## Risky Surfaces
 
-## Env Variables
+- shell / workspace actions
+- provider API calls
+- Telegram / WhatsApp outbound
+- MCP config merge dan bootstrap
+- operator TUI actions yang memicu side effects
 
-| Variable | Wajib | Default | Keterangan |
-|----------|-------|---------|-----------|
-| `AI_API_KEY` | ✅ | — | API key AI provider. Tanpa ini `/ready` tidak ready |
-| `AI_BASE_URL` | ❌ | `http://127.0.0.1:8045/v1` | Base URL OpenAI-compatible endpoint |
-| `AI_MODEL` | ❌ | `gemini-3-flash` | Model ID |
-| `AI_TIMEOUT_MS` | ❌ | `30000` | Timeout request ke AI provider |
-| `OPERATOR_TOKEN` | ✅ | — | Bearer token untuk operator API |
-| `PORT` | ❌ | `3001` | HTTP server port |
-| `NODE_ENV` | ❌ | `development` | Environment mode |
+Semua surface itu harus:
+- audit-safe
+- explicit
+- bisa dijelaskan perilakunya
 
-## Incident Response
+## Response
 
-1. **Credential leak** → Segera revoke key, ganti dengan yang baru, audit commit history dengan `git log -S "key_value"`
-2. **Unauthorized access** → Periksa audit log `AgentRegistry`, cek token validation code
-3. **Cross-project data leak** → Review `validateAgentProjectAccess()`, cek `current_project_id` assignment
-4. **Sub-agent tool misuse** → Audit `allowedMcpTools` config, periksa `SubAgentRegistry` integrity
+Kalau ada indikasi leak atau misuse:
+1. hentikan perluasan perubahan
+2. identifikasi surface dan scope
+3. jangan print secret ke chat/log
+4. dokumentasikan dampak dan remediation
 
-## File yang Tidak Boleh di-commit
+## Docs Rule
 
-```gitignore
-.env.local
-*.pem
-*.key
-*.p12
-secrets/
-.env.*.local
-```
-
-Pastikan `.gitignore` sudah mencakup semua file di atas sebelum `git add`.
-
-## Responsible Disclosure
-
-Laporkan security issue ke founder melalui channel private (Telegram/email). Jangan buat public GitHub issue untuk security vulnerability.
+Kalau security posture berubah, update:
+- `SECURITY.md`
+- `README.md` bila user-facing
+- file terkait di `docs/`
