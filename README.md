@@ -216,5 +216,7 @@ Proyek ini dilisensikan di bawah [**MIT License**](./LICENSE) — silakan gunaka
 </p>
 
 <p align="center">
-  <img src="https://profile-counter.glitch.me/agentai01/count.svg" alt="Visitor Count" />
+  <a href="https://github.com/NvlFR/agentai01">
+    <img src="https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2FNvlFR%2Fagentai01&count_bg=%2325c2a0&title_bg=%23555555&title=views" alt="Views" />
+  </a>
 </p>
