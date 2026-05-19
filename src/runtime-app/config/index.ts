@@ -28,7 +28,8 @@ export type RuntimeAppConfig = {
     logLatency: boolean
   }
   storage: {
-    mode: 'memory'
+    mode: 'memory' | 'sqlite' | 'postgres'
+    databaseUrl: string | null
     artifactsRoot: string
     operationalRoot: string
   }
@@ -249,7 +250,8 @@ export function parseRuntimeAppConfig(
         logLatency: aiLogLatency,
       },
       storage: {
-        mode: 'memory',
+        mode: mergedEnv['DATABASE_URL'] ? 'postgres' : (env === 'test' ? 'memory' : 'sqlite'),
+        databaseUrl: mergedEnv['DATABASE_URL'] ?? null,
         artifactsRoot,
         operationalRoot,
       },

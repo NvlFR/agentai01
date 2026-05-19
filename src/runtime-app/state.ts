@@ -1,5 +1,6 @@
 import type { CompanyDashboardReadModel } from '../app/dashboardReadModel.js'
 import type { CompanySnapshotSeed } from '../app/companySnapshot.js'
+import { UnifiedSqlRuntimeRepository } from './storage/sql/sqlRepository.js'
 import { spawnSync } from 'node:child_process'
 import { appendFileSync, mkdirSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
@@ -14,10 +15,12 @@ import type {
   Agent_Message,
   AgentType,
   ApprovalDecision,
+  Approval_Gate,
   Approval_Request,
   Approval_Response,
   LifecycleEvent,
   Lifecycle_State,
+  MessageType,
 } from '../domain/types.js'
 import type {
   AuditLogEntry,
@@ -140,6 +143,8 @@ export class RuntimeAppState {
   readonly config: RuntimeAppConfig
   readonly shell: OrchestratorShell
   readonly ceoRuntime: CeoRuntime
+  readonly repository: UnifiedSqlRuntimeRepository
+  readonly initPromise: Promise<void>
 
   private readonly jobs: RuntimeJob[]
   private readonly operatorAudit: OperatorAuditEntry[] = []
@@ -173,10 +178,22 @@ export class RuntimeAppState {
     })
     this.jobs = createJobs()
 
+    const repository = new UnifiedSqlRuntimeRepository(
+      config.storage.mode,
+      config.storage.databaseUrl,
+      path.join(config.storage.operationalRoot, 'state.db')
+    )
+    this.repository = repository
+
     seedApprovals(this.shell, this.approvalTimeline)
     seedMessages(this.shell, this.rejectedMessages)
     seedCeoRuntime(this.ceoRuntime)
     this.audit('runtime_boot', 'operator-ui', this.shell.runtime.runtime_id, 'Runtime app state initialized.')
+
+    this.initPromise = (async () => {
+      await repository.init()
+      await this.initPersistence()
+    })()
   }
 
   getSnapshot(now = new Date().toISOString()): RuntimeAppSnapshot {
@@ -229,6 +246,10 @@ export class RuntimeAppState {
       },
       extensions: this.extensionRegistry.list(),
     }
+  }
+
+  getApprovalTimeline(): Array<Approval_Request | Approval_Response> {
+    return [...this.approvalTimeline]
   }
 
   recordOperatorAction(action: string, detail: string): void {
@@ -432,12 +453,263 @@ export class RuntimeAppState {
   ): ActionResult {
     const snapshot = this.getSnapshot()
     persistOperationalSnapshot(this.config.env, snapshot)
+    this.saveAllToPersistence().catch(err => console.warn('Failed to save state to DB', err))
     return {
       ok,
       message,
       requires_confirmation,
       artifactPath,
       snapshot,
+    }
+  }
+
+  async saveAllToPersistence(): Promise<void> {
+    await this.repository.init()
+
+    // Save projects
+    const registry = this.shell.app.getRegistry()
+    for (const project of registry.listProjects()) {
+      await this.repository.saveProject({
+        project_id: project.project_id,
+        client_id: project.client_id,
+        lifecycle_state: project.lifecycle_state,
+        current_milestone: project.current_milestone,
+        active_agent_ids: project.active_agent_ids,
+        updated_at: new Date().toISOString(),
+      })
+    }
+
+    // Save approvals
+    for (const item of this.approvalTimeline) {
+      if ('gate' in item) {
+        const requestId = item.request_id
+        if ('summary' in item) {
+          // Request
+          const resp = this.approvalTimeline.find(x => !('summary' in x) && x.request_id === requestId) as Approval_Response | undefined
+          await this.repository.saveApproval({
+            request_id: item.request_id,
+            project_id: item.project_id || 'proj-acme-web',
+            gate: item.gate,
+            from_agent: item.from_agent,
+            timestamp: item.timestamp,
+            summary: item.summary,
+            recommendation: item.recommendation,
+            risks: item.risks,
+            options: [...item.options],
+            artifact_ref: item.artifact_ref,
+            decision: resp?.decision,
+            decision_notes: resp?.notes,
+            decision_timestamp: resp?.timestamp,
+            decision_actor: 'owner',
+          })
+        }
+      }
+    }
+
+    // Save jobs
+    for (const job of this.jobs) {
+      await this.repository.saveJob(job)
+    }
+
+    // Save rejected messages and communication log
+    const commLog = registry.getCommunicationLog()
+    for (const log of commLog) {
+      const isRejected = Array.from(this.rejectedMessages.values()).some(rm => rm.original.timestamp === log.message.timestamp)
+      await this.repository.saveMessage({
+        message_id: log.log_id,
+        project_id: log.message.project_id,
+        from_agent: log.message.from,
+        to_agent: log.message.to,
+        message_type: log.message.message_type,
+        timestamp: log.message.timestamp,
+        payload: log.message.payload,
+        status: isRejected ? 'rejected' : 'delivered',
+        retries: 0,
+      })
+    }
+
+    // Save audit log
+    for (const entry of this.operatorAudit) {
+      await this.repository.saveAuditEntry({
+        audit_id: `audit-${entry.timestamp}-${Math.random().toString(36).slice(2)}`,
+        ...entry,
+      })
+    }
+
+    // Save decisions
+    for (const dec of this.ceoRuntime.listDecisions()) {
+      await this.repository.saveDecision({
+        decision_id: dec.decision_id,
+        timestamp: dec.timestamp,
+        category: dec.category,
+        context: dec.context,
+        options_considered: dec.options_considered,
+        chosen_option: dec.chosen_option,
+        rationale: dec.rationale,
+        expected_impact: dec.expected_impact,
+        related_project_ids: dec.related_project_ids,
+        related_agent_ids: dec.related_agent_ids as string[],
+      })
+    }
+
+    // Save delegations
+    for (const del of this.ceoRuntime.listDelegations()) {
+      await this.repository.saveDelegation({
+        task_id: del.task_id,
+        target_agent: del.target_agent,
+        instructions: del.instructions,
+        priority: del.priority,
+        success_criteria: del.success_criteria,
+        project_id: del.project_id || 'proj-acme-web',
+        status: (del.status === 'completed' ? 'completed' : del.status === 'failed' ? 'failed' : 'pending'),
+        assigned_worker: del.assigned_agent_id || 'worker',
+        notes: del.latest_result_summary || del.failure_reason || '',
+        timestamp: del.created_at,
+      })
+    }
+  }
+
+  async initPersistence(): Promise<void> {
+    // 1. Try to load from database
+    const dbProjects = await this.repository.loadProjects()
+    const dbApprovals = await this.repository.loadApprovals()
+    const dbJobs = await this.repository.loadJobs()
+    const dbMessages = await this.repository.loadMessages()
+    const dbAudit = await this.repository.loadAuditEntries()
+    const dbDecisions = await this.repository.loadDecisions()
+    const dbDelegations = await this.repository.loadDelegations()
+
+    // 2. If data exists in the database, reconstruct the in-memory arrays and objects from it!
+    if (dbProjects.length > 0) {
+      const registry = this.shell.app.getRegistry()
+      for (const p of dbProjects) {
+        registry.registerProject({
+          project_id: p.project_id,
+          client_id: p.client_id,
+          lifecycle_state: p.lifecycle_state as any,
+          current_milestone: p.current_milestone,
+          active_agent_ids: p.active_agent_ids,
+          updated_at: p.updated_at || new Date().toISOString(),
+        })
+      }
+    } else {
+      // Database is empty! Seed the database immediately so that it is persisted!
+      await this.saveAllToPersistence()
+      return
+    }
+
+    if (dbApprovals.length > 0) {
+      this.approvalTimeline.length = 0
+      for (const approval of dbApprovals) {
+        const req: Approval_Request = {
+          request_id: approval.request_id,
+          gate: approval.gate as Approval_Gate,
+          from_agent: approval.from_agent as any,
+          timestamp: approval.timestamp,
+          project_id: approval.project_id,
+          summary: approval.summary,
+          recommendation: approval.recommendation,
+          risks: approval.risks,
+          options: approval.options as readonly ApprovalDecision[],
+          artifact_ref: approval.artifact_ref,
+        }
+        this.shell.recordApprovalRequest(req)
+        this.approvalTimeline.push(req)
+
+        if (approval.decision) {
+          const res: Approval_Response = {
+            request_id: approval.request_id,
+            gate: approval.gate as Approval_Gate,
+            timestamp: approval.decision_timestamp!,
+            decision: approval.decision as any,
+            notes: approval.decision_notes || '',
+          }
+          this.shell.applyApprovalResponse(res)
+          this.approvalTimeline.push(res)
+        }
+      }
+    }
+
+    if (dbJobs.length > 0) {
+      this.jobs.length = 0
+      for (const job of dbJobs) {
+        this.jobs.push(job)
+      }
+    }
+
+    if (dbMessages.length > 0) {
+      this.rejectedMessages.clear()
+      const registry = this.shell.app.getRegistry()
+      for (const msg of dbMessages) {
+        if (msg.status === 'rejected') {
+          this.rejectedMessages.set(msg.message_id, {
+            original: {
+              from: msg.from_agent as any,
+              to: msg.to_agent as any,
+              message_type: msg.message_type as MessageType,
+              project_id: msg.project_id || 'proj-acme-web',
+              timestamp: msg.timestamp,
+              payload: msg.payload,
+            },
+            retries: msg.retries,
+          })
+        }
+        registry.routeMessage({
+          from: msg.from_agent as any,
+          to: msg.to_agent as any,
+          message_type: msg.message_type as any,
+          project_id: msg.project_id || 'proj-acme-web',
+          timestamp: msg.timestamp,
+          payload: msg.payload,
+        })
+      }
+    }
+
+    if (dbAudit.length > 0) {
+      this.operatorAudit.length = 0
+      for (const entry of dbAudit) {
+        this.operatorAudit.push(entry)
+      }
+    }
+
+    if (dbDecisions.length > 0) {
+      for (const dec of dbDecisions) {
+        this.ceoRuntime.recordDecision({
+          decision_id: dec.decision_id,
+          timestamp: dec.timestamp,
+          category: dec.category as any,
+          context: dec.context,
+          options_considered: dec.options_considered,
+          chosen_option: dec.chosen_option,
+          rationale: dec.rationale,
+          expected_impact: dec.expected_impact,
+          related_project_ids: dec.related_project_ids,
+          related_agent_ids: dec.related_agent_ids as any[],
+        })
+      }
+    }
+
+    if (dbDelegations.length > 0) {
+      for (const del of dbDelegations) {
+        this.ceoRuntime.createDelegationTask({
+          task_id: del.task_id,
+          target_agent: del.target_agent as any,
+          instructions: del.instructions,
+          priority: del.priority as any,
+          success_criteria: del.success_criteria,
+          project_id: del.project_id,
+        }, del.timestamp)
+
+        if (del.status === 'completed') {
+          this.ceoRuntime.completeDelegationTask({
+            task_id: del.task_id,
+            actor_agent_id: del.assigned_worker || 'worker',
+            result_summary: del.notes || '',
+          }, del.timestamp)
+        } else if (del.status === 'failed') {
+          this.ceoRuntime.failDelegationTask(del.task_id, del.assigned_worker || 'worker', del.notes || '', del.timestamp)
+        }
+      }
     }
   }
 

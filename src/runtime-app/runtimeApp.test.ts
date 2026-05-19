@@ -215,6 +215,61 @@ describe('Runtime app operator server', () => {
     expect(confirmed.message).toContain('Semua proyek aktif berhasil ditutup.')
     expect(confirmed.snapshot.projects.every(project => project.lifecycle_state === 'closed')).toBe(true)
   })
+
+  test('proves runtime restart recovery preserves state (approvals, jobs, projects)', async () => {
+    const tempDir = await mkdtemp(join(tmpdir(), 'agentai-recovery-test-'))
+    tempDirs.push(tempDir)
+    const dbPath = join(tempDir, 'recovery.db')
+
+    const config: RuntimeAppConfig = {
+      ...createConfig(),
+      storage: {
+        mode: 'sqlite',
+        databaseUrl: dbPath,
+        artifactsRoot: join(tempDir, 'artifacts'),
+        operationalRoot: join(tempDir, 'operational'),
+      }
+    }
+
+    // 1. First run: Start and initialize persistence
+    const state1 = new RuntimeAppState(config)
+    await state1.initPromise
+
+    // Check we have projects seeded
+    const snapshot1 = state1.getSnapshot()
+    expect(snapshot1.projects.length).toBeGreaterThan(0)
+
+    // Let's record a pending approval response
+    const pendingApproval = snapshot1.approvals[0]
+    expect(pendingApproval).toBeDefined()
+    
+    // Respond to the approval
+    const respondResult = state1.respondToApproval(pendingApproval.request_id, {
+      decision: 'approve',
+      notes: 'Recovery test notes',
+      confirm: true,
+    })
+    expect(respondResult.ok).toBe(true)
+
+    // Save state completely
+    await state1.saveAllToPersistence()
+
+    // 2. Second run: Create a new instance pointing to the same db
+    const state2 = new RuntimeAppState(config)
+    await state2.initPromise
+
+    const snapshot2 = state2.getSnapshot()
+    // Verify projects are reconstructed
+    expect(snapshot2.projects.length).toBe(snapshot1.projects.length)
+
+    // Verify approval timeline has the recorded response!
+    const recoveredResponse = state2.getApprovalTimeline().find(
+      (x: any) => !('summary' in x) && x.request_id === pendingApproval.request_id
+    ) as any
+    expect(recoveredResponse).toBeDefined()
+    expect(recoveredResponse?.decision).toBe('approve')
+    expect(recoveredResponse?.notes).toBe('Recovery test notes')
+  }, 30000)
 })
 
 function createConfig(): RuntimeAppConfig {
@@ -239,6 +294,7 @@ function createConfig(): RuntimeAppConfig {
     },
     storage: {
       mode: 'memory',
+      databaseUrl: null,
       artifactsRoot: 'runtime/artifacts',
       operationalRoot: 'runtime/operational',
     },

@@ -225,6 +225,7 @@ describe('createAuthMiddlewareConfig', () => {
       },
       storage: {
         mode: 'memory' as const,
+        databaseUrl: null,
         artifactsRoot: '/tmp/artifacts',
         operationalRoot: '/tmp/operational',
       },

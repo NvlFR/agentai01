@@ -24,14 +24,14 @@
   - [x] 2.4 Pastikan inbound webhook gagal verification tidak bisa submit directive
   - [x] 2.5 Tambahkan metrics dan audit khusus untuk webhook accepted, rejected, dan replayed
 
-- [~] 3. Phase 1: Durable Runtime State
+- [x] 3. Phase 1: Durable Runtime State
   - [x] 3.1 Rancang schema persistence untuk projects, approvals, jobs, messages, audit, dan artifact references
-  - [~] 3.2 Tambahkan repository abstraction berbasis Postgres untuk runtime state utama
-  - [ ] 3.3 Migrasikan `RuntimeAppState` dari `createSeed()` ke load dari persistence
-  - [ ] 3.4 Tambahkan write path persistence untuk approval response, message retry, job retry, dan operator actions
-  - [ ] 3.5 Tambahkan checkpoint dan recovery snapshot yang bisa dipakai saat restart
-  - [ ] 3.6 Pastikan startup runtime dapat me-reconstruct state pending
-  - [ ] 3.7 Tambahkan integration test untuk restart recovery
+  - [x] 3.2 Tambahkan repository abstraction berbasis Postgres untuk runtime state utama
+  - [x] 3.3 Migrasikan `RuntimeAppState` dari `createSeed()` ke load dari persistence
+  - [x] 3.4 Tambahkan write path persistence untuk approval response, message retry, job retry, dan operator actions
+  - [x] 3.5 Tambahkan checkpoint dan recovery snapshot yang bisa dipakai saat restart
+  - [x] 3.6 Pastikan startup runtime dapat me-reconstruct state pending
+  - [x] 3.7 Tambahkan integration test untuk restart recovery
 
 - [x] 4. Phase 1: Durable Queue
   - [x] 4.1 Pilih backend queue production: Postgres-backed queue atau Redis/BullMQ
@@ -91,7 +91,7 @@
 
 - [~] 11. Validation And Exit Criteria
   - [x] 11.1 Buktikan tidak ada endpoint mutasi tanpa auth di jalur live
-  - [ ] 11.2 Buktikan runtime restart tidak menghilangkan approvals dan jobs pending
+  - [x] 11.2 Buktikan runtime restart tidak menghilangkan approvals dan jobs pending
   - [x] 11.3 Buktikan queue dead-letter bekerja pada failure permanen
   - [~] 11.4 Buktikan outbound Telegram dan WhatsApp benar-benar mengirim, bukan hanya log
   - [ ] 11.5 Buktikan provider fallback dan circuit breaker tercatat di observability

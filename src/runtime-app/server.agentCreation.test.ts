@@ -45,6 +45,7 @@ function makeConfig(root: string): RuntimeAppConfig {
     },
     storage: {
       mode: 'memory',
+      databaseUrl: null,
       artifactsRoot: path.join(root, 'artifacts'),
       operationalRoot: path.join(root, 'operational'),
     },

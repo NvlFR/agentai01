@@ -36,6 +36,7 @@ function makeConfig(): RuntimeAppConfig {
     },
     storage: {
       mode: 'memory',
+      databaseUrl: null,
       artifactsRoot: 'runtime/test/artifacts',
       operationalRoot: 'runtime/test/operational',
     },
