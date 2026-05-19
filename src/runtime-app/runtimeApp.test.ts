@@ -270,6 +270,37 @@ describe('Runtime app operator server', () => {
     expect(recoveredResponse?.decision).toBe('approve')
     expect(recoveredResponse?.notes).toBe('Recovery test notes')
   }, 30000)
+
+  test('boots production runtime without local seed data when persistence is empty', async () => {
+    const tempDir = await mkdtemp(join(tmpdir(), 'agentai-prod-empty-'))
+    tempDirs.push(tempDir)
+    const dbPath = join(tempDir, 'prod-empty.db')
+
+    const config: RuntimeAppConfig = {
+      ...createConfig(),
+      env: 'production',
+      runtimeId: 'runtime-prod-01',
+      storage: {
+        mode: 'sqlite',
+        databaseUrl: dbPath,
+        artifactsRoot: join(tempDir, 'artifacts'),
+        operationalRoot: join(tempDir, 'operational'),
+      },
+      readiness: {
+        ready: true,
+        reasons: [],
+        checklist: ['prod readiness'],
+      },
+    }
+
+    const state = new RuntimeAppState(config)
+    await state.initPromise
+
+    const snapshot = state.getSnapshot()
+    expect(snapshot.runtime.runtime_id).toBe('runtime-prod-01')
+    expect(snapshot.projects).toHaveLength(0)
+    expect(snapshot.approvals).toHaveLength(0)
+  })
 })
 
 function createConfig(): RuntimeAppConfig {

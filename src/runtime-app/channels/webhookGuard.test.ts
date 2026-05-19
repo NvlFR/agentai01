@@ -2,7 +2,11 @@ import { createHmac } from 'node:crypto'
 import { describe, expect, it, beforeEach } from 'bun:test'
 
 import { HttpError } from '../http/errors.js'
-import { resetWebhookGuardMemory, verifySignedWebhook } from './webhookGuard.js'
+import {
+  claimWebhookEventInMemory,
+  resetWebhookGuardMemory,
+  verifySignedWebhook,
+} from './webhookGuard.js'
 
 const SECRET = 'webhook-secret-test'
 const NOW_MS = Date.parse('2026-05-18T10:00:00.000Z')
@@ -34,18 +38,21 @@ describe('verifySignedWebhook', () => {
     const rawBody = JSON.stringify({ message: 'run status' })
     const request = signedRequest(rawBody, 'evt-1', TIMESTAMP)
 
-    verifySignedWebhook(request, rawBody, {
+    const verified = verifySignedWebhook(request, rawBody, {
+      provider: 'whatsapp',
+      secret: SECRET,
+      nowMs: NOW_MS,
+    })
+    claimWebhookEventInMemory(verified.provider, verified.event_id, NOW_MS)
+
+    const secondVerified = verifySignedWebhook(request, rawBody, {
       provider: 'whatsapp',
       secret: SECRET,
       nowMs: NOW_MS,
     })
 
     expect(() =>
-      verifySignedWebhook(request, rawBody, {
-        provider: 'whatsapp',
-        secret: SECRET,
-        nowMs: NOW_MS,
-      }),
+      claimWebhookEventInMemory(secondVerified.provider, secondVerified.event_id, NOW_MS),
     ).toThrow(HttpError)
   })
 

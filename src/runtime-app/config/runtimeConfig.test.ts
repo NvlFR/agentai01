@@ -47,6 +47,7 @@ describe('parseRuntimeAppConfig', () => {
       env: {
         AI_API_KEY: 'process-env-key',
         OPERATOR_TOKEN: 'operator-token-prod',
+        DATABASE_URL: 'postgres://agentai:secret@127.0.0.1:5432/agentai',
       },
       readEnvFiles: true,
     })
@@ -138,6 +139,10 @@ describe('parseRuntimeAppConfig', () => {
       field: 'OPERATOR_TOKEN',
       message: 'OPERATOR_TOKEN is required in staging and production; no development fallback is allowed.',
     })
+    expect(result.errors).toContainEqual({
+      field: 'DATABASE_URL',
+      message: 'DATABASE_URL is required in staging and production; runtime state must not fall back to local seed or ephemeral storage.',
+    })
   })
 })
 
@@ -170,6 +175,7 @@ describe('loadRuntimeConfig', () => {
         env: {
           APP_ENV: 'staging',
           OPERATOR_TOKEN: 'operator-token-staging',
+          DATABASE_URL: 'postgres://agentai:secret@127.0.0.1:5432/agentai',
         },
       }),
     ).not.toThrow()
@@ -189,7 +195,7 @@ describe('loadRuntimeConfig', () => {
           OPERATOR_TOKEN: 'operator-token-staging',
         },
       }),
-    ).not.toThrow()
+    ).toThrow(RuntimeConfigError)
 
     expect(() =>
       loadRuntimeAppConfig({

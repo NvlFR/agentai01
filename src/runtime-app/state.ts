@@ -151,18 +151,22 @@ export class RuntimeAppState {
   private readonly approvalTimeline: Array<Approval_Request | Approval_Response> = []
   private readonly rejectedMessages: Map<string, RetryMessageRecord> = new Map()
   private readonly extensionRegistry = createLowPriorityExtensionRegistry()
+  private readonly shouldSeedRuntime: boolean
 
   constructor(config: RuntimeAppConfig) {
     this.config = config
+    this.shouldSeedRuntime = config.env === 'development' || config.env === 'test'
     this.shell = bootOrchestratorShell({
       shell_id: 'runtime-operator-shell',
       runtime: {
-        runtime_id: 'runtime-dev-01',
+        runtime_id: config.runtimeId,
         mode: 'local',
         workers: createWorkers(),
       },
-      seed: createSeed(),
-      notes: ['In-memory operator shell for local development.'],
+      ...(this.shouldSeedRuntime ? { seed: createSeed() } : {}),
+      notes: this.shouldSeedRuntime
+        ? ['Seeded runtime shell for non-production development and test.']
+        : ['Runtime shell booted without seed data; waiting for durable state recovery.'],
     })
     this.ceoRuntime = new CeoRuntime(this.shell.app.getRegistry(), 'ceo-agent', {
       config: {
@@ -185,9 +189,11 @@ export class RuntimeAppState {
     )
     this.repository = repository
 
-    seedApprovals(this.shell, this.approvalTimeline)
-    seedMessages(this.shell, this.rejectedMessages)
-    seedCeoRuntime(this.ceoRuntime)
+    if (this.shouldSeedRuntime) {
+      seedApprovals(this.shell, this.approvalTimeline)
+      seedMessages(this.shell, this.rejectedMessages)
+      seedCeoRuntime(this.ceoRuntime)
+    }
     this.audit('runtime_boot', 'operator-ui', this.shell.runtime.runtime_id, 'Runtime app state initialized.')
 
     this.initPromise = (async () => {
@@ -592,9 +598,11 @@ export class RuntimeAppState {
           updated_at: p.updated_at || new Date().toISOString(),
         })
       }
-    } else {
-      // Database is empty! Seed the database immediately so that it is persisted!
+    } else if (this.shouldSeedRuntime) {
+      // Non-production runtimes may persist seed state on first boot for local iteration.
       await this.saveAllToPersistence()
+      return
+    } else {
       return
     }
 

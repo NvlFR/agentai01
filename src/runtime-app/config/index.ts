@@ -190,6 +190,7 @@ export function parseRuntimeAppConfig(
   const observerToken = readStringValue(mergedEnv['OBSERVER_TOKEN']) ?? null
   const telegramWebhookSecret = readStringValue(mergedEnv['TELEGRAM_WEBHOOK_SECRET']) ?? null
   const whatsappWebhookSecret = readStringValue(mergedEnv['WHATSAPP_WEBHOOK_SECRET']) ?? null
+  const databaseUrl = readStringValue(mergedEnv['DATABASE_URL']) ?? null
   const artifactsRoot = resolveStoragePath(
     cwd,
     readStringValue(mergedEnv['STORAGE_ARTIFACTS_ROOT']) ??
@@ -218,6 +219,13 @@ export function parseRuntimeAppConfig(
   const readinessReasons: string[] = []
   if (!aiApiKey) {
     readinessReasons.push('AI_API_KEY is not set.')
+  }
+
+  if ((env === 'production' || env === 'staging') && !databaseUrl) {
+    errors.push({
+      field: 'DATABASE_URL',
+      message: 'DATABASE_URL is required in staging and production; runtime state must not fall back to local seed or ephemeral storage.',
+    })
   }
 
   if (errors.length > 0) {
@@ -250,8 +258,8 @@ export function parseRuntimeAppConfig(
         logLatency: aiLogLatency,
       },
       storage: {
-        mode: mergedEnv['DATABASE_URL'] ? 'postgres' : (env === 'test' ? 'memory' : 'sqlite'),
-        databaseUrl: mergedEnv['DATABASE_URL'] ?? null,
+        mode: databaseUrl ? 'postgres' : (env === 'test' ? 'memory' : 'sqlite'),
+        databaseUrl,
         artifactsRoot,
         operationalRoot,
       },

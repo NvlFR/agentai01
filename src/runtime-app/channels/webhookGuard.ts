@@ -48,13 +48,21 @@ export function verifySignedWebhook(
 
   assertFreshTimestamp(timestamp, options.nowMs ?? Date.now(), options.replayWindowMs ?? DEFAULT_REPLAY_WINDOW_MS)
   assertSignature(secret, `${timestamp}.${rawBody}`, signature)
-  claimEvent(`${options.provider}:${eventId}`, options.nowMs ?? Date.now(), options.replayWindowMs ?? DEFAULT_REPLAY_WINDOW_MS)
 
   return {
     provider: options.provider,
     event_id: eventId,
     timestamp,
   }
+}
+
+export function claimWebhookEventInMemory(
+  provider: WebhookProvider,
+  eventId: string,
+  nowMs = Date.now(),
+  replayWindowMs = DEFAULT_REPLAY_WINDOW_MS,
+): void {
+  claimEvent(`${provider}:${eventId}`, nowMs, replayWindowMs)
 }
 
 export function resetWebhookGuardMemory(): void {

@@ -22,7 +22,11 @@ import {
   type RuntimeOperatorIdentity,
 } from './auth/index.js'
 import { InMemoryRateLimiter, type RateLimitPolicy } from './auth/rateLimit.js'
-import { verifySignedWebhook, type WebhookProvider } from './channels/webhookGuard.js'
+import {
+  claimWebhookEventInMemory,
+  verifySignedWebhook,
+  type WebhookProvider,
+} from './channels/webhookGuard.js'
 import { HttpError, isHttpError } from './http/errors.js'
 import { sendTelegramText } from '../channels/telegram/send.js'
 import { sendWhatsAppText } from '../channels/whatsapp/send.js'
@@ -513,6 +517,14 @@ async function readVerifiedWebhook(
 
   try {
     const verified = verifySignedWebhook(req, rawBody, { provider, secret })
+    const claimKey = `${provider}:${verified.event_id}`
+    const claimed = await state.repository.claimEvent(claimKey, new Date().toISOString())
+    if (!claimed) {
+      throw new HttpError(409, 'webhook_replay_rejected', 'Webhook event was already processed.')
+    }
+    if (state.config.storage.mode === 'memory') {
+      claimWebhookEventInMemory(provider, verified.event_id)
+    }
     globalDiagnostics.recordMetric('runtime_webhook_accepted_total', 1, {
       provider,
     })
